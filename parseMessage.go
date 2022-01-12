@@ -52,7 +52,7 @@ func (r *PingResult) parsePingOutput(output string) error {
 	reg := regexp.MustCompile(RegexpSubmitted)
 	subSentence, err := findingPattern(reg, output)
 	if err != nil {
-		r.TimeStamp = time.Now().Unix()
+		r.TimeStamp = time.Now().UTC().Unix()
 		r.ErrorMessage = err
 		return err
 	}
