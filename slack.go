@@ -9,12 +9,7 @@ import (
 	"github.com/parnurzeal/gorequest"
 )
 
-const (
-	SolanaPingWebHook = "https://hooks.slack.com/services/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"
-	Report_MAX        = 10
-	Header            = "( Submitted, Confirmed, Loss, min/mean/max/stddev ms )"
-	ReportTime        = 2 * 60 * time.Second
-)
+const Header = "( Submitted, Confirmed, Loss, min/mean/max/stddev ms )"
 
 type SlackText struct {
 	SText string `json:"text"`
@@ -36,7 +31,7 @@ type averageResult struct {
 }
 
 var lastReporUnixTime int64
-var ClusterToReport = []Cluster{Testnet, Devnet}
+var ClusterToReport = []Cluster{Testnet, Devnet, MainnetBeta}
 
 func resultMarkdown(pr []PingResult) (string, averageResult, error) {
 	if len(pr) <= 0 {
@@ -80,6 +75,7 @@ func (s *SlackPayload) GetReportPayload(c Cluster) {
 
 	records, avg, err := resultMarkdown(result)
 	lastReporUnixTime = currentTime
+	log.Info("GetReportPayload fetch ", len(result), " from ", c)
 
 	body := Block{}
 	if err == nil {
@@ -106,6 +102,7 @@ func SlackSend(webhookUrl string, payload *SlackPayload) []error {
 	resp, _, errs := request.Post(webhookUrl).Send(string(data)).End()
 
 	if errs != nil {
+		log.Error(err)
 		return errs
 	}
 
@@ -113,10 +110,13 @@ func SlackSend(webhookUrl string, payload *SlackPayload) []error {
 		return []error{fmt.Errorf("slack sending msg. Status: %v", resp.Status)}
 	}
 
+	log.Info("SlackSend->")
+
 	return nil
 }
 
 func SlackReportService() {
+	log.Info("-- Start SlackReportService --")
 	for _, c := range ClusterToReport {
 		go SlackReport(c)
 	}
@@ -126,8 +126,7 @@ func SlackReport(c Cluster) {
 	payload := SlackPayload{}
 	payload.GetReportPayload(c)
 	if len(payload.Blocks) <= 0 {
-		time.Sleep(ReportTime)
+		time.Sleep(time.Duration(config.Slack.ReportTime) * time.Second)
 	}
-	SlackSend(SolanaPingWebHook, &payload)
-
+	SlackSend(config.Slack.WebHook, &payload)
 }

@@ -2,8 +2,6 @@ package main
 
 import "time"
 
-const CleanerInterval = 60 * 60 * time.Second
-
 func PingWorkers(clusters []Cluster) {
 
 	for _, c := range clusters {
@@ -16,13 +14,23 @@ func PingWorkers(clusters []Cluster) {
 func GetPingService(c Cluster) {
 	for {
 		result := GetPing(c)
-		devnetDB.Add(result, c)
+
+		switch c {
+		case MainnetBeta:
+			mainnetBetaDB.Add(result, c)
+		case Testnet:
+			testnetDB.Add(result, c)
+		case Devnet:
+			devnetDB.Add(result, c)
+		default:
+			devnetDB.Add(result, c)
+		}
 		time.Sleep(10 * time.Second)
 	}
 }
 
 func GetPing(c Cluster) PingResult {
-	ret := PingResult{Hostname: "aaaa"}
+	ret := PingResult{Hostname: config.HostName, Cluster: c}
 	output, err := solanaPing(Devnet)
 	if err != nil {
 		ret.ErrorMessage = err
@@ -42,14 +50,14 @@ func CleanerService(c Cluster) {
 	for {
 		switch c {
 		case MainnetBeta:
-			mainnetBetaDB.RemoveOld(MaxRecordInDB)
+			mainnetBetaDB.RemoveOld(config.Cleaner.MaxRecordInDB)
 		case Testnet:
-			testnetDB.RemoveOld(MaxRecordInDB)
+			testnetDB.RemoveOld(config.Cleaner.MaxRecordInDB)
 		case Devnet:
-			devnetDB.RemoveOld(MaxRecordInDB)
+			devnetDB.RemoveOld(config.Cleaner.MaxRecordInDB)
 		default:
-			devnetDB.RemoveOld(MaxRecordInDB)
+			devnetDB.RemoveOld(config.Cleaner.MaxRecordInDB)
 		}
-		time.Sleep(CleanerInterval)
+		time.Sleep(time.Duration(config.Cleaner.CleanerInterval) * time.Second)
 	}
 }

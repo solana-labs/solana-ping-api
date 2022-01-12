@@ -8,11 +8,6 @@ import (
 
 // Temp database
 
-const MaxRecordInDB = 1000
-const HistoryFilepathMainnet = "ping-history-mainnet.serialized"
-const HistoryFilepathTestnet = "ping-history-testnet.serialized"
-const HistoryFilepathDevnet = "ping-history-devnet.serialized"
-
 type PingHistory []PingResult
 
 var devnetDB PingHistory
@@ -75,14 +70,15 @@ func SaveToFileHelper(c Cluster) {
 	filepath := ""
 	switch c {
 	case MainnetBeta:
-		filepath = HistoryFilepathMainnet
+		filepath = config.HistoryFile.Mainnet
 	case Testnet:
-		filepath = HistoryFilepathTestnet
+		filepath = config.HistoryFile.Testnet
 	case Devnet:
-		filepath = HistoryFilepathDevnet
+		filepath = config.HistoryFile.Devnet
 	default:
-		filepath = HistoryFilepathDevnet
+		filepath = config.HistoryFile.Devnet
 	}
+	log.Info("Open file:", filepath, " cluster:", c)
 	f, err := os.OpenFile(filepath, os.O_CREATE|os.O_RDWR, 0644)
 	defer f.Close()
 	if err != nil {

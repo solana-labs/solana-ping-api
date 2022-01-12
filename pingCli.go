@@ -2,48 +2,34 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"time"
 )
 
-const (
-	ArgCount      = "3"
-	ArgInterval   = "0"
-	ConfigMainnet = "config-mainnet-beta.yml"
-	ConfigTestnet = "config-testnet.yml"
-	ConfigDevnet  = "config-devnet.yml"
-	PingExePath   = "/home/sol/.local/share/solana/install/active_release/bin"
-)
-
-var ConfigPath = ""
-
-type Cluster string
-
-const (
-	MainnetBeta Cluster = "mainnet-beta"
-	Testnet             = "testnet"
-	Devnet              = "devnet"
-)
-
 func solanaPing(c Cluster) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
-	var config string
+
+	var configpath string
 	switch c {
 	case MainnetBeta:
-		config = ConfigPath + ConfigMainnet
+		configpath = config.SolanaConfigPath + config.SolanaConfig.Mainnet
 	case Testnet:
-		config = ConfigPath + ConfigTestnet
+		configpath = config.SolanaConfigPath + config.SolanaConfig.Testnet
 	case Devnet:
-		config = ConfigPath + ConfigDevnet
+		configpath = config.SolanaConfigPath + config.SolanaConfig.Devnet
 	default:
-		config = ConfigPath + ConfigDevnet
+		configpath = config.SolanaConfigPath + config.SolanaConfig.Devnet
 	}
-
-	cmd := exec.CommandContext(ctx, "solana", "ping", "-c", ArgCount, "-i", ArgInterval, "-C", config)
-	cmd.Env = append(os.Environ(), ":"+PingExePath)
+	log.Info("configfile=", configpath)
+	cmd := exec.CommandContext(ctx, "solana", "ping",
+		"-c", fmt.Sprintf("%d", config.SolanaPing.Count),
+		"-i", fmt.Sprintf("%d", config.SolanaPing.Interval),
+		"-C", configpath)
+	cmd.Env = append(os.Environ(), ":"+config.SolanaPing.PingExePath)
 	stdin, err := cmd.StdinPipe()
 
 	if err != nil {

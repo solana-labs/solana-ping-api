@@ -124,7 +124,7 @@ func (r *PingResult) parsePingOutput(output string) error {
 
 func (r *PingResult) ConvertToJoson() (PingResultJson, error) {
 	// Check result
-	jsonResult := PingResultJson{Hostname: r.Hostname, Submitted: r.Submitted, Confirmed: r.Confirmed,
+	jsonResult := PingResultJson{Hostname: r.Hostname, Cluster: r.Cluster, Submitted: r.Submitted, Confirmed: r.Confirmed,
 		ConfirmationMessage: r.ConfirmationMessage}
 	if nil == r.ErrorMessage {
 		jsonResult.ErrorMessage = ""

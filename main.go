@@ -9,42 +9,58 @@ import (
 )
 
 var log *logrus.Logger
+var config Config
 
-func getDevnetLatest(c *gin.Context) {
-	ret := GetDevnetLatest()
-	c.IndentedJSON(http.StatusOK, ret)
-}
+type Cluster string
+
+const (
+	MainnetBeta Cluster = "mainnet-beta"
+	Testnet             = "testnet"
+	Devnet              = "devnet"
+)
 
 func init() {
-	ConfigPath = os.Getenv("HOME") + "/.config/solana/cli/"
+	config = loadConfig()
 	log = logrus.New()
 	devnetDB = make([]PingResult, 0)
-	df, err := os.Open(HistoryFilepathMainnet)
-	if nil == err {
-		devnetDB.ReconstructFromFile(df)
-		defer df.Close()
+	df, err := os.Open(config.HistoryFile.Devnet)
+	if nil != err {
+		log.Warn("open devent file fail:", err)
 	}
+	devnetDB.ReconstructFromFile(df)
+	log.Info("devnetDB is recontruct from ", config.HistoryFile.Devnet)
+	defer df.Close()
 
 	testnetDB = make([]PingResult, 0)
-	tf, err := os.Open(HistoryFilepathTestnet)
-	if nil == err {
-		devnetDB.ReconstructFromFile(tf)
-		defer tf.Close()
+	tf, err := os.Open(config.HistoryFile.Testnet)
+	if nil != err {
+		log.Warn("open testnet file fail:", err)
 	}
+	testnetDB.ReconstructFromFile(tf)
+	log.Info("testnetDB is recontruct from ", config.HistoryFile.Testnet)
+	defer tf.Close()
+
 	mainnetBetaDB = make([]PingResult, 0)
-	mf, err := os.Open(HistoryFilepathDevnet)
-	if nil == err {
-		devnetDB.ReconstructFromFile(mf)
-		defer mf.Close()
+	mf, err := os.Open(config.HistoryFile.Mainnet)
+	if nil != err {
+		log.Warn("open mainnet file fail:", err)
 	}
+	mainnetBetaDB.ReconstructFromFile(mf)
+	log.Info("mainnetBetaDB is recontruct from ", config.HistoryFile.Mainnet)
+	defer mf.Close()
 }
 
 func main() {
 	router := gin.Default()
 	router.GET("/devnet/latest", getDevnetLatest)
-	go PingWorkers([]Cluster{Devnet})
+	go PingWorkers([]Cluster{Testnet, Devnet, MainnetBeta})
 	go SlackReportService()
-	router.Run("localhost:8080")
+	router.Run(config.ServerIP)
+}
+
+func getDevnetLatest(c *gin.Context) {
+	ret := GetDevnetLatest()
+	c.IndentedJSON(http.StatusOK, ret)
 }
 
 func GetDevnetLatest() PingResultJson {

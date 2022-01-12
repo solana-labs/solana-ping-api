@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"os"
 	"testing"
 )
 
@@ -11,6 +10,12 @@ var pingResult2 = PingResult{Hostname: "b", Submitted: 10, Confirmed: 0, Loss: 1
 var pingResult3 = PingResult{Hostname: "c", Submitted: 5, Confirmed: 5, Loss: 50, ConfirmationMessage: "nothing", ErrorMessage: errors.New("OooMyErr")}
 var testpayload = `{"blocks":[{"type":"section","text":{"text":"10 results","type":"mrkdwn"}}]}`
 
+func TestSlack(t *testing.T) {
+	c := loadConfig()
+	log.Info(c)
+}
+
+/*
 func TestSlack(t *testing.T) {
 	os.Remove(HistoryFilepathDevnet)
 	devnetDB = make([]PingResult, 0)
@@ -29,7 +34,6 @@ func TestSlack(t *testing.T) {
 
 }
 
-/*
 func TestSaveToFile(t *testing.T) {
 	os.Remove(HistoryFilepath)
 	devnetDB = make([]PingResult, 0)
