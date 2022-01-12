@@ -2,7 +2,7 @@ package main
 
 import "time"
 
-const CleanerInterval = 2 * 60 * time.Second
+const CleanerInterval = 60 * 60 * time.Second
 
 func PingWorkers(clusters []Cluster) {
 
@@ -16,7 +16,7 @@ func PingWorkers(clusters []Cluster) {
 func GetPingService(c Cluster) {
 	for {
 		result := GetPing(c)
-		devnetDB.Add(result)
+		devnetDB.Add(result, c)
 		time.Sleep(10 * time.Second)
 	}
 }
@@ -38,12 +38,18 @@ func GetPing(c Cluster) PingResult {
 }
 
 func CleanerService(c Cluster) {
+	log.Info("Start ", c, "Cleaner Service")
 	for {
-		DBCleaner(c)
+		switch c {
+		case MainnetBeta:
+			mainnetBetaDB.RemoveOld(MaxRecordInDB)
+		case Testnet:
+			testnetDB.RemoveOld(MaxRecordInDB)
+		case Devnet:
+			devnetDB.RemoveOld(MaxRecordInDB)
+		default:
+			devnetDB.RemoveOld(MaxRecordInDB)
+		}
 		time.Sleep(CleanerInterval)
 	}
-}
-func DBCleaner(c Cluster) {
-	removed := devnetDB.RemoveOld(MaxRecordInDB)
-	log.Info("DBCleaner ", removed, " removed! new : ", devnetDB)
 }

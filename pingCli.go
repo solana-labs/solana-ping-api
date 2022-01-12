@@ -11,11 +11,13 @@ import (
 const (
 	ArgCount      = "3"
 	ArgInterval   = "0"
-	ConfigMainnet = "/home/pieceofr/.config/solana/cli/config.yml"
-	ConfigTestnet = "/home/pieceofr/.config/solana/cli/config.yml"
-	ConfigDevnet  = "/home/pieceofr/.config/solana/cli/config.yml"
+	ConfigMainnet = "config-mainnet-beta.yml"
+	ConfigTestnet = "config-testnet.yml"
+	ConfigDevnet  = "config-devnet.yml"
 	PingExePath   = "/home/sol/.local/share/solana/install/active_release/bin"
 )
+
+var ConfigPath = ""
 
 type Cluster string
 
@@ -31,13 +33,13 @@ func solanaPing(c Cluster) (string, error) {
 	var config string
 	switch c {
 	case MainnetBeta:
-		config = ConfigMainnet
+		config = ConfigPath + ConfigMainnet
 	case Testnet:
-		config = ConfigTestnet
+		config = ConfigPath + ConfigTestnet
 	case Devnet:
-		config = ConfigDevnet
+		config = ConfigPath + ConfigDevnet
 	default:
-		config = ConfigDevnet
+		config = ConfigPath + ConfigDevnet
 	}
 
 	cmd := exec.CommandContext(ctx, "solana", "ping", "-c", ArgCount, "-i", ArgInterval, "-C", config)
