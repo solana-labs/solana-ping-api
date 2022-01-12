@@ -67,11 +67,10 @@ func (s *PingHistoryDevnet) SaveToFile(f *os.File) error {
 	if err != nil {
 		log.Error("SaveToFile Error", err)
 	}
-	n, err := f.Write(data)
+	_, err = f.Write(data)
 	if err != nil {
 		return err
 	}
-	log.Info("SaveToFile Write :", n, " bytes")
 	return nil
 }
 
