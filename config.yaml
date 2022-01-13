@@ -1,0 +1,24 @@
+SolanaConfigPath: "/home/pieceofr/.config/solana/cli/"
+ServerIP: "localhost:8888"
+History:
+ FilepathMainnet: "./ping-history-mainnet.serialized"
+ FilepathTestnet: "./ping-history-testnet.serialized"
+ FilepathDevnet: "./ping-history-devnet.serialized"
+SolanaConfig: 
+  Mainnet: "config-mainnet-beta.yml"
+  Testnet: "config-testnet.yml"
+  Devnet: config-devnet.yml"
+SolanaPing:
+ PingExePath: "/home/sol/.local/share/solana/install/active_release/bin"
+ Count: 3
+ Inverval: 1
+ Timeout: 60
+Slack:
+ WebHook: "https://hooks.slack.com/services/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"
+ ReportTime: 120
+Cleaner:
+ MaxRecordInDB: 1000
+ CleanerInterval: 3600
+
+
+
