@@ -10,21 +10,20 @@ import (
 )
 
 func solanaPing(c Cluster) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.SolanaPing.Timeout)*time.Second)
 	defer cancel()
 
 	var configpath string
 	switch c {
 	case MainnetBeta:
-		configpath = config.SolanaConfigPath + config.SolanaConfig.Mainnet
+		configpath = config.SolanaConfig.Dir + config.SolanaConfig.Mainnet
 	case Testnet:
-		configpath = config.SolanaConfigPath + config.SolanaConfig.Testnet
+		configpath = config.SolanaConfig.Dir + config.SolanaConfig.Testnet
 	case Devnet:
-		configpath = config.SolanaConfigPath + config.SolanaConfig.Devnet
+		configpath = config.SolanaConfig.Dir + config.SolanaConfig.Devnet
 	default:
-		configpath = config.SolanaConfigPath + config.SolanaConfig.Devnet
+		configpath = config.SolanaConfig.Dir + config.SolanaConfig.Devnet
 	}
-	log.Info("configfile=", configpath)
 	cmd := exec.CommandContext(ctx, "solana", "ping",
 		"-c", fmt.Sprintf("%d", config.SolanaPing.Count),
 		"-i", fmt.Sprintf("%d", config.SolanaPing.Interval),
@@ -33,6 +32,7 @@ func solanaPing(c Cluster) (string, error) {
 	stdin, err := cmd.StdinPipe()
 
 	if err != nil {
+		log.Error(c, ":Ping StdinPipe Error:", err)
 		return "", err
 	}
 
@@ -43,8 +43,8 @@ func solanaPing(c Cluster) (string, error) {
 
 	out, err := cmd.Output()
 	if err != nil {
+		log.Error(c, ":Ping Output Error:", err)
 		return "", err
 	}
-
 	return string(out), nil
 }

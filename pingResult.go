@@ -9,22 +9,12 @@ import (
 	"time"
 )
 
-type PingResult struct {
-	Cluster
-	Hostname            string
-	Submitted           uint64
-	Confirmed           uint64
-	Loss                float64
-	ConfirmationMessage string
-	TimeStamp           int64
-	ErrorMessage        error
-}
-
-type PingResultJson struct {
+//PingResultJSON is a struct convert from PingResult to desire json output struct
+type PingResultJSON struct {
 	Hostname            string `json:"hostname"`
 	Cluster             `json:"cluster"`
-	Submitted           uint64 `json:"submitted"`
-	Confirmed           uint64 `json:"confirmed"`
+	Submitted           int    `json:"submitted"`
+	Confirmed           int    `json:"confirmed"`
 	Loss                string `json:"loss"`
 	ConfirmationMessage string `json:"confirmation"`
 	TimeStamp           string `json:"ts"`
@@ -32,10 +22,10 @@ type PingResultJson struct {
 }
 
 const (
-	RegexpSubmitted    = "[0-9]+\\stransactions submitted"
-	RegexpConfirmed    = "[0-9]+\\stransactions confirmed"
-	RegexpLoss         = "([0-9]*[.])?[0-9]%\\stransaction loss"
-	RegexpConfirmation = "min/mean/max/stddev\\s*=\\s*[\\s\\S]*ms"
+	regexpSubmitted    = "[0-9]+\\stransactions submitted"
+	regexpConfirmed    = "[0-9]+\\stransactions confirmed"
+	regexpLoss         = "([0-9]*[.])?[0-9]%\\stransaction loss"
+	regexpConfirmation = "min/mean/max/stddev\\s*=\\s*[\\s\\S]*ms"
 )
 
 func findingPattern(reg *regexp.Regexp, output string) (string, error) {
@@ -49,97 +39,89 @@ func findingPattern(reg *regexp.Regexp, output string) (string, error) {
 func (r *PingResult) parsePingOutput(output string) error {
 
 	// Submitted
-	reg := regexp.MustCompile(RegexpSubmitted)
+	reg := regexp.MustCompile(regexpSubmitted)
 	subSentence, err := findingPattern(reg, output)
 	if err != nil {
 		r.TimeStamp = time.Now().UTC().Unix()
-		r.ErrorMessage = err
+		r.Error = err.Error()
 		return err
 	}
 	tmp := strings.Split(subSentence, " ")
-	n, err := strconv.ParseUint(tmp[0], 10, 64)
+	n, err := strconv.ParseUint(tmp[0], 10, 32)
 	if err != nil {
 		log.Error("parse transactions confirmed error ", subSentence)
-		r.ErrorMessage = err
+		r.Error = err.Error()
 		return errors.New("Parse Output Error")
 	}
-	r.Submitted = n
+	r.Submitted = int(n)
 
 	// Confirmed
-	reg = regexp.MustCompile(RegexpConfirmed)
+	reg = regexp.MustCompile(regexpConfirmed)
 	subSentence, err = findingPattern(reg, output)
 	if err != nil {
-		r.TimeStamp = time.Now().Unix()
-		r.ErrorMessage = err
+		r.TimeStamp = time.Now().UTC().Unix()
+		r.Error = err.Error()
 		return err
 	}
 	tmp = strings.Split(subSentence, " ")
-	n, err = strconv.ParseUint(tmp[0], 10, 64)
+	n, err = strconv.ParseUint(tmp[0], 10, 32)
 	if err != nil {
 		log.Error("parse transactions confirmed error ", subSentence)
-		r.ErrorMessage = err
+		r.Error = err.Error()
 		return ConvertWrongType
 	}
-	r.Confirmed = n
+	r.Confirmed = int(n)
 
 	// loss
-	reg = regexp.MustCompile(RegexpLoss)
+	reg = regexp.MustCompile(regexpLoss)
 	subSentence, err = findingPattern(reg, output)
 	if err != nil {
-		r.TimeStamp = time.Now().Unix()
-		r.ErrorMessage = err
+		r.TimeStamp = time.Now().UTC().Unix()
+		r.Error = err.Error()
 		return err
 	}
 	tmp = strings.Split(subSentence, "%")
 	if len(tmp) != 2 {
-		r.ErrorMessage = ParseSplitError
+		r.Error = ParseSplitError.Error()
 		return ParseSplitError
 	}
 	lossval, err := strconv.ParseFloat(tmp[0], 64)
 	if err != nil {
 		log.Error("parse transactions loss error ", subSentence)
-		r.ErrorMessage = ConvertWrongType
+		r.Error = ConvertWrongType.Error()
 		return ConvertWrongType
 	}
 	r.Loss = lossval
 
 	// Confirmation
-	reg = regexp.MustCompile(RegexpConfirmation)
+	reg = regexp.MustCompile(regexpConfirmation)
 	subSentence, err = findingPattern(reg, output)
 	if err != nil {
-		r.TimeStamp = time.Now().Unix()
-		r.ErrorMessage = err
+		r.TimeStamp = time.Now().UTC().Unix()
+		r.Error = err.Error()
 		return err
 	}
 	if len(subSentence) <= 0 {
-		r.TimeStamp = time.Now().Unix()
-		r.ErrorMessage = ParseSplitError
+		r.TimeStamp = time.Now().UTC().Unix()
+		r.Error = ParseSplitError.Error()
 		return ParseSplitError
 	}
-	r.TimeStamp = time.Now().Unix()
+	r.TimeStamp = time.Now().UTC().Unix()
 	r.ConfirmationMessage = subSentence
-	r.ErrorMessage = nil
+	r.Error = ""
 	return nil
 }
 
-func (r *PingResult) ConvertToJoson() (PingResultJson, error) {
+//ToJoson convert PingResult to Json Format
+func ToJoson(r *PingResult) PingResultJSON {
 	// Check result
-	jsonResult := PingResultJson{Hostname: r.Hostname, Cluster: r.Cluster, Submitted: r.Submitted, Confirmed: r.Confirmed,
-		ConfirmationMessage: r.ConfirmationMessage}
-	if nil == r.ErrorMessage {
-		jsonResult.ErrorMessage = ""
-	}
-	if r.Submitted == 0 && r.Confirmed == 0 && len(r.ConfirmationMessage) == 0 {
-		return jsonResult, ResultInvalid
-
-	}
-
+	jsonResult := PingResultJSON{Hostname: r.Hostname, Cluster: Cluster(r.Cluster), Submitted: r.Submitted, Confirmed: r.Confirmed,
+		ConfirmationMessage: r.ConfirmationMessage, ErrorMessage: r.Error}
 	loss := fmt.Sprintf("%3.1f%s", r.Loss, "%")
-
 	jsonResult.Loss = loss
 	ts := time.Unix(r.TimeStamp, 0)
 	jsonResult.TimeStamp = ts.Format(time.RFC3339)
-	return jsonResult, nil
+	return jsonResult
 }
 
 // Memo: Below regex is not working for e2

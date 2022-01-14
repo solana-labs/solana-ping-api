@@ -1,85 +1,71 @@
 package main
 
 import (
-	"errors"
 	"testing"
 )
 
-var pingResult1 = PingResult{Hostname: "a", Submitted: 10, Confirmed: 10, Loss: 0, ConfirmationMessage: "nothing", ErrorMessage: nil}
-var pingResult2 = PingResult{Hostname: "b", Submitted: 10, Confirmed: 0, Loss: 100, ConfirmationMessage: "nothing", ErrorMessage: nil}
-var pingResult3 = PingResult{Hostname: "c", Submitted: 5, Confirmed: 5, Loss: 50, ConfirmationMessage: "nothing", ErrorMessage: errors.New("OooMyErr")}
-var testpayload = `{"blocks":[{"type":"section","text":{"text":"10 results","type":"mrkdwn"}}]}`
+var sch1 = PingResult{
+	TimeStamp:           1642149689,
+	Cluster:             "Devnet",
+	Hostname:            "solana-ping-api",
+	Submitted:           10,
+	Confirmed:           9,
+	Loss:                10.0,
+	ConfirmationMessage: " min/mean/max/stddev = 742/821/978/136 ms",
+	TakeTime:            90,
+	Error:               "",
+}
 
-func TestSlack(t *testing.T) {
-	c := loadConfig()
-	log.Info(c)
+var hook = "https://hooks.slack.com/services/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"
+
+func TestParse(t *testing.T) {
+	pings := []PingResult{sch1}
+	avg := generateData(pings)
+	payload := SlackPayload{}
+	payload.ToPayload(MainnetBeta, pings, avg)
+	err := SlackSend(hook, &payload)
+	if err != nil {
+		log.Error(err)
+	}
+
 }
 
 /*
+func TestConfig(t *testing.T) {
+	config := loadConfig()
+	log.Info(config.Clusters)
+	log.Info(config.ServerIP)
+	log.Info(config.SolanaConfig)
+	log.Info(config.SolanaPing)
+	log.Info(config.Slack)
+	log.Info(config.Cleaner)
+}
+*/
+
+/*
 func TestSlack(t *testing.T) {
-	os.Remove(HistoryFilepathDevnet)
-	devnetDB = make([]PingResult, 0)
-	devnetDB.Add(pingResult1, Devnet)
-	devnetDB.Add(pingResult2, Devnet)
-	devnetDB.Add(pingResult3, Devnet)
 
 	payload := SlackPayload{}
 
 	payload.GetReportPayload(Devnet)
 
-	errs := SlackSend(SolanaPingWebHook, &payload)
+	errs := SlackSend(config.Slack.WebHook, &payload)
 	if errs != nil {
 		t.Error(errs)
 	}
 
 }
-
-func TestSaveToFile(t *testing.T) {
-	os.Remove(HistoryFilepath)
-	devnetDB = make([]PingResult, 0)
-	devnetDB.Add(pingResult1)
-	devnetDB.Add(pingResult2)
-	devnetDB.Add(pingResult3)
-	f, err := os.OpenFile(HistoryFilepath, os.O_CREATE|os.O_RDWR, 0644)
-	defer f.Close()
-	if err != nil {
-		t.FailNow()
-	}
-	err = devnetDB.SaveToFile(f)
-	if err != nil {
-		t.FailNow()
-	}
-}
-
-func TestOpenHistoryFileExist(t *testing.T) {
-	os.Remove(HistoryFilepath)
-	devnetDB = make([]PingResult, 0)
-	devnetDB.Add(pingResult1)
-	devnetDB.Add(pingResult2)
-	devnetDB.Add(pingResult3)
-	SaveToFileHelper()
-	f, err := os.Open(HistoryFilepath)
-	defer f.Close()
-	if nil == err {
-		devnetDB.ReconstructFromFile(f)
-		t.Log("new DB:", devnetDB)
-
-	} else {
-		t.Error(err)
-	}
-}
-
-func TestOpenHistoryFileEmpty(t *testing.T) {
-	devnetDB = make([]PingResult, 0)
-	os.Remove(HistoryFilepath)
-	f, err := os.Open(HistoryFilepath)
-	defer f.Close()
-
-	if nil == err {
-		reconstructErr := devnetDB.ReconstructFromFile(f)
-		if reconstructErr != nil {
-			t.Error()
-		}
-	}
-}
 */
+var output = `Source Account: 8Juu8gXPHCKougXvkg3ZY8HdJcBdqFch7hHKjKFNWTFV
+
+msg BD5heio2zqXdNuN1i7hia6dKbLVq7RvYt9HanYdj8nWD
+✅ 1 lamport(s) transferred: seq=0   time= 773ms signature=2twfwLjCj7eLxXPDkyfPqJFP66Jb3Npkb6nTVeJXXZC5rThYp9Mn67SX8Pk8km5SAyQwYdasrK7cUP4JJN2BdXYr
+msg BD5heio2zqXdNuN1i7hia6dKbLVq7RvYt9HanYdj8nWD
+✅ 1 lamport(s) transferred: seq=1   time=1106ms signature=Nbyz2bzmb2FNqdmJoP18KoHeNE8ByvCHh2D4tiDsWxn7Z5BoWXsA5iGrhgjbqRDe5FQy5gafHfcaXw73c4spYod
+msg BD5heio2zqXdNuN1i7hia6dKbLVq7RvYt9HanYdj8nWD
+✅ 1 lamport(s) transferred: seq=2   time= 773ms signature=2JXmQNaLW2FM3w9uMmTJqRZiHJkrZay1e6B7ti9mAWebgDWqCek6YoHmrLoLu7wNqSLuHSmgjpKv5ERoq4HYyMMz
+
+--- transaction statistics ---
+3 transactions submitted, 3 transactions confirmed, 0.0% transaction loss
+confirmation min/mean/max/stddev = 773/884/1106/192 ms
+ `

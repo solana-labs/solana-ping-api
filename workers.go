@@ -1,63 +1,81 @@
 package main
 
-import "time"
+import (
+	"time"
+)
 
-func PingWorkers(clusters []Cluster) {
-
+func launchWorkers(clusters []Cluster, slackCluster []Cluster) {
 	for _, c := range clusters {
-		go GetPingService(c)
-		go CleanerService(c)
+		go getPingWorker(c)
+	}
+
+	time.Sleep(30 * time.Second)
+
+	for _, c := range slackCluster {
+		go slackReportWorker(c)
 	}
 
 }
 
-func GetPingService(c Cluster) {
+func getPingWorker(c Cluster) {
+	log.Info(">> Solana Ping Worker for ", c, " start!")
 	for {
+		startTime := time.Now().UTC().Unix()
 		result := GetPing(c)
-
-		switch c {
-		case MainnetBeta:
-			mainnetBetaDB.Add(result, c)
-		case Testnet:
-			testnetDB.Add(result, c)
-		case Devnet:
-			devnetDB.Add(result, c)
-		default:
-			devnetDB.Add(result, c)
+		endTime1 := time.Now().UTC().Unix()
+		result.TakeTime = int(endTime1 - startTime)
+		addRecord(result)
+		endTime2 := time.Now().UTC().Unix()
+		perPingTime := config.SolanaPing.PerPingTime
+		waitTime := perPingTime - (endTime2 - startTime)
+		if waitTime > 0 {
+			time.Sleep(time.Duration(waitTime) * time.Second)
 		}
-		time.Sleep(10 * time.Second)
 	}
 }
 
+//GetPing  Do the solana ping and return ping result, return error is in PingResult.Error
 func GetPing(c Cluster) PingResult {
-	ret := PingResult{Hostname: config.HostName, Cluster: c}
-	output, err := solanaPing(Devnet)
+	result := PingResult{Hostname: config.HostName, Cluster: string(c)}
+	output, err := solanaPing(c)
 	if err != nil {
-		ret.ErrorMessage = err
-		return ret
+		log.Error("GetPing ping error:", err)
+		result.Error = err.Error()
+		return result
 	}
-	err = ret.parsePingOutput(output)
+	err = result.parsePingOutput(output)
 	if err != nil {
-		ret.ErrorMessage = err
-		return ret
+		log.Error("GetPing parse output error:", err)
+		result.Error = err.Error()
+		return result
 	}
-
-	return ret
+	return result
 }
 
-func CleanerService(c Cluster) {
-	log.Info("Start ", c, "Cleaner Service")
+var lastReporUnixTime int64
+
+func slackReportWorker(c Cluster) {
+	log.Info(">> Slack Report Worker for ", c, " start!")
 	for {
-		switch c {
-		case MainnetBeta:
-			mainnetBetaDB.RemoveOld(config.Cleaner.MaxRecordInDB)
-		case Testnet:
-			testnetDB.RemoveOld(config.Cleaner.MaxRecordInDB)
-		case Devnet:
-			devnetDB.RemoveOld(config.Cleaner.MaxRecordInDB)
-		default:
-			devnetDB.RemoveOld(config.Cleaner.MaxRecordInDB)
+		if lastReporUnixTime == 0 {
+			lastReporUnixTime = time.Now().UTC().Unix() - int64(config.Slack.ReportTime)
+			log.Info("reconstruct lastReport time=", lastReporUnixTime, "time now=", time.Now().UTC().Unix())
 		}
-		time.Sleep(time.Duration(config.Cleaner.CleanerInterval) * time.Second)
+		data := getAfter(c, lastReporUnixTime)
+		if len(data) <= 0 { // No Data
+			log.Warn(c, " getAfter return empty")
+			time.Sleep(30 * time.Second)
+			continue
+		}
+		lastReporUnixTime = time.Now().UTC().Unix()
+		stats := generateData(data)
+		payload := SlackPayload{}
+		payload.ToPayload(c, data, stats)
+		err := SlackSend(config.Slack.WebHook, &payload)
+		if err != nil {
+			log.Error("SlackSend Error:", err)
+		}
+
+		time.Sleep(time.Duration(config.Slack.ReportTime) * time.Second)
 	}
 }

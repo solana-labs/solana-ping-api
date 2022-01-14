@@ -3,101 +3,98 @@ package main
 import (
 	"net/http"
 	"os"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 var log *logrus.Logger
 var config Config
 
+//Cluster enum
 type Cluster string
 
+var database *gorm.DB
+var dbMtx *sync.Mutex
+
+//Cluster enum
 const (
-	MainnetBeta Cluster = "mainnet-beta"
-	Testnet             = "testnet"
-	Devnet              = "devnet"
+	MainnetBeta Cluster = "MainnetBeta"
+	Testnet             = "Testnet"
+	Devnet              = "Devnet"
 )
 
 func init() {
 	config = loadConfig()
 	log = logrus.New()
-	devnetDB = make([]PingResult, 0)
-	df, err := os.Open(config.HistoryFile.Devnet)
-	if nil != err {
-		log.Warn("open devent file fail:", err)
-	}
-	devnetDB.ReconstructFromFile(df)
-	log.Info("devnetDB is recontruct from ", config.HistoryFile.Devnet)
-	defer df.Close()
+	logFormatter := new(logrus.TextFormatter)
+	logFormatter.FullTimestamp = true
+	log.SetFormatter(logFormatter)
 
-	testnetDB = make([]PingResult, 0)
-	tf, err := os.Open(config.HistoryFile.Testnet)
-	if nil != err {
-		log.Warn("open testnet file fail:", err)
+	if config.LogfileOn {
+		logfile, err := os.OpenFile(config.Logfile, os.O_WRONLY|os.O_CREATE, 655)
+		if err != nil {
+			log.Fatal("Log file Error:", err)
+			panic("Invalid Cluster")
+		}
+		log.SetOutput(logfile)
 	}
-	testnetDB.ReconstructFromFile(tf)
-	log.Info("testnetDB is recontruct from ", config.HistoryFile.Testnet)
-	defer tf.Close()
 
-	mainnetBetaDB = make([]PingResult, 0)
-	mf, err := os.Open(config.HistoryFile.Mainnet)
-	if nil != err {
-		log.Warn("open mainnet file fail:", err)
+	postgres, err := gorm.Open(postgres.Open(config.DBConn), &gorm.Config{})
+	if err != nil {
+		log.Panic(err)
 	}
-	mainnetBetaDB.ReconstructFromFile(mf)
-	log.Info("mainnetBetaDB is recontruct from ", config.HistoryFile.Mainnet)
-	defer mf.Close()
+	database = postgres
+	dbMtx = &sync.Mutex{}
+	log.Info("database initialized")
+
 }
 
 func main() {
+	go launchWorkers(config.Clusters, config.Slack.Clusters)
 	router := gin.Default()
 	router.GET("/devnet/latest", getDevnetLatest)
-	go PingWorkers([]Cluster{Testnet, Devnet, MainnetBeta})
-	go SlackReportService()
+	router.GET("/testnet/latest", getTestnetLatest)
+	router.GET("/mainnet-beta/latest", getMainnetBetaLatest)
 	router.Run(config.ServerIP)
 }
 
-func getDevnetLatest(c *gin.Context) {
-	ret := GetDevnetLatest()
+func getMainnetBetaLatest(c *gin.Context) {
+	ret := GetLatestResult(MainnetBeta)
 	c.IndentedJSON(http.StatusOK, ret)
 }
 
-func GetDevnetLatest() PingResultJson {
-	r := devnetDB.GetLatest(1)
-
-	if len(r) > 0 {
-		ret, err := r[0].ConvertToJoson()
-		if err != nil {
-			return PingResultJson{ErrorMessage: err.Error()}
-		}
-		return ret
-	}
-	return PingResultJson{ErrorMessage: NoPingResultFound.Error()}
+func getTestnetLatest(c *gin.Context) {
+	ret := GetLatestResult(Testnet)
+	c.IndentedJSON(http.StatusOK, ret)
 }
 
-func GetTestnetLatest() PingResultJson {
-	r := testnetDB.GetLatest(1)
-
-	if len(r) > 0 {
-		ret, err := r[0].ConvertToJoson()
-		if err != nil {
-			return PingResultJson{ErrorMessage: err.Error()}
-		}
-		return ret
-	}
-	return PingResultJson{ErrorMessage: NoPingResultFound.Error()}
+func getDevnetLatest(c *gin.Context) {
+	ret := GetLatestResult(Devnet)
+	c.IndentedJSON(http.StatusOK, ret)
 }
 
-func GetMainnetLatest() PingResultJson {
-	r := mainnetBetaDB.GetLatest(1)
-
-	if len(r) > 0 {
-		ret, err := r[0].ConvertToJoson()
-		if err != nil {
-			return PingResultJson{ErrorMessage: err.Error()}
-		}
-		return ret
+//GetLatestResult return the latest PingResult from the cluster and convert it into PingResultJSON
+func GetLatestResult(c Cluster) PingResultJSON {
+	if !IsClusterActive(c) {
+		return PingResultJSON{ErrorMessage: "Cluster " + string(c) + " is not active"}
 	}
-	return PingResultJson{ErrorMessage: NoPingResultFound.Error()}
+	records := getLastN(c, 1)
+	if len(records) > 0 {
+		return ToJoson(&records[0])
+	}
+
+	return PingResultJSON{ErrorMessage: "Invalid Cluster"}
+}
+
+func IsClusterActive(c Cluster) bool {
+	for _, existedCluster := range config.Clusters {
+		if c == existedCluster { // cluster existed
+			return true
+		}
+	}
+	return false
 }
