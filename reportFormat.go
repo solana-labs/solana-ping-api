@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"strings"
 )
 
@@ -86,7 +87,7 @@ func reportBody(pr []PingResult, st statisticResult) (string, error) {
 		cmsg := strings.Split(e.ConfirmationMessage, " ")
 		var confdata string
 		if len(cmsg) < 4 {
-			log.Error("split confirmationMessage error:", cmsg, " PingResult=>", e)
+			log.Println("split confirmationMessage error:", cmsg, " PingResult=>", e)
 			confdata = e.ConfirmationMessage
 		} else {
 			confdata = cmsg[2]

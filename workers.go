@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"time"
 )
 
@@ -18,7 +19,7 @@ func launchWorkers(clusters []Cluster, slackCluster []Cluster) {
 }
 
 func getPingWorker(c Cluster) {
-	log.Info(">> Solana Ping Worker for ", c, " start!")
+	log.Println(">> Solana Ping Worker for ", c, " start!")
 	for {
 		startTime := time.Now().UTC().Unix()
 		result := GetPing(c)
@@ -39,13 +40,13 @@ func GetPing(c Cluster) PingResult {
 	result := PingResult{Hostname: config.HostName, Cluster: string(c)}
 	output, err := solanaPing(c)
 	if err != nil {
-		log.Error("GetPing ping error:", err)
+		log.Println("GetPing ping error:", err)
 		result.Error = err.Error()
 		return result
 	}
 	err = result.parsePingOutput(output)
 	if err != nil {
-		log.Error("GetPing parse output error:", err)
+		log.Println("GetPing parse output error:", err)
 		result.Error = err.Error()
 		return result
 	}
@@ -55,15 +56,15 @@ func GetPing(c Cluster) PingResult {
 var lastReporUnixTime int64
 
 func slackReportWorker(c Cluster) {
-	log.Info(">> Slack Report Worker for ", c, " start!")
+	log.Println(">> Slack Report Worker for ", c, " start!")
 	for {
 		if lastReporUnixTime == 0 {
 			lastReporUnixTime = time.Now().UTC().Unix() - int64(config.Slack.ReportTime)
-			log.Info("reconstruct lastReport time=", lastReporUnixTime, "time now=", time.Now().UTC().Unix())
+			log.Println("reconstruct lastReport time=", lastReporUnixTime, "time now=", time.Now().UTC().Unix())
 		}
 		data := getAfter(c, lastReporUnixTime)
 		if len(data) <= 0 { // No Data
-			log.Warn(c, " getAfter return empty")
+			log.Println(c, " getAfter return empty")
 			time.Sleep(30 * time.Second)
 			continue
 		}
@@ -73,9 +74,10 @@ func slackReportWorker(c Cluster) {
 		payload.ToPayload(c, data, stats)
 		err := SlackSend(config.Slack.WebHook, &payload)
 		if err != nil {
-			log.Error("SlackSend Error:", err)
+			log.Println("SlackSend Error:", err)
 		}
 
 		time.Sleep(time.Duration(config.Slack.ReportTime) * time.Second)
 	}
+
 }

@@ -1,17 +1,15 @@
 package main
 
 import (
+	"log"
 	"net/http"
-	"os"
 	"sync"
 
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-var log *logrus.Logger
 var config Config
 
 //Cluster enum
@@ -29,27 +27,15 @@ const (
 
 func init() {
 	config = loadConfig()
-	log = logrus.New()
-	logFormatter := new(logrus.TextFormatter)
-	logFormatter.FullTimestamp = true
-	log.SetFormatter(logFormatter)
 
-	if config.LogfileOn {
-		logfile, err := os.OpenFile(config.Logfile, os.O_WRONLY|os.O_CREATE, 655)
-		if err != nil {
-			log.Fatal("Log file Error:", err)
-			panic("Invalid Cluster")
-		}
-		log.SetOutput(logfile)
-	}
-
-	postgres, err := gorm.Open(postgres.Open(config.DBConn), &gorm.Config{})
+	gormDB, err := gorm.Open(postgres.Open(config.DBConn), &gorm.Config{})
 	if err != nil {
 		log.Panic(err)
 	}
-	database = postgres
+	database = gormDB
+
 	dbMtx = &sync.Mutex{}
-	log.Info("database initialized")
+	log.Println("database initialized")
 
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"time"
@@ -32,7 +33,7 @@ func solanaPing(c Cluster) (string, error) {
 	stdin, err := cmd.StdinPipe()
 
 	if err != nil {
-		log.Error(c, ":Ping StdinPipe Error:", err)
+		log.Println(c, ":Ping StdinPipe Error:", err)
 		return "", err
 	}
 
@@ -43,7 +44,7 @@ func solanaPing(c Cluster) (string, error) {
 
 	out, err := cmd.Output()
 	if err != nil {
-		log.Error(c, ":Ping Output Error:", err)
+		log.Println(c, ":Ping Output Error:", err)
 		return "", err
 	}
 	return string(out), nil

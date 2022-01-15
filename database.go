@@ -1,6 +1,9 @@
 package main
 
-import "time"
+import (
+	"log"
+	"time"
+)
 
 //PingResult schema for pingresult table
 type PingResult struct {
@@ -21,7 +24,7 @@ func addRecord(data PingResult) error {
 	dbMtx.Lock()
 	result := database.Create(&data)
 	dbMtx.Unlock()
-	log.Info(data.Cluster, " add a record")
+	log.Println(data.Cluster, " add a record")
 	return result.Error
 }
 
@@ -39,7 +42,7 @@ func getAfter(c Cluster, t int64) []PingResult {
 	dbMtx.Lock()
 	database.Order("time_stamp desc").First(&r)
 	database.Order("time_stamp desc").Where("cluster=? AND time_stamp > ?", c, t).Find(&ret)
-	log.Info("Latest in DB:", r.TimeStamp, " after:", t, " found:", len(ret))
+	log.Println("Latest in DB:", r.TimeStamp, " after:", t, " found:", len(ret))
 	dbMtx.Unlock()
 	return ret
 

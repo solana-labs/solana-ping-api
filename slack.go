@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/parnurzeal/gorequest"
 )
@@ -20,10 +21,10 @@ func SlackSend(webhookURL string, payload *SlackPayload) []error {
 		return errs
 	}
 	if resp.StatusCode >= 400 {
-		log.Info(resp.StatusCode, " payload:", string(data))
+		log.Println(resp.StatusCode, " payload:", string(data))
 		return []error{fmt.Errorf("slack sending msg. Status: %v", resp.Status)}
 	}
 
-	log.Info("Slack Send Successfully =>")
+	log.Println("Slack Send Successfully =>")
 	return nil
 }

@@ -33,12 +33,12 @@ func TestParse(t *testing.T) {
 /*
 func TestConfig(t *testing.T) {
 	config := loadConfig()
-	log.Info(config.Clusters)
-	log.Info(config.ServerIP)
-	log.Info(config.SolanaConfig)
-	log.Info(config.SolanaPing)
-	log.Info(config.Slack)
-	log.Info(config.Cleaner)
+	log.Println(config.Clusters)
+	log.Println(config.ServerIP)
+	log.Println(config.SolanaConfig)
+	log.Println(config.SolanaPing)
+	log.Println(config.Slack)
+	log.Println(config.Cleaner)
 }
 */
 

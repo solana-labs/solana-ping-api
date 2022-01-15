@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -49,7 +50,7 @@ func (r *PingResult) parsePingOutput(output string) error {
 	tmp := strings.Split(subSentence, " ")
 	n, err := strconv.ParseUint(tmp[0], 10, 32)
 	if err != nil {
-		log.Error("parse transactions confirmed error ", subSentence)
+		log.Println("parse transactions confirmed error ", subSentence)
 		r.Error = err.Error()
 		return errors.New("Parse Output Error")
 	}
@@ -66,7 +67,7 @@ func (r *PingResult) parsePingOutput(output string) error {
 	tmp = strings.Split(subSentence, " ")
 	n, err = strconv.ParseUint(tmp[0], 10, 32)
 	if err != nil {
-		log.Error("parse transactions confirmed error ", subSentence)
+		log.Println("parse transactions confirmed error ", subSentence)
 		r.Error = err.Error()
 		return ConvertWrongType
 	}
@@ -87,7 +88,7 @@ func (r *PingResult) parsePingOutput(output string) error {
 	}
 	lossval, err := strconv.ParseFloat(tmp[0], 64)
 	if err != nil {
-		log.Error("parse transactions loss error ", subSentence)
+		log.Println("parse transactions loss error ", subSentence)
 		r.Error = ConvertWrongType.Error()
 		return ConvertWrongType
 	}
