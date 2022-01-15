@@ -24,28 +24,17 @@ type Slack struct {
 	WebHook    string
 	ReportTime int
 }
-type Cleaner struct {
-	MaxRecordInDB   int
-	CleanerInterval int
-}
-type HistoryFile struct {
-	Mainnet string
-	Testnet string
-	Devnet  string
-}
 
 type Config struct {
 	DBConn    string
-	Clusters  []Cluster
 	HostName  string
 	ServerIP  string
 	LogfileOn bool
 	Logfile   string
+	Clusters  []Cluster
 	SolanaConfig
 	SolanaPing
 	Slack
-	Cleaner
-	HistoryFile
 }
 
 func loadConfig() Config {
@@ -89,15 +78,6 @@ func loadConfig() Config {
 		Clusters:   sCluster,
 		WebHook:    v.GetString("Slack.WebHook"),
 		ReportTime: v.GetInt("Slack.ReportTime"),
-	}
-	c.Cleaner = Cleaner{
-		MaxRecordInDB:   v.GetInt("Cleaner.MaxRecordInDB"),
-		CleanerInterval: v.GetInt("Cleaner.CleanerInterval"),
-	}
-	c.HistoryFile = HistoryFile{
-		Mainnet: v.GetString("History.FilepathMainnet"),
-		Testnet: v.GetString("History.FilepathTestnet"),
-		Devnet:  v.GetString("History.FilepathDevnet"),
 	}
 
 	return c

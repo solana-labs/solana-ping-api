@@ -1,9 +1,9 @@
-ServerIP: "0.0.0.0:8080"
-DBConn: user=sol password= host= port=5432 dbname=
-LogfileOn: false
-Logfile: "/home/sol/ping-api-server/ping-api.log.dev"
+ServerIP: "localhost:8080"
+DBConn: user= password= host= port=5432 dbname=
+LogfileOn: true
+Logfile: "/home/pieceofr/ping-api-server/ping-api.log.dev"
 Clusters:
- - MainnetBeta
+# - MainnetBeta
  - Testnet
  - Devnet
 SolanaConfig:
@@ -21,9 +21,9 @@ Slack:
  WebHook: 
  ReportTime: 300
  Clusters:
-  - MainnetBeta
-  - Testnet
-  - Devnet
+#  - MainnetBeta
+#  - Testnet
+#  - Devnet
 
 
 
