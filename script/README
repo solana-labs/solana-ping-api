@@ -1,0 +1,29 @@
+Install Example Steps
+
+mkdir ~/ping-api-server
+cp scripts/* ~/ping-api-server
+cp config.yaml ~/ping-api-server
+# Change config.yaml
+./cp-to-real-config.sh
+./update-from-wks.sh
+
+# create a /etc/systemd/system/solana-ping-api.service
+# [Unit]
+# Description=Solana Ping API Service
+# After=network.target
+# StartLimitIntervalSec=1
+
+# [Service]
+# Type=simple
+# Restart=always
+# RestartSec=30
+# User=sol
+# LogRateLimitIntervalSec=0
+# ExecStart=/home/sol/ping-api-server/restart.sh
+
+# [Install]
+# WantedBy=multi-user.target
+
+sudo systemctl daemon-reload
+sudo systemctl start solana-ping-api.service
+
