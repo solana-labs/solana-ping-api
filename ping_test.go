@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"testing"
 )
 
@@ -25,7 +26,7 @@ func TestParse(t *testing.T) {
 	payload.ToPayload(MainnetBeta, pings, avg)
 	err := SlackSend(hook, &payload)
 	if err != nil {
-		log.Error(err)
+		log.Print(err)
 	}
 
 }
