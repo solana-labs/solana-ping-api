@@ -1,13 +1,13 @@
 package main
 
 import (
-	"log"
-	"net/http"
-	"sync"
-
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"log"
+	"time"
+	"net/http"
+	"sync"
 )
 
 var config Config
@@ -42,24 +42,42 @@ func init() {
 func main() {
 	go launchWorkers(config.Clusters, config.Slack.Clusters)
 	router := gin.Default()
-	router.GET("/devnet/latest", getDevnetLatest)
-	router.GET("/testnet/latest", getTestnetLatest)
-	router.GET("/mainnet-beta/latest", getMainnetBetaLatest)
+	router.GET("/:cluster/latest", getLatest)
+	router.GET("/:cluster/last60hours", last60hours)
 	router.Run(config.ServerIP)
 }
 
-func getMainnetBetaLatest(c *gin.Context) {
-	ret := GetLatestResult(MainnetBeta)
+func getLatest(c *gin.Context) {
+	cluster := c.Param("cluster")
+	var ret PingResultJSON
+	switch cluster {
+	case "mainnet-beta":
+		ret = GetLatestResult(MainnetBeta)
+	case "testnet":
+		ret = GetLatestResult(Testnet)
+	case "devnet":
+		ret = GetLatestResult(Devnet)
+	default:
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
 	c.IndentedJSON(http.StatusOK, ret)
 }
+func last60hours(c *gin.Context) {
+	cluster := c.Param("cluster")
+	var ret []PingResultJSON
+	switch cluster {
+	case "mainnet-beta":
+		ret = GetLast60hours(MainnetBeta)
+	case "testnet":
+		ret = GetLast60hours(Testnet)
+	case "devnet":
+		ret = GetLast60hours(Devnet)
+	default:
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
 
-func getTestnetLatest(c *gin.Context) {
-	ret := GetLatestResult(Testnet)
-	c.IndentedJSON(http.StatusOK, ret)
-}
-
-func getDevnetLatest(c *gin.Context) {
-	ret := GetLatestResult(Devnet)
 	c.IndentedJSON(http.StatusOK, ret)
 }
 
@@ -73,7 +91,23 @@ func GetLatestResult(c Cluster) PingResultJSON {
 		return ToJoson(&records[0])
 	}
 
-	return PingResultJSON{ErrorMessage: "Invalid Cluster"}
+	return PingResultJSON{}
+}
+
+//GetLatestResult return the latest PingResult from the cluster and convert it into PingResultJSON
+func GetLast60hours(c Cluster) []PingResultJSON {
+	if !IsClusterActive(c) {
+		return []PingResultJSON{}
+	}
+	now := time.Now().UTC().Unix()
+	// (-1) because getAfter function return only after .
+	beginOfPast60Hours := now - 60*60*60 - 1 
+	records := getAfter(c, beginOfPast60Hours)
+	ret := []PingResultJSON{}
+	for _, e := range records{
+		ret = append(ret, ToJoson(&e))
+	}
+	return ret
 }
 
 func IsClusterActive(c Cluster) bool {
