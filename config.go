@@ -38,10 +38,14 @@ type Config struct {
 }
 
 func loadConfig() Config {
+	userHome, err := os.UserHomeDir()
+	if err != nil {
+		panic("loadConfig error:" + err.Error())
+	}
 	c := Config{}
 	v := viper.New()
-	v.SetConfigName("config") // 指定 config 的檔名
-	v.AddConfigPath("./")
+	v.SetConfigName("config")
+	v.AddConfigPath(userHome + "/.config/ping-api")
 	v.ReadInConfig()
 	v.AutomaticEnv()
 	host, err := os.Hostname()
@@ -79,6 +83,12 @@ func loadConfig() Config {
 		WebHook:    v.GetString("Slack.WebHook"),
 		ReportTime: v.GetInt("Slack.ReportTime"),
 	}
+	osPath := os.Getenv("PATH")
+	if len(osPath) != 0 {
+		osPath = c.PingExePath + ":" + osPath
+		os.Setenv("PATH", osPath)
+	}
+	os.Setenv("PATH", c.PingExePath)
 
 	return c
 }

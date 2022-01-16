@@ -1,9 +1,10 @@
+## config.yaml should put it in ~/.config/ping-api/config.yaml
+## log file is specified in solana-ping-api-restart.sh
+##
 ServerIP: "localhost:8080"
 DBConn: user= password= host= port=5432 dbname=
-LogfileOn: true
-Logfile: "/home/pieceofr/ping-api-server/ping-api.log.dev"
 Clusters:
-# - MainnetBeta
+ - MainnetBeta
  - Testnet
  - Devnet
 SolanaConfig:
@@ -21,7 +22,7 @@ Slack:
  WebHook: 
  ReportTime: 300
  Clusters:
-#  - MainnetBeta
+  - MainnetBeta
 #  - Testnet
 #  - Devnet
 
