@@ -46,5 +46,4 @@ func getAfter(c Cluster, t int64) []PingResult {
 	log.Println("Latest in DB:", r.TimeStamp, " after:", t, " found:", len(ret))
 	dbMtx.Unlock()
 	return ret
-
 }

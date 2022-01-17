@@ -43,7 +43,7 @@ func main() {
 	go launchWorkers(config.Clusters, config.Slack.Clusters)
 	router := gin.Default()
 	router.GET("/:cluster/latest", getLatest)
-	router.GET("/:cluster/last60hours", last60hours)
+	router.GET("/:cluster/last6hours", last6hours)
 	router.Run(config.ServerIP)
 }
 
@@ -63,16 +63,16 @@ func getLatest(c *gin.Context) {
 	}
 	c.IndentedJSON(http.StatusOK, ret)
 }
-func last60hours(c *gin.Context) {
+func last6hours(c *gin.Context) {
 	cluster := c.Param("cluster")
 	var ret []PingResultJSON
 	switch cluster {
 	case "mainnet-beta":
-		ret = GetLast60hours(MainnetBeta)
+		ret = GetLast6hours(MainnetBeta)
 	case "testnet":
-		ret = GetLast60hours(Testnet)
+		ret = GetLast6hours(Testnet)
 	case "devnet":
-		ret = GetLast60hours(Devnet)
+		ret = GetLast6hours(Devnet)
 	default:
 		c.AbortWithStatus(http.StatusNotFound)
 		return
@@ -95,13 +95,13 @@ func GetLatestResult(c Cluster) PingResultJSON {
 }
 
 //GetLatestResult return the latest PingResult from the cluster and convert it into PingResultJSON
-func GetLast60hours(c Cluster) []PingResultJSON {
+func GetLast6hours(c Cluster) []PingResultJSON {
 	if !IsClusterActive(c) {
 		return []PingResultJSON{}
 	}
 	now := time.Now().UTC().Unix()
 	// (-1) because getAfter function return only after .
-	beginOfPast60Hours := now - 60*60*60 - 1 
+	beginOfPast60Hours := now - 60*60*6 - 1 
 	records := getAfter(c, beginOfPast60Hours)
 	ret := []PingResultJSON{}
 	for _, e := range records{
