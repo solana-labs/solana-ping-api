@@ -4,9 +4,9 @@ import (
 	"log"
 	"time"
 )
-
-//PingResult schema for pingresult table
+//PingResult is a struct to store ping result and database structure
 type PingResult struct {
+	Status				bool
 	TimeStamp           int64  `gorm:"primaryKey;autoIncrement:false"`
 	Cluster             string `gorm:"primaryKey"`
 	Hostname            string
@@ -19,6 +19,7 @@ type PingResult struct {
 	CreatedAt           time.Time `gorm:"type:timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP" json:"created_at,omitempty"`
 	UpdatedAt           time.Time `gorm:"type:timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP" json:"updated_at,omitempty"`
 }
+
 
 func addRecord(data PingResult) error {
 	dbMtx.Lock()

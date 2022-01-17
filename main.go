@@ -105,7 +105,9 @@ func GetLast60hours(c Cluster) []PingResultJSON {
 	records := getAfter(c, beginOfPast60Hours)
 	ret := []PingResultJSON{}
 	for _, e := range records{
-		ret = append(ret, ToJoson(&e))
+		if len(e.Error) <= 0 { // return only valid data point
+			ret = append(ret, ToJoson(&e))
+		}
 	}
 	return ret
 }
