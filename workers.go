@@ -40,16 +40,28 @@ func GetPing(c Cluster) PingResult {
 	result := PingResult{Hostname: config.HostName, Cluster: string(c)}
 	output, err := solanaPing(c)
 	if err != nil {
-		log.Println("GetPing ping error:", err)
+		log.Println(c, " GetPing ping Error:", err)
 		result.Error = err.Error()
+		result.Submitted = config.Count
+		result.Confirmed = 0
+		result.Loss = 100
+		result.ConfirmationMessage = ""
+		result.TimeStamp = time.Now().UTC().Unix()
 		return result
 	}
+
 	err = result.parsePingOutput(output)
 	if err != nil {
-		log.Println("GetPing parse output error:", err)
 		result.Error = err.Error()
+		result.Submitted = config.Count
+		result.Confirmed = 0
+		result.Loss = 100
+		result.ConfirmationMessage = ""
+		result.TimeStamp = time.Now().UTC().Unix()
+		log.Println(c, "GetPing parse output Error:", err, " output:", output)
 		return result
 	}
+
 	return result
 }
 

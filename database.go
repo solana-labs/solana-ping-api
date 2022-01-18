@@ -25,7 +25,7 @@ func addRecord(data PingResult) error {
 	dbMtx.Lock()
 	result := database.Create(&data)
 	dbMtx.Unlock()
-	log.Println(data.Cluster, " add a record")
+	log.Println(data.Cluster, " add a record : ", result)
 	return result.Error
 }
 

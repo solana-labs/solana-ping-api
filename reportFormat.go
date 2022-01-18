@@ -62,14 +62,10 @@ func generateData(pr []PingResult) statisticResult {
 	count := 0
 	errCount := 0
 	for _, e := range pr {
-		if len(e.Error) > 0 {
-			errCount++
-		} else {
-			sumSub += float64(e.Submitted)
-			sumConf += float64(e.Confirmed)
-			sumLoss += e.Loss
-			count++
-		}
+		sumSub += float64(e.Submitted)
+		sumConf += float64(e.Confirmed)
+		sumLoss += e.Loss
+		count++
 	}
 	avgLoss := sumLoss / float64(count)
 	avgSub := sumSub / float64(count)
