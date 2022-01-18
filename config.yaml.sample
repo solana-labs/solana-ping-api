@@ -1,20 +1,32 @@
 ServerIP: "0.0.0.0:8080"
 DBConn: "user= password= host= port=5432 dbname=pingresult"
+Logfile:
 Clusters:
- - MainnetBeta
- - Testnet
- - Devnet
+ Report:
+  - MainnetBeta
+#  - Testnet
+#  - Devnet
+ DataPoint1Min:
+  - MainnetBeta
+  - Testnet
+  - Devnet
 SolanaConfig:
  Dir: "/home/sol/.config/solana/cli/"
  Mainnet: "config-mainnet-beta.yml"
  Testnet: "config-testnet.yml"
  Devnet: "config-devnet.yml"
 SolanaPing:
- PingExePath: "/home/sol/.local/share/solana/install/active_release/bin"
- Count: 10
- Inverval: 1
- Timeout: 300
- PerPingTime: 30
+ PingExePath: "/home/pieceofr/.local/share/solana/install/active_release/bin"
+ Report:
+  Count: 10
+  Inverval: 1
+  Timeout: 300
+  PerPingTime: 30
+ DataPoint1Min:
+  Count: 3
+  Inverval: 1
+  Timeout: 30
+  PerPingTime: 20
 Slack:
  WebHook:
  ReportTime: 300

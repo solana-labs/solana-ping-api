@@ -21,7 +21,7 @@ var hook = "https://hooks.slack.com/services/T86Q0TMPS/B02TVQL0ZM0/SxrGHUtZ9txgs
 
 func TestParse(t *testing.T) {
 	pings := []PingResult{sch1}
-	avg := generateData(pings)
+	avg := generateReportData(pings)
 	payload := SlackPayload{}
 	payload.ToPayload(MainnetBeta, pings, avg)
 	err := SlackSend(hook, &payload)

@@ -5,30 +5,58 @@ import (
 	"time"
 )
 
-func launchWorkers(clusters []Cluster, slackCluster []Cluster) {
-	for _, c := range clusters {
-		go getPingWorker(c)
+type PingType string
+
+const (
+	Report        PingType = "report"
+	DataPoint1Min PingType = "datapoint1min"
+)
+
+func launchWorkers() {
+	for _, c := range config.ReportClusters {
+		go pingReportWorker(c)
+	}
+	for _, c := range config.DataPoint1MinClusters {
+		go pingDataPoint1MinWorker(c)
 	}
 
 	time.Sleep(30 * time.Second)
-
-	for _, c := range slackCluster {
+	for _, c := range config.Slack.Clusters {
 		go slackReportWorker(c)
 	}
 
 }
 
-func getPingWorker(c Cluster) {
-	log.Println(">> Solana Ping Worker for ", c, " start!")
+func pingReportWorker(c Cluster) {
+	log.Println(">> Solana pingReportWorker for ", c, " start!")
 	for {
 		startTime := time.Now().UTC().Unix()
-		result := GetPing(c)
+		result := GetPing(c, config.SolanaPing.Report.Count,
+			config.SolanaPing.Report.Interval, int64(config.SolanaPing.Report.Timeout))
 		endTime1 := time.Now().UTC().Unix()
+		result.PingType = string(Report)
 		result.TakeTime = int(endTime1 - startTime)
 		addRecord(result)
 		endTime2 := time.Now().UTC().Unix()
-		perPingTime := config.SolanaPing.PerPingTime
-		waitTime := perPingTime - (endTime2 - startTime)
+		waitTime := config.SolanaPing.Report.PerPingTime - (endTime2 - startTime)
+		if waitTime > 0 {
+			time.Sleep(time.Duration(waitTime) * time.Second)
+		}
+	}
+}
+
+func pingDataPoint1MinWorker(c Cluster) {
+	log.Println(">> Solana DataPoint1MinWorker for ", c, " start!")
+	for {
+		startTime := time.Now().UTC().Unix()
+		result := GetPing(c, config.SolanaPing.DataPoint1Min.Count,
+			config.SolanaPing.DataPoint1Min.Interval, int64(config.SolanaPing.DataPoint1Min.Timeout))
+		endTime1 := time.Now().UTC().Unix()
+		result.PingType = string(DataPoint1Min)
+		result.TakeTime = int(endTime1 - startTime)
+		addRecord(result)
+		endTime2 := time.Now().UTC().Unix()
+		waitTime := config.SolanaPing.DataPoint1Min.PerPingTime - (endTime2 - startTime)
 		if waitTime > 0 {
 			time.Sleep(time.Duration(waitTime) * time.Second)
 		}
@@ -36,13 +64,13 @@ func getPingWorker(c Cluster) {
 }
 
 //GetPing  Do the solana ping and return ping result, return error is in PingResult.Error
-func GetPing(c Cluster) PingResult {
+func GetPing(c Cluster, count int, interval int, timeout int64) PingResult {
 	result := PingResult{Hostname: config.HostName, Cluster: string(c)}
-	output, err := solanaPing(c)
+	output, err := solanaPing(c, count, interval, timeout)
 	if err != nil {
 		log.Println(c, " GetPing ping Error:", err)
 		result.Error = err.Error()
-		result.Submitted = config.Count
+		result.Submitted = config.SolanaPing.Report.Count
 		result.Confirmed = 0
 		result.Loss = 100
 		result.ConfirmationMessage = ""
@@ -53,7 +81,7 @@ func GetPing(c Cluster) PingResult {
 	err = result.parsePingOutput(output)
 	if err != nil {
 		result.Error = err.Error()
-		result.Submitted = config.Count
+		result.Submitted = config.SolanaPing.Report.Count
 		result.Confirmed = 0
 		result.Loss = 100
 		result.ConfirmationMessage = ""
@@ -74,14 +102,14 @@ func slackReportWorker(c Cluster) {
 			lastReporUnixTime = time.Now().UTC().Unix() - int64(config.Slack.ReportTime)
 			log.Println("reconstruct lastReport time=", lastReporUnixTime, "time now=", time.Now().UTC().Unix())
 		}
-		data := getAfter(c, lastReporUnixTime)
+		data := getAfter(c, DataPoint1Min, lastReporUnixTime)
 		if len(data) <= 0 { // No Data
 			log.Println(c, " getAfter return empty")
 			time.Sleep(30 * time.Second)
 			continue
 		}
 		lastReporUnixTime = time.Now().UTC().Unix()
-		stats := generateData(data)
+		stats := generateReportData(data)
 		payload := SlackPayload{}
 		payload.ToPayload(c, data, stats)
 		err := SlackSend(config.Slack.WebHook, &payload)

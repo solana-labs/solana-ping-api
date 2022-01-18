@@ -4,22 +4,22 @@ import (
 	"log"
 	"time"
 )
+
 //PingResult is a struct to store ping result and database structure
 type PingResult struct {
-	Status				bool
 	TimeStamp           int64  `gorm:"primaryKey;autoIncrement:false"`
 	Cluster             string `gorm:"primaryKey"`
 	Hostname            string
-	Submitted           int
-	Confirmed           int
-	Loss                float64
+	PingType            string  `gorm:"NOT NULL"`
+	Submitted           int     `gorm:"NOT NULL"`
+	Confirmed           int     `gorm:"NOT NULL"`
+	Loss                float64 `gorm:"NOT NULL"`
 	ConfirmationMessage string
 	TakeTime            int
-	Error               string    `gorm:"NOT NULL"`
+	Error               string
 	CreatedAt           time.Time `gorm:"type:timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP" json:"created_at,omitempty"`
 	UpdatedAt           time.Time `gorm:"type:timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP" json:"updated_at,omitempty"`
 }
-
 
 func addRecord(data PingResult) error {
 	dbMtx.Lock()
@@ -29,20 +29,20 @@ func addRecord(data PingResult) error {
 	return result.Error
 }
 
-func getLastN(c Cluster, n int) []PingResult {
+func getLastN(c Cluster, pType PingType, n int) []PingResult {
 	ret := []PingResult{}
 	dbMtx.Lock()
-	database.Order("time_stamp desc").Where("cluster=?", c).Limit(n).Find(&ret)
+	database.Order("time_stamp desc").Where("cluster=? AND ping_type=?", c, string(pType)).Limit(n).Find(&ret)
 	dbMtx.Unlock()
 	return ret
 }
 
-func getAfter(c Cluster, t int64) []PingResult {
+func getAfter(c Cluster, pType PingType, t int64) []PingResult {
 	ret := []PingResult{}
 	r := PingResult{}
 	dbMtx.Lock()
 	database.Order("time_stamp desc").First(&r)
-	database.Order("time_stamp desc").Where("cluster=? AND time_stamp > ?", c, t).Find(&ret)
+	database.Order("time_stamp desc").Where("cluster=? AND ping_type=? AND time_stamp > ?", c, string(pType), t).Find(&ret)
 	log.Println("Latest in DB:", r.TimeStamp, " after:", t, " found:", len(ret))
 	dbMtx.Unlock()
 	return ret

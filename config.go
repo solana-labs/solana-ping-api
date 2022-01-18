@@ -12,12 +12,16 @@ type SolanaConfig struct {
 	Testnet string
 	Devnet  string
 }
-type SolanaPing struct {
-	PingExePath string
+type PingConfig struct {
 	Count       int
 	Interval    int
 	Timeout     int
 	PerPingTime int64
+}
+type SolanaPing struct {
+	PingExePath   string
+	Report        PingConfig
+	DataPoint1Min PingConfig
 }
 type Slack struct {
 	Clusters   []Cluster
@@ -26,12 +30,13 @@ type Slack struct {
 }
 
 type Config struct {
-	DBConn    string
-	HostName  string
-	ServerIP  string
-	LogfileOn bool
-	Logfile   string
-	Clusters  []Cluster
+	UseGCloudDB           bool
+	DBConn                string
+	HostName              string
+	ServerIP              string
+	Logfile               string
+	ReportClusters        []Cluster
+	DataPoint1MinClusters []Cluster
 	SolanaConfig
 	SolanaPing
 	Slack
@@ -52,15 +57,20 @@ func loadConfig() Config {
 	if err != nil {
 		c.HostName = ""
 	}
+	c.UseGCloudDB = v.GetBool("UseGCloudDB")
 	c.DBConn = v.GetString("DBConn")
 	c.HostName = host
 	c.ServerIP = v.GetString("ServerIP")
-	c.Clusters = []Cluster{}
-	for _, e := range v.GetStringSlice("Clusters") {
-		c.Clusters = append(c.Clusters, Cluster(e))
+
+	c.ReportClusters = []Cluster{}
+	for _, e := range v.GetStringSlice("Clusters.Report") {
+		c.ReportClusters = append(c.ReportClusters, Cluster(e))
+	}
+	c.DataPoint1MinClusters = []Cluster{}
+	for _, e := range v.GetStringSlice("Clusters.DataPoint1Min") {
+		c.DataPoint1MinClusters = append(c.DataPoint1MinClusters, Cluster(e))
 	}
 	c.Logfile = v.GetString("Logfile")
-	c.LogfileOn = v.GetBool("LogfileOn")
 	c.SolanaConfig = SolanaConfig{
 		Dir:     v.GetString("SolanaConfig.Dir"),
 		Mainnet: v.GetString("SolanaConfig.Mainnet"),
@@ -69,10 +79,18 @@ func loadConfig() Config {
 	}
 	c.SolanaPing = SolanaPing{
 		PingExePath: v.GetString("SolanaPing.PingExePath"),
-		Count:       v.GetInt("SolanaPing.Count"),
-		Interval:    v.GetInt("SolanaPing.Inverval"),
-		Timeout:     v.GetInt("SolanaPing.Timeout"),
-		PerPingTime: v.GetInt64("SolanaPing.PerPingTime"),
+		Report: PingConfig{
+			Count:       v.GetInt("SolanaPing.Report.Count"),
+			Interval:    v.GetInt("SolanaPing.Report.Inverval"),
+			Timeout:     v.GetInt("SolanaPing.Report.Timeout"),
+			PerPingTime: v.GetInt64("SolanaPing.Report.PerPingTime"),
+		},
+		DataPoint1Min: PingConfig{
+			Count:       v.GetInt("SolanaPing.DataPoint1Min.Count"),
+			Interval:    v.GetInt("SolanaPing.DataPoint1Min.Inverval"),
+			Timeout:     v.GetInt("SolanaPing.DataPoint1Min.Timeout"),
+			PerPingTime: v.GetInt64("SolanaPing.DataPoint1Min.PerPingTime"),
+		},
 	}
 	sCluster := []Cluster{}
 	for _, e := range v.GetStringSlice("Slack.Clusters") {

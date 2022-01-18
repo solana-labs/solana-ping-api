@@ -2,25 +2,12 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 )
-
-//PingResultJSON is a struct convert from PingResult to desire json output struct
-type PingResultJSON struct {
-	Hostname            string `json:"hostname"`
-	Cluster             `json:"cluster"`
-	Submitted           int    `json:"submitted"`
-	Confirmed           int    `json:"confirmed"`
-	Loss                string `json:"loss"`
-	ConfirmationMessage string `json:"confirmation"`
-	TimeStamp           string `json:"ts"`
-	ErrorMessage        string `json:"error"`
-}
 
 const (
 	regexpSubmitted    = "[0-9]+\\stransactions submitted"
@@ -111,18 +98,6 @@ func (r *PingResult) parsePingOutput(output string) error {
 	r.ConfirmationMessage = subSentence
 	r.Error = ""
 	return nil
-}
-
-//ToJoson convert PingResult to Json Format
-func ToJoson(r *PingResult) PingResultJSON {
-	// Check result
-	jsonResult := PingResultJSON{Hostname: r.Hostname, Cluster: Cluster(r.Cluster), Submitted: r.Submitted, Confirmed: r.Confirmed,
-		ConfirmationMessage: r.ConfirmationMessage, ErrorMessage: r.Error}
-	loss := fmt.Sprintf("%3.1f%s", r.Loss, "%")
-	jsonResult.Loss = loss
-	ts := time.Unix(r.TimeStamp, 0)
-	jsonResult.TimeStamp = ts.Format(time.RFC3339)
-	return jsonResult
 }
 
 // Memo: Below regex is not working for e2

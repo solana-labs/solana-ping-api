@@ -1,13 +1,15 @@
 package main
 
 import (
+	"log"
+	"net/http"
+	"sync"
+	"time"
+
+	_ "github.com/GoogleCloudPlatform/cloudsql-proxy/proxy/dialers/postgres"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"log"
-	"time"
-	"net/http"
-	"sync"
 )
 
 var config Config
@@ -17,6 +19,8 @@ type Cluster string
 
 var database *gorm.DB
 var dbMtx *sync.Mutex
+
+const useGCloudDB = true
 
 //Cluster enum
 const (
@@ -28,19 +32,36 @@ const (
 func init() {
 	config = loadConfig()
 
-	gormDB, err := gorm.Open(postgres.Open(config.DBConn), &gorm.Config{})
-	if err != nil {
-		log.Panic(err)
+	log.Println("ServerIP:", config.ServerIP, " HostName:", config.HostName, " UseGCloudDB:", config.UseGCloudDB, " DBConn:", config.DBConn, " Logfile:", config.Logfile)
+	log.Println("ReportClusters:", config.ReportClusters, " DataPoint1MinClusters:", config.DataPoint1MinClusters)
+	log.Println("SolanaConfig:", config.SolanaConfig)
+	log.Println("SolanaPing:", config.SolanaPing)
+	log.Println("Slack:", config.Slack)
+
+	if config.UseGCloudDB {
+		gormDB, err := gorm.Open(postgres.New(postgres.Config{
+			DriverName: "cloudsqlpostgres",
+			DSN:        config.DBConn,
+		}))
+		if err != nil {
+			log.Panic(err)
+		}
+		database = gormDB
+	} else {
+		gormDB, err := gorm.Open(postgres.Open(config.DBConn), &gorm.Config{})
+		if err != nil {
+			log.Panic(err)
+		}
+		database = gormDB
 	}
-	database = gormDB
 
 	dbMtx = &sync.Mutex{}
-	log.Println("database initialized")
+	log.Println("database connected")
 
 }
 
 func main() {
-	go launchWorkers(config.Clusters, config.Slack.Clusters)
+	go launchWorkers()
 	router := gin.Default()
 	router.GET("/:cluster/latest", getLatest)
 	router.GET("/:cluster/last6hours", last6hours)
@@ -49,7 +70,7 @@ func main() {
 
 func getLatest(c *gin.Context) {
 	cluster := c.Param("cluster")
-	var ret PingResultJSON
+	var ret DataPoint1MinResultJSON
 	switch cluster {
 	case "mainnet-beta":
 		ret = GetLatestResult(MainnetBeta)
@@ -65,7 +86,7 @@ func getLatest(c *gin.Context) {
 }
 func last6hours(c *gin.Context) {
 	cluster := c.Param("cluster")
-	var ret []PingResultJSON
+	var ret DataPoint1MinJson
 	switch cluster {
 	case "mainnet-beta":
 		ret = GetLast6hours(MainnetBeta)
@@ -81,39 +102,52 @@ func last6hours(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, ret)
 }
 
-//GetLatestResult return the latest PingResult from the cluster and convert it into PingResultJSON
-func GetLatestResult(c Cluster) PingResultJSON {
-	if !IsClusterActive(c) {
-		return PingResultJSON{ErrorMessage: "Cluster " + string(c) + " is not active"}
+//GetLatestResult return the latest DataPoint1Min PingResult from the cluster and convert it into PingResultJSON
+func GetLatestResult(c Cluster) DataPoint1MinResultJSON {
+	if !IsReportClusterActive(c) {
+		return DataPoint1MinResultJSON{}
 	}
-	records := getLastN(c, 1)
+	records := getLastN(c, DataPoint1Min, 1)
 	if len(records) > 0 {
-		return ToJoson(&records[0])
+		return To1MinWindowJson(&records[0])
 	}
 
-	return PingResultJSON{}
+	return DataPoint1MinResultJSON{}
 }
 
-//GetLatestResult return the latest PingResult from the cluster and convert it into PingResultJSON
-func GetLast6hours(c Cluster) []PingResultJSON {
-	if !IsClusterActive(c) {
-		return []PingResultJSON{}
+//GetLatestResult return the latest 6hr DataPoint1Min PingResult from the cluster and convert it into PingResultJSON
+func GetLast6hours(c Cluster) DataPoint1MinJson {
+	if !IsDataPoint1MinClusterActive(c) {
+		return DataPoint1MinJson{NumOfDataPoint: 0, NumOfNoData: 0, Data: []DataPoint1MinResultJSON{}}
 	}
 	now := time.Now().UTC().Unix()
 	// (-1) because getAfter function return only after .
-	beginOfPast60Hours := now - 60*60*6 - 1 
-	records := getAfter(c, beginOfPast60Hours)
-	ret := []PingResultJSON{}
-	for _, e := range records{
-		if len(e.Error) <= 0 { // return only valid data point
-			ret = append(ret, ToJoson(&e))
-		}
+	beginOfPast60Hours := now - 6*60*60
+	records := getAfter(c, DataPoint1Min, beginOfPast60Hours)
+	if len(records) == 0 {
+		return DataPoint1MinJson{NumOfDataPoint: 0, NumOfNoData: 0, Data: []DataPoint1MinResultJSON{}}
 	}
+	results, nodata := generateDataPoint1Min(beginOfPast60Hours, now, records)
+	ret := DataPoint1MinJson{
+		NumOfDataPoint: len(results),
+		NumOfNoData:    nodata,
+		Data:           results,
+	}
+
 	return ret
 }
 
-func IsClusterActive(c Cluster) bool {
-	for _, existedCluster := range config.Clusters {
+func IsReportClusterActive(c Cluster) bool {
+	for _, existedCluster := range config.ReportClusters {
+		if c == existedCluster { // cluster existed
+			return true
+		}
+	}
+	return false
+}
+
+func IsDataPoint1MinClusterActive(c Cluster) bool {
+	for _, existedCluster := range config.DataPoint1MinClusters {
 		if c == existedCluster { // cluster existed
 			return true
 		}

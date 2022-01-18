@@ -10,8 +10,8 @@ import (
 	"time"
 )
 
-func solanaPing(c Cluster) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.SolanaPing.Timeout)*time.Second)
+func solanaPing(c Cluster, count int, interval int, timeout int64) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 	defer cancel()
 
 	var configpath string
@@ -26,8 +26,8 @@ func solanaPing(c Cluster) (string, error) {
 		configpath = config.SolanaConfig.Dir + config.SolanaConfig.Devnet
 	}
 	cmd := exec.CommandContext(ctx, "solana", "ping",
-		"-c", fmt.Sprintf("%d", config.SolanaPing.Count),
-		"-i", fmt.Sprintf("%d", config.SolanaPing.Interval),
+		"-c", fmt.Sprintf("%d", count),
+		"-i", fmt.Sprintf("%d", interval),
 		"-C", configpath)
 	cmd.Env = append(os.Environ(), ":"+config.SolanaPing.PingExePath)
 	stdin, err := cmd.StdinPipe()
