@@ -87,7 +87,7 @@ func getLatest(c *gin.Context) {
 }
 func last6hours(c *gin.Context) {
 	cluster := c.Param("cluster")
-	var ret DataPoint1MinJson
+	var ret []DataPoint1MinResultJSON
 	switch cluster {
 	case "mainnet-beta":
 		ret = GetLast6hours(MainnetBeta)
@@ -117,25 +117,19 @@ func GetLatestResult(c Cluster) DataPoint1MinResultJSON {
 }
 
 //GetLatestResult return the latest 6hr DataPoint1Min PingResult from the cluster and convert it into PingResultJSON
-func GetLast6hours(c Cluster) DataPoint1MinJson {
+func GetLast6hours(c Cluster) []DataPoint1MinResultJSON {
 	if !IsDataPoint1MinClusterActive(c) {
-		return DataPoint1MinJson{NumOfDataPoint: 0, NumOfNoData: 0, Data: []DataPoint1MinResultJSON{}}
+		return []DataPoint1MinResultJSON{}
 	}
 	now := time.Now().UTC().Unix()
 	// (-1) because getAfter function return only after .
 	beginOfPast60Hours := now - 6*60*60
 	records := getAfter(c, DataPoint1Min, beginOfPast60Hours)
 	if len(records) == 0 {
-		return DataPoint1MinJson{NumOfDataPoint: 0, NumOfNoData: 0, Data: []DataPoint1MinResultJSON{}}
+		return []DataPoint1MinResultJSON{}
 	}
-	results, nodata := generateDataPoint1Min(beginOfPast60Hours, now, records)
-	ret := DataPoint1MinJson{
-		NumOfDataPoint: len(results),
-		NumOfNoData:    nodata,
-		Data:           results,
-	}
-
-	return ret
+	results, _ := generateDataPoint1Min(beginOfPast60Hours, now, records)
+	return results
 }
 
 func IsReportClusterActive(c Cluster) bool {

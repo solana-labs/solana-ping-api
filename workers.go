@@ -31,7 +31,7 @@ func pingReportWorker(c Cluster) {
 	log.Println(">> Solana pingReportWorker for ", c, " start!")
 	for {
 		startTime := time.Now().UTC().Unix()
-		result := GetPing(c, config.SolanaPing.Report.Count,
+		result := GetPing(c, Report, config.SolanaPing.Report.Count,
 			config.SolanaPing.Report.Interval, int64(config.SolanaPing.Report.Timeout))
 		endTime1 := time.Now().UTC().Unix()
 		result.PingType = string(Report)
@@ -49,7 +49,7 @@ func pingDataPoint1MinWorker(c Cluster) {
 	log.Println(">> Solana DataPoint1MinWorker for ", c, " start!")
 	for {
 		startTime := time.Now().UTC().Unix()
-		result := GetPing(c, config.SolanaPing.DataPoint1Min.Count,
+		result := GetPing(c, DataPoint1Min, config.SolanaPing.DataPoint1Min.Count,
 			config.SolanaPing.DataPoint1Min.Interval, int64(config.SolanaPing.DataPoint1Min.Timeout))
 		endTime1 := time.Now().UTC().Unix()
 		result.PingType = string(DataPoint1Min)
@@ -64,13 +64,18 @@ func pingDataPoint1MinWorker(c Cluster) {
 }
 
 //GetPing  Do the solana ping and return ping result, return error is in PingResult.Error
-func GetPing(c Cluster, count int, interval int, timeout int64) PingResult {
+func GetPing(c Cluster, ptype PingType, count int, interval int, timeout int64) PingResult {
 	result := PingResult{Hostname: config.HostName, Cluster: string(c)}
 	output, err := solanaPing(c, count, interval, timeout)
 	if err != nil {
 		log.Println(c, " GetPing ping Error:", err)
 		result.Error = err.Error()
-		result.Submitted = config.SolanaPing.Report.Count
+		if ptype == Report {
+			result.Submitted = config.SolanaPing.Report.Count
+		} else {
+			result.Submitted = config.SolanaPing.DataPoint1Min.Count
+		}
+
 		result.Confirmed = 0
 		result.Loss = 100
 		result.ConfirmationMessage = ""
@@ -81,7 +86,11 @@ func GetPing(c Cluster, count int, interval int, timeout int64) PingResult {
 	err = result.parsePingOutput(output)
 	if err != nil {
 		result.Error = err.Error()
-		result.Submitted = config.SolanaPing.Report.Count
+		if ptype == Report {
+			result.Submitted = config.SolanaPing.Report.Count
+		} else {
+			result.Submitted = config.SolanaPing.DataPoint1Min.Count
+		}
 		result.Confirmed = 0
 		result.Loss = 100
 		result.ConfirmationMessage = ""

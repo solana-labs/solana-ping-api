@@ -175,10 +175,32 @@ func generateDataPoint1Min(startTime int64, endTime int64, pr []PingResult) ([]D
 
 		windowResult.PingType = string(DataPoint1Min)
 		datapoint1MinRet = append(datapoint1MinRet, windowResult)
+
+		if windowResult.Loss > 0 {
+			log.Println(windowResult)
+		}
 	}
 	ret := []DataPoint1MinResultJSON{}
-	for _, e := range datapoint1MinRet {
-		ret = append(ret, To1MinWindowJson(&e))
+	for i, e := range datapoint1MinRet {
+		if len(e.Error) > 0 {
+			// Use previous datapoint
+			if i-1 >= 0 { // has previouse
+				datapoint1MinRet[i-1].TimeStamp = e.TimeStamp
+				ret = append(ret, To1MinWindowJson(&datapoint1MinRet[i-1]))
+				log.Println("Error:  No data found and use previouse data point")
+			} else if i+1 < len(datapoint1MinRet) { // has next
+				datapoint1MinRet[i+1].TimeStamp = e.TimeStamp
+				ret = append(ret, To1MinWindowJson(&datapoint1MinRet[i+1]))
+				log.Println("Error: No data found and use next data point")
+			}
+			ret = append(ret, To1MinWindowJson(&e))
+
+		} else {
+			ret = append(ret, To1MinWindowJson(&e))
+		}
+		if e.Loss > 0 {
+			log.Println("Loss:", e.Loss, "ts:", e.TimeStamp, " date:", ret[len(ret)-1].TimeStamp)
+		}
 	}
 	return ret, nodata
 }
