@@ -168,8 +168,8 @@ func generateDataPoint1Min(startTime int64, endTime int64, pr []PingResult) ([]D
 			windowResult.TimeStamp = periodend
 			nodata++
 		} else {
-			if float64(windowResult.Submitted) > 0 {
-				windowResult.Loss = float64(windowResult.Submitted-windowResult.Confirmed) / float64(windowResult.Submitted)
+			if windowResult.Submitted > 0 {
+				windowResult.Loss = (float64(windowResult.Submitted-windowResult.Confirmed) / float64(windowResult.Submitted)) * 100
 			}
 		}
 
