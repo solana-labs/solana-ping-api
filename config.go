@@ -109,10 +109,10 @@ func loadConfig() Config {
 		os.Setenv("PATH", osPath)
 	}
 	os.Setenv("PATH", c.PingExePath)
+	os.Setenv("PATH", c.PingExePath)
 	gcloudCredential := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
-	if 0 == len(gcloudCredential) {
-		os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", config.GCloudCredentialPath)
+	if len(gcloudCredential) == 0 && len(c.GCloudCredentialPath) != 0 {
+		os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", c.GCloudCredentialPath)
 	}
-
 	return c
 }
