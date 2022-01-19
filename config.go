@@ -31,6 +31,7 @@ type Slack struct {
 
 type Config struct {
 	UseGCloudDB           bool
+	GCloudCredentialPath  string
 	DBConn                string
 	HostName              string
 	ServerIP              string
@@ -58,6 +59,7 @@ func loadConfig() Config {
 		c.HostName = ""
 	}
 	c.UseGCloudDB = v.GetBool("UseGCloudDB")
+	c.GCloudCredentialPath = v.GetString("GCloudCredentialPath")
 	c.DBConn = v.GetString("DBConn")
 	c.HostName = host
 	c.ServerIP = v.GetString("ServerIP")
@@ -107,6 +109,10 @@ func loadConfig() Config {
 		os.Setenv("PATH", osPath)
 	}
 	os.Setenv("PATH", c.PingExePath)
+	gcloudCredential := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
+	if 0 == len(gcloudCredential) {
+		os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", config.GCloudCredentialPath)
+	}
 
 	return c
 }

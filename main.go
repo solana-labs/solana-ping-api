@@ -32,7 +32,8 @@ const (
 func init() {
 	config = loadConfig()
 
-	log.Println("ServerIP:", config.ServerIP, " HostName:", config.HostName, " UseGCloudDB:", config.UseGCloudDB, " DBConn:", config.DBConn, " Logfile:", config.Logfile)
+	log.Println("ServerIP:", config.ServerIP, " HostName:", config.HostName,
+		" UseGCloudDB:", config.UseGCloudDB, " GCloudCredentialPath", config.GCloudCredentialPath, " DBConn:", config.DBConn, " Logfile:", config.Logfile)
 	log.Println("ReportClusters:", config.ReportClusters, " DataPoint1MinClusters:", config.DataPoint1MinClusters)
 	log.Println("SolanaConfig:", config.SolanaConfig)
 	log.Println("SolanaPing:", config.SolanaPing)
