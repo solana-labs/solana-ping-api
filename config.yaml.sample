@@ -1,6 +1,6 @@
 ServerIP: "0.0.0.0:8080"
 # if use google cloud database, set up UseGCloudDB: true and give GCloudCredentialPath $GOOGLE_APPLICATION_CREDENTIALS value
-UseGCloudDB: true 
+UseGCloudDB: false 
 GCloudCredentialPath:  "/home/sol/gcloud/credential/dev.json"
 DBConn: "user= password= host= port=5432 dbname=pingresult"
 Logfile:
