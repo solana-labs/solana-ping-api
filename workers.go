@@ -111,7 +111,7 @@ func slackReportWorker(c Cluster) {
 			lastReporUnixTime = time.Now().UTC().Unix() - int64(config.Slack.ReportTime)
 			log.Println("reconstruct lastReport time=", lastReporUnixTime, "time now=", time.Now().UTC().Unix())
 		}
-		data := getAfter(c, DataPoint1Min, lastReporUnixTime)
+		data := getAfter(c, Report, lastReporUnixTime)
 		if len(data) <= 0 { // No Data
 			log.Println(c, " getAfter return empty")
 			time.Sleep(30 * time.Second)

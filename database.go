@@ -10,7 +10,7 @@ type PingResult struct {
 	TimeStamp           int64  `gorm:"primaryKey;autoIncrement:false"`
 	Cluster             string `gorm:"primaryKey"`
 	Hostname            string
-	PingType            string  `gorm:"NOT NULL"`
+	PingType            string  `gorm:"NOT NULL;primaryKey"`
 	Submitted           int     `gorm:"NOT NULL"`
 	Confirmed           int     `gorm:"NOT NULL"`
 	Loss                float64 `gorm:"NOT NULL"`

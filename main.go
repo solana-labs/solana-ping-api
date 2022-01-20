@@ -81,6 +81,7 @@ func getLatest(c *gin.Context) {
 		ret = GetLatestResult(Devnet)
 	default:
 		c.AbortWithStatus(http.StatusNotFound)
+		log.Println("StatusNotFound Error:", cluster)
 		return
 	}
 	c.IndentedJSON(http.StatusOK, ret)
