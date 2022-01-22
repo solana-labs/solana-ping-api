@@ -44,6 +44,7 @@ func init() {
 	log.Println("SolanaConfigFile/Devnet:", config.SolanaConfigInfo.ConfigDevnet)
 	log.Println("SolanaPing:", config.SolanaPing)
 	log.Println("Slack:", config.Slack)
+	useConfigTimeSetup()
 
 	if config.UseGCloudDB {
 		gormDB, err := gorm.Open(postgres.New(postgres.Config{

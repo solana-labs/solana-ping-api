@@ -36,7 +36,14 @@ type SolanaPing struct {
 	PingExePath   string
 	Report        PingConfig
 	DataPoint1Min PingConfig
+	PingSetup
 }
+type PingSetup struct {
+	TxTimeout               int64
+	WaitConfirmationTimeout int64
+	StatusCheckTime         int64
+}
+
 type Slack struct {
 	Clusters   []Cluster
 	WebHook    string
@@ -130,7 +137,9 @@ func loadConfig() Config {
 			PerPingTime: v.GetInt64("SolanaPing.DataPoint1Min.PerPingTime"),
 		},
 	}
-
+	c.SolanaPing.PingSetup.TxTimeout = v.GetInt64("SolanaPing.PingSetup.TxTimeout")
+	c.SolanaPing.PingSetup.WaitConfirmationTimeout = v.GetInt64("SolanaPing.PingSetup.WaitConfirmationTimeout")
+	c.SolanaPing.PingSetup.StatusCheckTime = v.GetInt64("SolanaPing.PingSetup.StatusCheckTime")
 	sCluster := []Cluster{}
 	for _, e := range v.GetStringSlice("Slack.Clusters") {
 		sCluster = append(sCluster, Cluster(e))

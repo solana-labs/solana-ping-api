@@ -15,9 +15,9 @@ Clusters:
   - Devnet
 SolanaConfig:
  Dir: "/home/sol/.config/solana/cli/"
- Mainnet: "config-mainnet-beta.yml"
- Testnet: "config-testnet.yml"
- Devnet: "config-devnet.yml"
+ MainnetPath: "config-mainnet-beta.yml"
+ TestnetPath: "config-testnet.yml"
+ DevnetPath: "config-devnet.yml"
 SolanaPing:
  PingExePath: "/home/pieceofr/.local/share/solana/install/active_release/bin"
  Report:
@@ -30,6 +30,10 @@ SolanaPing:
   Inverval: 1
   Timeout: 30
   PerPingTime: 20
+ PingSetup:
+  TxTimeout: 20
+  WaitConfirmationTimeout: 50
+  StatusCheckTime: 1
 Slack:
  WebHook:
  ReportTime: 300
