@@ -11,7 +11,7 @@
 - download executable file 
 - or build from source
     - Install golang 
-    - clone from git@github.com:solana-labs/solana-ping-api.git
+    - clone from git@github.com:pieceofr/solana-ping-api.git
     - go mod tidy to download packages
     - go build 
 - mkdir ~/.config/ping-api
