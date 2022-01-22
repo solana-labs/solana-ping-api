@@ -7,10 +7,10 @@ import (
 
 //PingResult is a struct to store ping result and database structure
 type PingResult struct {
-	TimeStamp           int64  `gorm:"primaryKey;autoIncrement:false"`
-	Cluster             string `gorm:"primaryKey"`
+	TimeStamp           int64 `gorm:"autoIncrement:false"`
+	Cluster             string
 	Hostname            string
-	PingType            string  `gorm:"NOT NULL;primaryKey"`
+	PingType            string  `gorm:"NOT NULL;"`
 	Submitted           int     `gorm:"NOT NULL"`
 	Confirmed           int     `gorm:"NOT NULL"`
 	Loss                float64 `gorm:"NOT NULL"`
