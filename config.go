@@ -1,16 +1,30 @@
 package main
 
 import (
+	"bufio"
+	"log"
 	"os"
+	"strings"
 
 	"github.com/spf13/viper"
 )
 
 type SolanaConfig struct {
-	Dir     string
-	Mainnet string
-	Testnet string
-	Devnet  string
+	JsonRPCURL    string
+	WebsocketURL  string
+	KeypairPath   string
+	AddressLabels map[string]string
+	Commitment    string
+}
+
+type SolanaConfigInfo struct {
+	Dir           string
+	MainnetPath   string
+	TestnetPath   string
+	DevnetPath    string
+	ConfigMain    SolanaConfig
+	ConfigTestnet SolanaConfig
+	ConfigDevnet  SolanaConfig
 }
 type PingConfig struct {
 	Count       int
@@ -38,7 +52,7 @@ type Config struct {
 	Logfile               string
 	ReportClusters        []Cluster
 	DataPoint1MinClusters []Cluster
-	SolanaConfig
+	SolanaConfigInfo
 	SolanaPing
 	Slack
 }
@@ -73,12 +87,34 @@ func loadConfig() Config {
 		c.DataPoint1MinClusters = append(c.DataPoint1MinClusters, Cluster(e))
 	}
 	c.Logfile = v.GetString("Logfile")
-	c.SolanaConfig = SolanaConfig{
-		Dir:     v.GetString("SolanaConfig.Dir"),
-		Mainnet: v.GetString("SolanaConfig.Mainnet"),
-		Testnet: v.GetString("SolanaConfig.Testnet"),
-		Devnet:  v.GetString("SolanaConfig.Devnet"),
+	c.SolanaConfigInfo = SolanaConfigInfo{
+		Dir:         v.GetString("SolanaConfig.Dir"),
+		MainnetPath: v.GetString("SolanaConfig.MainnetPath"),
+		TestnetPath: v.GetString("SolanaConfig.TestnetPath"),
+		DevnetPath:  v.GetString("SolanaConfig.DevnetPath"),
 	}
+	if len(c.SolanaConfigInfo.MainnetPath) > 0 {
+		sConfig, err := ReadSolanaConfigFile(c.SolanaConfigInfo.Dir + c.SolanaConfigInfo.MainnetPath)
+		if err != nil {
+			log.Fatal(err)
+		}
+		c.SolanaConfigInfo.ConfigMain = sConfig
+	}
+	if len(c.SolanaConfigInfo.TestnetPath) > 0 {
+		sConfig, err := ReadSolanaConfigFile(c.SolanaConfigInfo.Dir + c.SolanaConfigInfo.TestnetPath)
+		if err != nil {
+			log.Fatal(err)
+		}
+		c.SolanaConfigInfo.ConfigTestnet = sConfig
+	}
+	if len(c.SolanaConfigInfo.DevnetPath) > 0 {
+		sConfig, err := ReadSolanaConfigFile(c.SolanaConfigInfo.Dir + c.SolanaConfigInfo.DevnetPath)
+		if err != nil {
+			log.Fatal(err)
+		}
+		c.SolanaConfigInfo.ConfigDevnet = sConfig
+	}
+
 	c.SolanaPing = SolanaPing{
 		PingExePath: v.GetString("SolanaPing.PingExePath"),
 		Report: PingConfig{
@@ -94,6 +130,7 @@ func loadConfig() Config {
 			PerPingTime: v.GetInt64("SolanaPing.DataPoint1Min.PerPingTime"),
 		},
 	}
+
 	sCluster := []Cluster{}
 	for _, e := range v.GetStringSlice("Slack.Clusters") {
 		sCluster = append(sCluster, Cluster(e))
@@ -115,4 +152,54 @@ func loadConfig() Config {
 		os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", c.GCloudCredentialPath)
 	}
 	return c
+}
+
+func ReadSolanaConfigFile(filepath string) (SolanaConfig, error) {
+	configmap := make(map[string]string, 1)
+	addressmap := make(map[string]string, 1)
+
+	f, err := os.Open(filepath)
+	if err != nil {
+		log.Printf("error opening file: %v\n", err)
+		return SolanaConfig{}, err
+	}
+	r := bufio.NewReader(f)
+	line, _, err := r.ReadLine()
+	for err == nil {
+		k, v := ToKeyPair(string(line))
+		if k == "address_labels" {
+			line, _, err := r.ReadLine()
+			lKey, lVal := ToKeyPair(string(line))
+			if err == nil && string(line)[0:1] == " " {
+				if len(lKey) > 0 && len(lVal) > 0 {
+					addressmap[lKey] = lVal
+				}
+			} else {
+				configmap[k] = v
+			}
+		} else {
+			configmap[k] = v
+		}
+
+		line, _, err = r.ReadLine()
+	}
+	return SolanaConfig{
+		JsonRPCURL:    configmap["json_rpc_url"],
+		WebsocketURL:  configmap["websocket_url:"],
+		KeypairPath:   configmap["keypair_path"],
+		AddressLabels: addressmap,
+		Commitment:    configmap["commitment"],
+	}, nil
+}
+
+func ToKeyPair(line string) (key string, val string) {
+	noSpaceLine := strings.TrimSpace(string(line))
+	idx := strings.Index(noSpaceLine, ":")
+	if idx == -1 || idx == 0 { // not found or only have :
+		return "", ""
+	}
+	if (len(noSpaceLine) - 1) == idx { // no value
+		return strings.TrimSpace(noSpaceLine[0:idx]), ""
+	}
+	return strings.TrimSpace(noSpaceLine[0:idx]), strings.TrimSpace(noSpaceLine[idx+1:])
 }

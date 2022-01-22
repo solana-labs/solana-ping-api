@@ -17,13 +17,13 @@ func solanaPing(c Cluster, count int, interval int, timeout int64) (string, erro
 	var configpath string
 	switch c {
 	case MainnetBeta:
-		configpath = config.SolanaConfig.Dir + config.SolanaConfig.Mainnet
+		configpath = config.SolanaConfigInfo.Dir + config.SolanaConfigInfo.MainnetPath
 	case Testnet:
-		configpath = config.SolanaConfig.Dir + config.SolanaConfig.Testnet
+		configpath = config.SolanaConfigInfo.Dir + config.SolanaConfigInfo.TestnetPath
 	case Devnet:
-		configpath = config.SolanaConfig.Dir + config.SolanaConfig.Devnet
+		configpath = config.SolanaConfigInfo.Dir + config.SolanaConfigInfo.DevnetPath
 	default:
-		configpath = config.SolanaConfig.Dir + config.SolanaConfig.Devnet
+		configpath = config.SolanaConfigInfo.Dir + config.SolanaConfigInfo.DevnetPath
 	}
 	cmd := exec.CommandContext(ctx, "solana", "ping",
 		"-c", fmt.Sprintf("%d", count),
