@@ -14,10 +14,17 @@ const (
 
 func launchWorkers() {
 	for _, c := range config.ReportClusters {
-		go pingReportWorker(c)
+		for i := 0; i < config.Report.NumWorkers; i++ {
+			go pingReportWorker(c)
+			time.Sleep(2 * time.Second)
+		}
 	}
 	for _, c := range config.DataPoint1MinClusters {
-		go pingDataPoint1MinWorker(c)
+		for i := 0; i < config.DataPoint1Min.NumWorkers; i++ {
+			go pingDataPoint1MinWorker(c)
+			time.Sleep(2 * time.Second)
+		}
+
 	}
 
 	time.Sleep(30 * time.Second)
@@ -30,15 +37,13 @@ func launchWorkers() {
 func pingReportWorker(c Cluster) {
 	log.Println(">> Solana pingReportWorker for ", c, " start!")
 	for {
-		startTime := time.Now().UTC().Unix()
-		result := GetPing(c, Report, config.SolanaPing.Report.Count,
-			config.SolanaPing.Report.Interval, int64(config.SolanaPing.Report.Timeout))
-		endTime1 := time.Now().UTC().Unix()
-		result.PingType = string(Report)
-		result.TakeTime = int(endTime1 - startTime)
+		result, err := Ping(c, config.HostName, Report, config.SolanaPing.Report)
+		if err != nil {
+			log.Println("pingReportWorker Error:", err)
+			continue
+		}
 		addRecord(result)
-		endTime2 := time.Now().UTC().Unix()
-		waitTime := config.SolanaPing.Report.PerPingTime - (endTime2 - startTime)
+		waitTime := config.SolanaPing.Report.MinPerPingTime - result.TakeTime
 		if waitTime > 0 {
 			time.Sleep(time.Duration(waitTime) * time.Second)
 		}
@@ -48,58 +53,18 @@ func pingReportWorker(c Cluster) {
 func pingDataPoint1MinWorker(c Cluster) {
 	log.Println(">> Solana DataPoint1MinWorker for ", c, " start!")
 	for {
-		startTime := time.Now().UTC().Unix()
-		result := GetPing(c, DataPoint1Min, config.SolanaPing.DataPoint1Min.Count,
-			config.SolanaPing.DataPoint1Min.Interval, int64(config.SolanaPing.DataPoint1Min.Timeout))
-		endTime1 := time.Now().UTC().Unix()
-		result.PingType = string(DataPoint1Min)
-		result.TakeTime = int(endTime1 - startTime)
+		result, err := Ping(c, config.HostName, DataPoint1Min, config.SolanaPing.DataPoint1Min)
+		if err != nil {
+			log.Println("pingReportWorker Error:", err)
+			continue
+		}
 		addRecord(result)
-		endTime2 := time.Now().UTC().Unix()
-		waitTime := config.SolanaPing.DataPoint1Min.PerPingTime - (endTime2 - startTime)
+		waitTime := config.SolanaPing.DataPoint1Min.MinPerPingTime - (result.TakeTime / 1000)
 		if waitTime > 0 {
+			log.Println("---wait for ---", waitTime, " sec")
 			time.Sleep(time.Duration(waitTime) * time.Second)
 		}
 	}
-}
-
-//GetPing  Do the solana ping and return ping result, return error is in PingResult.Error
-func GetPing(c Cluster, ptype PingType, count int, interval int, timeout int64) PingResult {
-	result := PingResult{Hostname: config.HostName, Cluster: string(c)}
-	output, err := solanaPing(c, count, interval, timeout)
-	if err != nil {
-		log.Println(c, " GetPing ping Error:", err)
-		result.Error = err.Error()
-		if ptype == Report {
-			result.Submitted = config.SolanaPing.Report.Count
-		} else {
-			result.Submitted = config.SolanaPing.DataPoint1Min.Count
-		}
-
-		result.Confirmed = 0
-		result.Loss = 100
-		result.ConfirmationMessage = ""
-		result.TimeStamp = time.Now().UTC().Unix()
-		return result
-	}
-
-	err = result.parsePingOutput(output)
-	if err != nil {
-		result.Error = err.Error()
-		if ptype == Report {
-			result.Submitted = config.SolanaPing.Report.Count
-		} else {
-			result.Submitted = config.SolanaPing.DataPoint1Min.Count
-		}
-		result.Confirmed = 0
-		result.Loss = 100
-		result.ConfirmationMessage = ""
-		result.TimeStamp = time.Now().UTC().Unix()
-		log.Println(c, "GetPing parse output Error:", err, " output:", output)
-		return result
-	}
-
-	return result
 }
 
 var lastReporUnixTime int64

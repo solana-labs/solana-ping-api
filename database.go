@@ -3,22 +3,27 @@ package main
 import (
 	"log"
 	"time"
+
+	"github.com/lib/pq"
 )
 
 //PingResult is a struct to store ping result and database structure
 type PingResult struct {
-	TimeStamp           int64 `gorm:"autoIncrement:false"`
-	Cluster             string
-	Hostname            string
-	PingType            string  `gorm:"NOT NULL;"`
-	Submitted           int     `gorm:"NOT NULL"`
-	Confirmed           int     `gorm:"NOT NULL"`
-	Loss                float64 `gorm:"NOT NULL"`
-	ConfirmationMessage string
-	TakeTime            int
-	Error               string
-	CreatedAt           time.Time `gorm:"type:timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP" json:"created_at,omitempty"`
-	UpdatedAt           time.Time `gorm:"type:timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP" json:"updated_at,omitempty"`
+	TimeStamp int64 `gorm:"autoIncrement:false"`
+	Cluster   string
+	Hostname  string
+	PingType  string `gorm:"NOT NULL"`
+	Submitted int    `gorm:"NOT NULL"`
+	Confirmed int    `gorm:"NOT NULL"`
+	Loss      float64
+	Max       int64
+	Mean      int64
+	Min       int64
+	Stddev    int64
+	TakeTime  int64
+	Error     pq.StringArray `gorm:"type:text[];"NOT NULL"`
+	CreatedAt time.Time      `gorm:"type:timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP" json:"created_at,omitempty"`
+	UpdatedAt time.Time      `gorm:"type:timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP" json:"updated_at,omitempty"`
 }
 
 func addRecord(data PingResult) error {

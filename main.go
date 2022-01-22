@@ -44,7 +44,6 @@ func init() {
 	log.Println("SolanaConfigFile/Devnet:", config.SolanaConfigInfo.ConfigDevnet)
 	log.Println("SolanaPing:", config.SolanaPing)
 	log.Println("Slack:", config.Slack)
-	useConfigTimeSetup()
 
 	if config.UseGCloudDB {
 		gormDB, err := gorm.Open(postgres.New(postgres.Config{
@@ -129,7 +128,12 @@ func GetLast6hours(c Cluster) []DataPoint1MinResultJSON {
 	if !IsDataPoint1MinClusterActive(c) {
 		return []DataPoint1MinResultJSON{}
 	}
+	lastRecord := getLastN(c, DataPoint1Min, 1)
 	now := time.Now().UTC().Unix()
+	if len(lastRecord) > 0 {
+		now = lastRecord[0].TimeStamp
+	}
+
 	// (-1) because getAfter function return only after .
 	beginOfPast60Hours := now - 6*60*60
 	records := getAfter(c, DataPoint1Min, beginOfPast60Hours)

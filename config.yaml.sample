@@ -1,7 +1,7 @@
 ServerIP: "0.0.0.0:8080"
 # if use google cloud database, set up UseGCloudDB: true and give GCloudCredentialPath $GOOGLE_APPLICATION_CREDENTIALS value
 UseGCloudDB: false 
-GCloudCredentialPath:  "/home/sol/gcloud/credential/dev.json"
+GCloudCredentialPath:  "/home/xxxx/gcloud/credential/dev.json"
 DBConn: "user= password= host= port=5432 dbname=pingresult"
 Logfile:
 Clusters:
@@ -19,24 +19,29 @@ SolanaConfig:
  TestnetPath: "config-testnet.yml"
  DevnetPath: "config-devnet.yml"
 SolanaPing:
- PingExePath: "/home/pieceofr/.local/share/solana/install/active_release/bin"
  Report:
-  Count: 10
-  Inverval: 1
-  Timeout: 300
-  PerPingTime: 30
- DataPoint1Min:
-  Count: 3
-  Inverval: 1
-  Timeout: 30
-  PerPingTime: 20
- PingSetup:
-  TxTimeout: 20
+  Receiver: "9qT3WeLV5o3t3GVgCk9A3mpTRjSb9qBvnfrAsVKLhmU5"
+  NumWorkers: 1
+  BatchCount: 10
+  BatchInverval: 1
+  TxTimeout: 10
   WaitConfirmationTimeout: 50
-  StatusCheckTime: 1
+  StatusCheckInterval: 2
+  MinPerPingTime: 15
+  MaxPerPingTime: 500
+ DataPoint1Min:
+  Receiver: "9qT3WeLV5o3t3GVgCk9A3mpTRjSb9qBvnfrAsVKLhmU5"
+  NumWorkers: 3
+  BatchCount: 1
+  BatchInverval: 1
+  TxTimeout: 10
+  WaitConfirmationTimeout: 45
+  StatusCheckTime: 2
+  MinPerPingTime: 15
+  MaxPerPingTime: 55
 Slack:
  WebHook:
- ReportTime: 300
+ ReportTime: 600
  Clusters:
   - MainnetBeta
 #  - Testnet

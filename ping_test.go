@@ -3,18 +3,23 @@ package main
 import (
 	"log"
 	"testing"
+	"time"
 )
 
 var sch1 = PingResult{
-	TimeStamp:           1642149689,
-	Cluster:             "Devnet",
-	Hostname:            "solana-ping-api",
-	Submitted:           10,
-	Confirmed:           9,
-	Loss:                10.0,
-	ConfirmationMessage: " min/mean/max/stddev = 742/821/978/136 ms",
-	TakeTime:            90,
-	Error:               "",
+	TimeStamp: time.Now().UTC().Unix(),
+	Status:    true,
+	Cluster:   "Devnet",
+	Hostname:  "solana-ping-api",
+	PingType:  "report",
+	Submitted: 10,
+	Confirmed: 9,
+	Max:       12000,
+	Mean:      8000,
+	Min:       500,
+	Stddev:    100,
+	TakeTime:  90,
+	Error:     []string{},
 }
 
 var hook = "https://hooks.slack.com/services/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"

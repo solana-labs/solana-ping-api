@@ -27,21 +27,19 @@ type SolanaConfigInfo struct {
 	ConfigDevnet  SolanaConfig
 }
 type PingConfig struct {
-	Count       int
-	Interval    int
-	Timeout     int
-	PerPingTime int64
-}
-type SolanaPing struct {
-	PingExePath   string
-	Report        PingConfig
-	DataPoint1Min PingConfig
-	PingSetup
-}
-type PingSetup struct {
+	Receiver                string
+	NumWorkers              int
+	BatchCount              int
+	BatchInverval           int
 	TxTimeout               int64
 	WaitConfirmationTimeout int64
-	StatusCheckTime         int64
+	StatusCheckInterval     int64
+	MinPerPingTime          int64
+	MaxPerPingTime          int64
+}
+type SolanaPing struct {
+	Report        PingConfig
+	DataPoint1Min PingConfig
 }
 
 type Slack struct {
@@ -123,23 +121,30 @@ func loadConfig() Config {
 	}
 
 	c.SolanaPing = SolanaPing{
-		PingExePath: v.GetString("SolanaPing.PingExePath"),
 		Report: PingConfig{
-			Count:       v.GetInt("SolanaPing.Report.Count"),
-			Interval:    v.GetInt("SolanaPing.Report.Inverval"),
-			Timeout:     v.GetInt("SolanaPing.Report.Timeout"),
-			PerPingTime: v.GetInt64("SolanaPing.Report.PerPingTime"),
+			Receiver:                v.GetString("SolanaPing.Report.Receiver"),
+			NumWorkers:              v.GetInt("SolanaPing.Report.NumWorkers"),
+			BatchCount:              v.GetInt("SolanaPing.Report.BatchCount"),
+			BatchInverval:           v.GetInt("SolanaPing.Report.BatchInverval"),
+			TxTimeout:               v.GetInt64("SolanaPing.Report.TxTimeout"),
+			WaitConfirmationTimeout: v.GetInt64("SolanaPing.Report.PerPingTime"),
+			StatusCheckInterval:     v.GetInt64("SolanaPing.Report.StatusCheckInterval"),
+			MinPerPingTime:          v.GetInt64("SolanaPing.Report.MinPerPingTime"),
+			MaxPerPingTime:          v.GetInt64("SolanaPing.Report.MaxPerPingTime"),
 		},
 		DataPoint1Min: PingConfig{
-			Count:       v.GetInt("SolanaPing.DataPoint1Min.Count"),
-			Interval:    v.GetInt("SolanaPing.DataPoint1Min.Inverval"),
-			Timeout:     v.GetInt("SolanaPing.DataPoint1Min.Timeout"),
-			PerPingTime: v.GetInt64("SolanaPing.DataPoint1Min.PerPingTime"),
+			Receiver:                v.GetString("SolanaPing.DataPoint1Min.Receiver"),
+			NumWorkers:              v.GetInt("SolanaPing.DataPoint1Min.NumWorkers"),
+			BatchCount:              v.GetInt("SolanaPing.DataPoint1Min.BatchCount"),
+			BatchInverval:           v.GetInt("SolanaPing.DataPoint1Min.BatchInverval"),
+			TxTimeout:               v.GetInt64("SolanaPing.DataPoint1Min.TxTimeout"),
+			WaitConfirmationTimeout: v.GetInt64("SolanaPing.DataPoint1Min.PerPingTime"),
+			StatusCheckInterval:     v.GetInt64("SolanaPing.DataPoint1Min.StatusCheckInterval"),
+			MinPerPingTime:          v.GetInt64("SolanaPing.DataPoint1Min.MinPerPingTime"),
+			MaxPerPingTime:          v.GetInt64("SolanaPing.DataPoint1Min.MaxPerPingTime"),
 		},
 	}
-	c.SolanaPing.PingSetup.TxTimeout = v.GetInt64("SolanaPing.PingSetup.TxTimeout")
-	c.SolanaPing.PingSetup.WaitConfirmationTimeout = v.GetInt64("SolanaPing.PingSetup.WaitConfirmationTimeout")
-	c.SolanaPing.PingSetup.StatusCheckTime = v.GetInt64("SolanaPing.PingSetup.StatusCheckTime")
+
 	sCluster := []Cluster{}
 	for _, e := range v.GetStringSlice("Slack.Clusters") {
 		sCluster = append(sCluster, Cluster(e))
@@ -149,13 +154,6 @@ func loadConfig() Config {
 		WebHook:    v.GetString("Slack.WebHook"),
 		ReportTime: v.GetInt("Slack.ReportTime"),
 	}
-	osPath := os.Getenv("PATH")
-	if len(osPath) != 0 {
-		osPath = c.PingExePath + ":" + osPath
-		os.Setenv("PATH", osPath)
-	}
-	os.Setenv("PATH", c.PingExePath)
-	os.Setenv("PATH", c.PingExePath)
 	gcloudCredential := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
 	if len(gcloudCredential) == 0 && len(c.GCloudCredentialPath) != 0 {
 		os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", c.GCloudCredentialPath)

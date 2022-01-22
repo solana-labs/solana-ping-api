@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"strings"
 	"time"
 )
 
@@ -53,19 +52,36 @@ type SlackPayload struct {
 
 //statisticResult for caucualate report
 type statisticResult struct {
-	NumOfRecords int
-	Submiited    float64
-	Confirmed    float64
-	Loss         float64
-	Count        int
-	ErrCount     int
+	Submiited float64
+	Confirmed float64
+	Loss      float64
+	Count     int
+	ErrCount  int
+}
+
+func confirmationMessage(pr PingResult) string {
+	if pr.Stddev <= 0 {
+		return fmt.Sprintf(" %d/%d/%d/%s ", int(pr.Min), int(pr.Mean), int(pr.Max), "NaN")
+	}
+	return fmt.Sprintf(" %d/%d/%d/%d ", int(pr.Min), int(pr.Mean), int(pr.Max), int(pr.Stddev))
+}
+
+func ErrorsToString(errs []string) (errsString string) {
+	for i, e := range errs {
+		if i == 0 {
+			errsString = e
+		} else {
+			errsString = errsString + ";" + e
+		}
+	}
+	return
 }
 
 //ToReportJoson convert PingResult to Json Format
 func ToReportJoson(r *PingResult) ReportResultJSON {
 	// Check result
 	jsonResult := ReportResultJSON{Hostname: r.Hostname, Submitted: r.Submitted, Confirmed: r.Confirmed,
-		ConfirmationMessage: r.ConfirmationMessage, Error: r.Error}
+		ConfirmationMessage: confirmationMessage(*r), Error: ErrorsToString(r.Error)}
 	loss := fmt.Sprintf("%3.1f%s", r.Loss, "%")
 	jsonResult.Loss = loss
 	ts := time.Unix(r.TimeStamp, 0)
@@ -75,7 +91,7 @@ func ToReportJoson(r *PingResult) ReportResultJSON {
 
 func To1MinWindowJson(r *PingResult) DataPoint1MinResultJSON {
 	// Check result
-	jsonResult := DataPoint1MinResultJSON{Submitted: r.Submitted, Confirmed: r.Confirmed, Error: r.Error}
+	jsonResult := DataPoint1MinResultJSON{Submitted: r.Submitted, Confirmed: r.Confirmed, Error: ErrorsToString(r.Error)}
 	loss := fmt.Sprintf("%3.1f%s", r.Loss, "%")
 	jsonResult.Loss = loss
 	ts := time.Unix(r.TimeStamp, 0)
@@ -108,39 +124,44 @@ func (s *SlackPayload) ToPayload(c Cluster, data []PingResult, stats statisticRe
 }
 
 func generateReportData(pr []PingResult) statisticResult {
-	var sumSub, sumConf, sumLoss float64
+	var sumSub, sumConf float64
 	count := 0
 	errCount := 0
+	result := statisticResult{}
 	for _, e := range pr {
 		sumSub += float64(e.Submitted)
 		sumConf += float64(e.Confirmed)
-		sumLoss += e.Loss
 		count++
+		if len(e.Error) > 0 {
+			errCount++
+		}
 	}
-	avgLoss := sumLoss / float64(count)
-	avgSub := sumSub / float64(count)
-	avgConf := sumConf / float64(count)
-	return statisticResult{NumOfRecords: len(pr), Submiited: avgSub, Confirmed: avgConf, Loss: avgLoss, Count: count, ErrCount: errCount}
+	if count <= 0 {
+		return result
+	}
+	result.Submiited = float64(sumSub) / float64(count)
+	result.Confirmed = float64(sumConf) / float64(count)
+	result.Loss = (result.Submiited - result.Confirmed) / result.Submiited
+	result.ErrCount = errCount
+	result.Count = count
+
+	return result
 }
 
 func reportBody(pr []PingResult, st statisticResult) (string, error) {
 	if st.Count <= 0 {
 		return "()", NoPingResultRecord
 	}
-
 	text := ""
 	for _, e := range pr {
-		cmsg := strings.Split(e.ConfirmationMessage, " ")
-		var confdata string
-		if len(cmsg) < 4 {
-			log.Println("split confirmationMessage error:", cmsg, " PingResult=>", e)
-			confdata = e.ConfirmationMessage
-		} else {
-			confdata = cmsg[2]
+		cmsg := confirmationMessage(e)
+		loss := float64(100)
+		if e.Submitted > 0 {
+			loss = float64(e.Submitted-e.Confirmed) / float64(e.Submitted)
 		}
-		text = fmt.Sprintf("%s( %d, %d, %3.1f, %s )\n", text, e.Submitted, e.Confirmed, e.Loss, confdata)
+		text = fmt.Sprintf("%s( %d, %d, %3.1f, %s )\n", text, e.Submitted, e.Confirmed, loss, cmsg)
+		log.Println("reportBody:", text)
 	}
-
 	return text, nil
 }
 
@@ -161,10 +182,9 @@ func generateDataPoint1Min(startTime int64, endTime int64, pr []PingResult) ([]D
 			}
 		}
 		if count == 0 {
-			windowResult.Error = "No Data"
+			windowResult.Error = []string{"No Data"}
 			windowResult.Submitted = 0
 			windowResult.Confirmed = 0
-			windowResult.Loss = 0
 			windowResult.TimeStamp = periodend
 			nodata++
 		} else {
