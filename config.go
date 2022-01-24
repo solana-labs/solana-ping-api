@@ -55,6 +55,7 @@ type Config struct {
 	HostName              string
 	ServerIP              string
 	Logfile               string
+	Tracefile             string
 	ReportClusters        []Cluster
 	DataPoint1MinClusters []Cluster
 	SolanaConfigInfo
@@ -92,6 +93,10 @@ func loadConfig() Config {
 		c.DataPoint1MinClusters = append(c.DataPoint1MinClusters, Cluster(e))
 	}
 	c.Logfile = v.GetString("Logfile")
+	c.Tracefile = v.GetString("Tracefile")
+	if len(c.Tracefile) <= 0 {
+		c.Tracefile = userHome + "/trace.log"
+	}
 	c.SolanaConfigInfo = SolanaConfigInfo{
 		Dir:         v.GetString("SolanaConfig.Dir"),
 		MainnetPath: v.GetString("SolanaConfig.MainnetPath"),

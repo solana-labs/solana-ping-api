@@ -4,6 +4,7 @@ UseGCloudDB: false
 GCloudCredentialPath:  "/home/xxxx/gcloud/credential/dev.json"
 DBConn: "user= password= host= port=5432 dbname=pingresult"
 Logfile:
+Tracefile: /home/sol/ping-api-server/log/trace.log
 Clusters:
  Report:
   - MainnetBeta

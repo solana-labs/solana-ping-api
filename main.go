@@ -35,7 +35,8 @@ func init() {
 	config = loadConfig()
 
 	log.Println("ServerIP:", config.ServerIP, " HostName:", config.HostName,
-		" UseGCloudDB:", config.UseGCloudDB, " GCloudCredentialPath", config.GCloudCredentialPath, " DBConn:", config.DBConn, " Logfile:", config.Logfile)
+		" UseGCloudDB:", config.UseGCloudDB, " GCloudCredentialPath", config.GCloudCredentialPath, " DBConn:", config.DBConn,
+		" Logfile:", config.Logfile, " Tracefile:", config.Tracefile)
 	log.Println("ReportClusters:", config.ReportClusters, " DataPoint1MinClusters:", config.DataPoint1MinClusters)
 	log.Println("SolanaConfig/Dir:", config.SolanaConfigInfo.Dir,
 		" SolanaConfig/Mainnet", config.SolanaConfigInfo.MainnetPath,
@@ -70,7 +71,7 @@ func init() {
 }
 
 func main() {
-	f, err := os.Create("/home/sol/wks_go/solana-ping-api/trace.out")
+	f, err := os.Create(config.Tracefile)
 	if err != nil {
 		log.Fatalf("failed to create trace output file: %v", err)
 	}
