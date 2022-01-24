@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/portto/solana-go-sdk/client"
-	"github.com/portto/solana-go-sdk/rpc"
 	"github.com/portto/solana-go-sdk/types"
 )
 
@@ -16,8 +15,8 @@ type TakeTime struct {
 	End   int64
 }
 
-func Ping(cluster Cluster, host string, pType PingType, config PingConfig) (PingResult, error) {
-	var c *client.Client
+func Ping(cluster Cluster, c *client.Client, host string, pType PingType, config PingConfig) (PingResult, error) {
+
 	var configAcct types.Account
 	resultErrs := []string{}
 	timer := TakeTime{}
@@ -26,17 +25,7 @@ func Ping(cluster Cluster, host string, pType PingType, config PingConfig) (Ping
 		Hostname: host,
 		PingType: string(pType),
 	}
-	switch cluster {
-	case MainnetBeta:
-		c = client.NewClient(rpc.MainnetRPCEndpoint)
-	case Testnet:
-		c = client.NewClient(rpc.TestnetRPCEndpoint)
-	case Devnet:
-		c = client.NewClient(rpc.DevnetRPCEndpoint)
-	default:
-		log.Fatal("Invalid Cluster")
-		return result, InvalidCluster
-	}
+
 	configAcct, err := getConfigKeyPair(cluster)
 	if err != nil {
 		result.Error = resultErrs

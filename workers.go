@@ -3,6 +3,9 @@ package main
 import (
 	"log"
 	"time"
+
+	"github.com/portto/solana-go-sdk/client"
+	"github.com/portto/solana-go-sdk/rpc"
 )
 
 type PingType string
@@ -34,10 +37,36 @@ func launchWorkers() {
 
 }
 
-func pingReportWorker(c Cluster) {
-	log.Println(">> Solana pingReportWorker for ", c, " start!")
+func createRPCClient(cluster Cluster) (*client.Client, error) {
+	var c *client.Client
+	switch cluster {
+	case MainnetBeta:
+		c = client.NewClient(rpc.MainnetRPCEndpoint)
+	case Testnet:
+		c = client.NewClient(rpc.TestnetRPCEndpoint)
+	case Devnet:
+		c = client.NewClient(rpc.DevnetRPCEndpoint)
+	default:
+		log.Fatal("Invalid Cluster")
+		return nil, InvalidCluster
+	}
+	return c, nil
+}
+
+func pingReportWorker(cluster Cluster) {
+	log.Println(">> Solana pingReportWorker for ", cluster, " start!")
+	c, err := createRPCClient(cluster)
+	if err != nil {
+		return
+	}
 	for {
-		result, err := Ping(c, config.HostName, Report, config.SolanaPing.Report)
+		if c == nil {
+			c, err = createRPCClient(cluster)
+			if err != nil {
+				return
+			}
+		}
+		result, err := Ping(cluster, c, config.HostName, Report, config.SolanaPing.Report)
 		if err != nil {
 			log.Println("pingReportWorker Error:", err)
 			continue
@@ -50,10 +79,20 @@ func pingReportWorker(c Cluster) {
 	}
 }
 
-func pingDataPoint1MinWorker(c Cluster) {
-	log.Println(">> Solana DataPoint1MinWorker for ", c, " start!")
+func pingDataPoint1MinWorker(cluster Cluster) {
+	log.Println(">> Solana DataPoint1MinWorker for ", cluster, " start!")
+	c, err := createRPCClient(cluster)
+	if err != nil {
+		return
+	}
 	for {
-		result, err := Ping(c, config.HostName, DataPoint1Min, config.SolanaPing.DataPoint1Min)
+		if c == nil {
+			c, err = createRPCClient(cluster)
+			if err != nil {
+				return
+			}
+		}
+		result, err := Ping(cluster, c, config.HostName, DataPoint1Min, config.SolanaPing.DataPoint1Min)
 		if err != nil {
 			log.Println("pingReportWorker Error:", err)
 			continue
@@ -69,23 +108,23 @@ func pingDataPoint1MinWorker(c Cluster) {
 
 var lastReporUnixTime int64
 
-func slackReportWorker(c Cluster) {
-	log.Println(">> Slack Report Worker for ", c, " start!")
+func slackReportWorker(cluster Cluster) {
+	log.Println(">> Slack Report Worker for ", cluster, " start!")
 	for {
 		if lastReporUnixTime == 0 {
 			lastReporUnixTime = time.Now().UTC().Unix() - int64(config.Slack.ReportTime)
 			log.Println("reconstruct lastReport time=", lastReporUnixTime, "time now=", time.Now().UTC().Unix())
 		}
-		data := getAfter(c, Report, lastReporUnixTime)
+		data := getAfter(cluster, Report, lastReporUnixTime)
 		if len(data) <= 0 { // No Data
-			log.Println(c, " getAfter return empty")
+			log.Println(cluster, " getAfter return empty")
 			time.Sleep(30 * time.Second)
 			continue
 		}
 		lastReporUnixTime = time.Now().UTC().Unix()
 		stats := generateReportData(data)
 		payload := SlackPayload{}
-		payload.ToPayload(c, data, stats)
+		payload.ToPayload(cluster, data, stats)
 		err := SlackSend(config.Slack.WebHook, &payload)
 		if err != nil {
 			log.Println("SlackSend Error:", err)

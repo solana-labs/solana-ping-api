@@ -11,6 +11,7 @@ import (
 	"github.com/portto/solana-go-sdk/client"
 	"github.com/portto/solana-go-sdk/common"
 	"github.com/portto/solana-go-sdk/program/sysprog"
+	"github.com/portto/solana-go-sdk/rpc"
 	"github.com/portto/solana-go-sdk/types"
 )
 
@@ -67,17 +68,21 @@ func Transfer(c *client.Client, sender types.Account, feePayer types.Account, re
 func waitConfirmation(c *client.Client, txHash string, timeout time.Duration, queryTime time.Duration) error {
 	if timeout <= 0 {
 		timeout = waitConfirmationTimeoutDefault
+		log.Println("timeout is not set! Use default timeout", timeout, " sec")
 	}
-	ctx, _ := context.WithTimeout(context.TODO(), timeout)
+	ctx, _ := context.WithTimeout(context.TODO(), timeout*time.Second)
 	for {
-		resp, err := c.GetTransaction(ctx, txHash)
+		resp, err := c.GetSignatureStatus(ctx, txHash)
 		if err != nil {
 			log.Println("waitConfirmation Error:", err)
 			return err
 		}
 		if resp != nil {
-			log.Println("tx:", txHash, "is confirmed.", " Slot:", resp.Slot, " RecentBlockHash:", resp.Transaction.Message.RecentBlockHash)
-			return nil
+			log.Println("tx:", txHash, " get status. Slot:", resp.Slot, " confirmations:", *resp.Confirmations, " confirmationStatus:", *resp.ConfirmationStatus)
+			if *resp.ConfirmationStatus == rpc.CommitmentConfirmed {
+				log.Println("tx:", txHash, "is confirmed")
+				return nil
+			}
 		}
 		if queryTime <= 0 {
 			queryTime = statusCheckTimeDefault
