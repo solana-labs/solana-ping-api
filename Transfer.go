@@ -70,7 +70,7 @@ func waitConfirmation(c *client.Client, txHash string, timeout time.Duration, qu
 		timeout = waitConfirmationTimeoutDefault
 		log.Println("timeout is not set! Use default timeout", timeout, " sec")
 	}
-	ctx, _ := context.WithTimeout(context.TODO(), timeout*time.Second)
+	ctx, _ := context.WithTimeout(context.TODO(), timeout)
 	for {
 		resp, err := c.GetSignatureStatus(ctx, txHash)
 		if err != nil {

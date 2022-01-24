@@ -3,6 +3,8 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
+	"runtime/trace"
 	"sync"
 	"time"
 
@@ -68,6 +70,21 @@ func init() {
 }
 
 func main() {
+	f, err := os.Create("/home/sol/wks_go/solana-ping-api/trace.out")
+	if err != nil {
+		log.Fatalf("failed to create trace output file: %v", err)
+	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Fatalf("failed to close trace file: %v", err)
+		}
+	}()
+
+	if err := trace.Start(f); err != nil {
+		log.Fatalf("failed to start trace: %v", err)
+	}
+	defer trace.Stop()
+
 	go launchWorkers()
 	router := gin.Default()
 	router.GET("/:cluster/latest", getLatest)
