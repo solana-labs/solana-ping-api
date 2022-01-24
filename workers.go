@@ -19,13 +19,13 @@ func launchWorkers() {
 	for _, c := range config.ReportClusters {
 		for i := 0; i < config.Report.NumWorkers; i++ {
 			go pingReportWorker(c)
-			time.Sleep(2 * time.Second)
+			time.Sleep(10 * time.Second)
 		}
 	}
 	for _, c := range config.DataPoint1MinClusters {
 		for i := 0; i < config.DataPoint1Min.NumWorkers; i++ {
 			go pingDataPoint1MinWorker(c)
-			time.Sleep(2 * time.Second)
+			time.Sleep(10 * time.Second)
 		}
 
 	}

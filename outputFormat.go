@@ -157,7 +157,7 @@ func reportBody(pr []PingResult, st statisticResult) (string, error) {
 		cmsg := confirmationMessage(e)
 		loss := float64(100)
 		if e.Submitted > 0 {
-			loss = (float64(e.Submitted-e.Confirmed) / float64(e.Submitted))
+			loss = (float64(e.Submitted-e.Confirmed) / float64(e.Submitted)) * 100
 		}
 		text = fmt.Sprintf("%s( %d, %d, %3.1f, %s )\n", text, e.Submitted, e.Confirmed, loss, cmsg)
 		log.Println("reportBody:", text)

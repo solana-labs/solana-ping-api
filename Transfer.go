@@ -25,7 +25,8 @@ func Transfer(c *client.Client, sender types.Account, feePayer types.Account, re
 	// to fetch recent blockhash
 	res, err := c.GetRecentBlockhash(context.Background())
 	if err != nil {
-		log.Fatalf("get recent block hash error, err: %v\n", err)
+		log.Println("get recent block hash error, err:", err)
+		return "", err
 	}
 	// create a message
 	message := types.NewMessage(types.NewMessageParam{
