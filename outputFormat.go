@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 )
 
@@ -159,7 +160,13 @@ func reportBody(pr []PingResult, st statisticResult) (string, error) {
 		if e.Submitted > 0 {
 			loss = (float64(e.Submitted-e.Confirmed) / float64(e.Submitted)) * 100
 		}
-		text = fmt.Sprintf("%s( %d, %d, %3.1f, %s )\n", text, e.Submitted, e.Confirmed, loss, cmsg)
+		failCount := check429fail(e)
+		if failCount > 0 {
+			text = fmt.Sprintf("%s( %d, %d, %3.1f, %s )(%d 429-Too-Many-Requests rejects)\n", text, e.Submitted, e.Confirmed, loss, cmsg, failCount)
+		} else {
+			text = fmt.Sprintf("%s( %d, %d, %3.1f, %s )\n", text, e.Submitted, e.Confirmed, loss, cmsg)
+		}
+
 		log.Println("reportBody:", text)
 	}
 	return text, nil
@@ -209,4 +216,15 @@ func generateDataPoint1Min(startTime int64, endTime int64, pr []PingResult) ([]D
 		}
 	}
 	return ret, nodata
+}
+
+func check429fail(pr PingResult) int {
+	cnt := 0
+	for _, er := range pr.Error {
+		if strings.Contains(er, "get status code: 429") {
+			cnt++
+		}
+	}
+	return cnt
+
 }

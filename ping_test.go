@@ -8,7 +8,6 @@ import (
 
 var sch1 = PingResult{
 	TimeStamp: time.Now().UTC().Unix(),
-	Status:    true,
 	Cluster:   "Devnet",
 	Hostname:  "solana-ping-api",
 	PingType:  "report",
