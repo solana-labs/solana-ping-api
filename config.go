@@ -37,9 +37,15 @@ type PingConfig struct {
 	MinPerPingTime          int64
 	MaxPerPingTime          int64
 }
+type EndPoint struct {
+	Mainnet string
+	Testnet string
+	Devnet  string
+}
 type SolanaPing struct {
-	Report        PingConfig
-	DataPoint1Min PingConfig
+	AlternativeEnpoint EndPoint
+	Report             PingConfig
+	DataPoint1Min      PingConfig
 }
 
 type Slack struct {
@@ -124,8 +130,12 @@ func loadConfig() Config {
 		}
 		c.SolanaConfigInfo.ConfigDevnet = sConfig
 	}
-
 	c.SolanaPing = SolanaPing{
+		AlternativeEnpoint: EndPoint{
+			Mainnet: v.GetString("SolanaPing.AlternativeEnpoint.Mainnet"),
+			Testnet: v.GetString("SolanaPing.AlternativeEnpoint.Testnet"),
+			Devnet:  v.GetString("SolanaPing.AlternativeEnpoint.Devnet"),
+		},
 		Report: PingConfig{
 			Receiver:                v.GetString("SolanaPing.Report.Receiver"),
 			NumWorkers:              v.GetInt("SolanaPing.Report.NumWorkers"),

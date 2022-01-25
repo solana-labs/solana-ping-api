@@ -30,6 +30,7 @@ const (
 	Testnet             = "Testnet"
 	Devnet              = "Devnet"
 )
+const MainnetEndpoint = "https://api.generic.solana.com"
 
 func init() {
 	config = loadConfig()

@@ -41,11 +41,27 @@ func createRPCClient(cluster Cluster) (*client.Client, error) {
 	var c *client.Client
 	switch cluster {
 	case MainnetBeta:
-		c = client.NewClient(rpc.MainnetRPCEndpoint)
+		if len(config.SolanaPing.AlternativeEnpoint.Mainnet) > 0 {
+			c = client.NewClient(config.SolanaPing.AlternativeEnpoint.Mainnet)
+			log.Println(c, " use alternative endpoint:", config.SolanaPing.AlternativeEnpoint.Mainnet)
+		} else {
+			c = client.NewClient(rpc.MainnetRPCEndpoint)
+		}
+
 	case Testnet:
-		c = client.NewClient(rpc.TestnetRPCEndpoint)
+		if len(config.SolanaPing.AlternativeEnpoint.Testnet) > 0 {
+			c = client.NewClient(config.SolanaPing.AlternativeEnpoint.Testnet)
+			log.Println(c, " use alternative endpoint:", config.SolanaPing.AlternativeEnpoint.Testnet)
+		} else {
+			c = client.NewClient(rpc.TestnetRPCEndpoint)
+		}
 	case Devnet:
-		c = client.NewClient(rpc.DevnetRPCEndpoint)
+		if len(config.SolanaPing.AlternativeEnpoint.Devnet) > 0 {
+			c = client.NewClient(config.SolanaPing.AlternativeEnpoint.Devnet)
+			log.Println(c, " use alternative endpoint:", config.SolanaPing.AlternativeEnpoint.Devnet)
+		} else {
+			c = client.NewClient(rpc.DevnetRPCEndpoint)
+		}
 	default:
 		log.Fatal("Invalid Cluster")
 		return nil, InvalidCluster

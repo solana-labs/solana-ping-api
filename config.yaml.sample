@@ -20,6 +20,10 @@ SolanaConfig:
  TestnetPath: "config-testnet.yml"
  DevnetPath: "config-devnet.yml"
 SolanaPing:
+ AlternativeEnpoint:
+  Mainnet:
+  Testnet:
+  Devnet:
  Report:
   Receiver: "9qT3WeLV5o3t3GVgCk9A3mpTRjSb9qBvnfrAsVKLhmU5"
   NumWorkers: 1
