@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/GoogleCloudPlatform/cloudsql-proxy v1.28.0
 	github.com/gin-gonic/gin v1.7.7
+	github.com/lib/pq v1.10.4
 	github.com/parnurzeal/gorequest v0.2.16
 	github.com/portto/solana-go-sdk v1.13.0
 	github.com/spf13/viper v1.10.1
@@ -39,7 +40,6 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/leodido/go-urn v1.2.0 // indirect
-	github.com/lib/pq v1.10.4 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/mitchellh/mapstructure v1.4.3 // indirect
