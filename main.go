@@ -91,6 +91,7 @@ func main() {
 	router := gin.Default()
 	router.GET("/:cluster/latest", getLatest)
 	router.GET("/:cluster/last6hours", last6hours)
+	router.GET("/health", health)
 	if config.ServerSetup.Mode == HTTPS {
 		router.RunTLS(config.ServerSetup.SSLIP, config.ServerSetup.CrtPath, config.ServerSetup.KeyPath)
 	} else if config.Mode == HTTP {
@@ -101,6 +102,11 @@ func main() {
 	} else {
 		log.Panic("Invalid ServerSetup Mode")
 	}
+}
+func health(c *gin.Context) {
+	c.JSON(200, gin.H{
+		"status": "OK",
+	})
 }
 
 func getLatest(c *gin.Context) {
