@@ -1,4 +1,8 @@
-ServerIP: "0.0.0.0:8080"
+ServerIPSecure:
+ SSL: true
+ IP: "0.0.0.0:8443"
+ KeyPath: "PathToCertificates/server.key"
+ CrtPath: "PathToCertificates/server.crt"
 # if use google cloud database, set up UseGCloudDB: true and give GCloudCredentialPath $GOOGLE_APPLICATION_CREDENTIALS value
 UseGCloudDB: false 
 GCloudCredentialPath:  "/home/xxxx/gcloud/credential/dev.json"

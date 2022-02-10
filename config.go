@@ -53,9 +53,16 @@ type Slack struct {
 	WebHook    string
 	ReportTime int
 }
+type ServerIPSecure struct {
+	SSL     bool
+	IP      string
+	KeyPath string
+	CrtPath string
+}
 
 type Config struct {
-	UseGCloudDB           bool
+	UseGCloudDB bool
+	ServerIPSecure
 	GCloudCredentialPath  string
 	DBConn                string
 	HostName              string
@@ -84,6 +91,12 @@ func loadConfig() Config {
 	if err != nil {
 		c.HostName = ""
 	}
+
+	c.ServerIPSecure.SSL = v.GetBool("ServerIPSecure.Use")
+	c.ServerIPSecure.IP = v.GetString("ServerIPSecure.IP")
+	c.ServerIPSecure.KeyPath = v.GetString("ServerIPSecure.KeyPath")
+	c.ServerIPSecure.CrtPath = v.GetString("ServerIPSecure.CrtPath")
+
 	c.UseGCloudDB = v.GetBool("UseGCloudDB")
 	c.GCloudCredentialPath = v.GetString("GCloudCredentialPath")
 	c.DBConn = v.GetString("DBConn")

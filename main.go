@@ -91,7 +91,11 @@ func main() {
 	router := gin.Default()
 	router.GET("/:cluster/latest", getLatest)
 	router.GET("/:cluster/last6hours", last6hours)
-	router.Run(config.ServerIP)
+	if config.SSL {
+		router.RunTLS(config.ServerIPSecure.IP, config.ServerIPSecure.CrtPath, config.ServerIPSecure.KeyPath)
+	} else {
+		router.Run(config.ServerIPSecure.IP)
+	}
 }
 
 func getLatest(c *gin.Context) {
