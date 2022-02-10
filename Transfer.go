@@ -79,7 +79,6 @@ func waitConfirmation(c *client.Client, txHash string, timeout time.Duration, qu
 			return err
 		}
 		if resp != nil {
-			log.Println("tx:", txHash, " get status. Slot:", resp.Slot, " confirmations:", *resp.Confirmations, " confirmationStatus:", *resp.ConfirmationStatus)
 			if *resp.ConfirmationStatus == rpc.CommitmentConfirmed {
 				log.Println("tx:", txHash, "is confirmed")
 				return nil

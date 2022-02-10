@@ -34,9 +34,8 @@ const MainnetEndpoint = "https://api.generic.solana.com"
 
 func init() {
 	config = loadConfig()
-
-	log.Println("ServerIP:", config.ServerIP, " HostName:", config.HostName,
-		" UseGCloudDB:", config.UseGCloudDB, " GCloudCredentialPath", config.GCloudCredentialPath, " DBConn:", config.DBConn,
+	log.Println("ServerSetup:", config.ServerSetup)
+	log.Println("Database UseGCloudDB:", config.UseGCloudDB, " GCloudCredentialPath", config.GCloudCredentialPath, " DBConn:", config.DBConn,
 		" Logfile:", config.Logfile, " Tracefile:", config.Tracefile)
 	log.Println("ReportClusters:", config.ReportClusters, " DataPoint1MinClusters:", config.DataPoint1MinClusters)
 	log.Println("SolanaConfig/Dir:", config.SolanaConfigInfo.Dir,
@@ -94,10 +93,14 @@ func main() {
 	router.GET("/health", health)
 	if config.ServerSetup.Mode == HTTPS {
 		router.RunTLS(config.ServerSetup.SSLIP, config.ServerSetup.CrtPath, config.ServerSetup.KeyPath)
+		log.Println("HTTPS server is up!", " IP:", config.ServerSetup.SSLIP)
 	} else if config.Mode == HTTP {
+		log.Println("HTTP server is up!", " IP:", config.ServerSetup.IP)
 		router.Run(config.ServerSetup.IP)
 	} else if config.Mode == BOTH {
 		go router.RunTLS(config.ServerSetup.SSLIP, config.ServerSetup.CrtPath, config.ServerSetup.KeyPath)
+		log.Println("HTTPS server is up!", " IP:", config.ServerSetup.SSLIP)
+		log.Println("HTTP server is up!", " IP:", config.ServerSetup.IP)
 		router.Run(config.ServerSetup.IP)
 	} else {
 		log.Panic("Invalid ServerSetup Mode")

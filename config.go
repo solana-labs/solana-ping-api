@@ -102,16 +102,17 @@ func loadConfig() Config {
 		c.HostName = ""
 	}
 
-	c.ServerSetup.Mode = ConnectionMode(v.GetString("ServerIPSecure.Mode"))
+	c.ServerSetup.Mode = ConnectionMode(v.GetString("ServerSetup.Mode"))
 
-	if c.ServerSetup.Mode != HTTP ||
-		c.ServerSetup.Mode != HTTPS || c.ServerSetup.Mode != BOTH {
+	if c.ServerSetup.Mode != HTTP &&
+		c.ServerSetup.Mode != HTTPS && c.ServerSetup.Mode != BOTH {
 		c.ServerSetup.Mode = HTTP
+		log.Println("server mode not support! use default mode")
 	}
-	c.ServerSetup.IP = v.GetString("ServerIPSecure.IP")
-	c.ServerSetup.SSLIP = v.GetString("ServerIPSecure.SSLIP")
-	c.ServerSetup.KeyPath = v.GetString("ServerIPSecure.KeyPath")
-	c.ServerSetup.CrtPath = v.GetString("ServerIPSecure.CrtPath")
+	c.ServerSetup.IP = v.GetString("ServerSetup.IP")
+	c.ServerSetup.SSLIP = v.GetString("ServerSetup.SSLIP")
+	c.ServerSetup.KeyPath = v.GetString("ServerSetup.KeyPath")
+	c.ServerSetup.CrtPath = v.GetString("ServerSetup.CrtPath")
 
 	c.UseGCloudDB = v.GetBool("UseGCloudDB")
 	c.GCloudCredentialPath = v.GetString("GCloudCredentialPath")
