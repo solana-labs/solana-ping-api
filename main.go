@@ -104,9 +104,7 @@ func main() {
 	}
 }
 func health(c *gin.Context) {
-	c.JSON(200, gin.H{
-		"status": "OK",
-	})
+	c.Data(200, c.ContentType(), []byte("OK"))
 }
 
 func getLatest(c *gin.Context) {

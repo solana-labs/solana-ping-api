@@ -9,7 +9,7 @@ GCloudCredentialPath:  "/home/xxxx/gcloud/credential/dev.json"    #give GCloudCr
 DBConn: "user= password= host= port=5432 dbname=pingresult"
 Logfile:
 Tracefile: /home/sol/ping-api-server/log/trace.log
-Clusters:
+Clusters:                                                         # Clusters to perform Report and DataPoint1Min, user # to disable Clusters
  Report:
   - MainnetBeta
 #  - Testnet
