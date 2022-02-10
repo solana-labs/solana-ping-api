@@ -16,6 +16,7 @@ const (
 )
 
 func launchWorkers() {
+	time.Sleep(2 * time.Second) // let http server start first
 	for _, c := range config.ReportClusters {
 		for i := 0; i < config.Report.NumWorkers; i++ {
 			go pingReportWorker(c)
