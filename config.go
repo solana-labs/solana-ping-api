@@ -9,6 +9,15 @@ import (
 	"github.com/spf13/viper"
 )
 
+// ConnectionMode is a type of client connection
+type ConnectionMode string
+
+const (
+	HTTP  ConnectionMode = "http"
+	HTTPS ConnectionMode = "https"
+	BOTH  ConnectionMode = "both"
+)
+
 type SolanaConfig struct {
 	JsonRPCURL    string
 	WebsocketURL  string
@@ -53,16 +62,17 @@ type Slack struct {
 	WebHook    string
 	ReportTime int
 }
-type ServerIPSecure struct {
-	SSL     bool
+type ServerSetup struct {
+	Mode    ConnectionMode
 	IP      string
+	SSLIP   string
 	KeyPath string
 	CrtPath string
 }
 
 type Config struct {
 	UseGCloudDB bool
-	ServerIPSecure
+	ServerSetup
 	GCloudCredentialPath  string
 	DBConn                string
 	HostName              string
@@ -92,10 +102,16 @@ func loadConfig() Config {
 		c.HostName = ""
 	}
 
-	c.ServerIPSecure.SSL = v.GetBool("ServerIPSecure.Use")
-	c.ServerIPSecure.IP = v.GetString("ServerIPSecure.IP")
-	c.ServerIPSecure.KeyPath = v.GetString("ServerIPSecure.KeyPath")
-	c.ServerIPSecure.CrtPath = v.GetString("ServerIPSecure.CrtPath")
+	c.ServerSetup.Mode = ConnectionMode(v.GetString("ServerIPSecure.Mode"))
+
+	if c.ServerSetup.Mode != HTTP ||
+		c.ServerSetup.Mode != HTTPS || c.ServerSetup.Mode != BOTH {
+		c.ServerSetup.Mode = HTTP
+	}
+	c.ServerSetup.IP = v.GetString("ServerIPSecure.IP")
+	c.ServerSetup.SSLIP = v.GetString("ServerIPSecure.SSLIP")
+	c.ServerSetup.KeyPath = v.GetString("ServerIPSecure.KeyPath")
+	c.ServerSetup.CrtPath = v.GetString("ServerIPSecure.CrtPath")
 
 	c.UseGCloudDB = v.GetBool("UseGCloudDB")
 	c.GCloudCredentialPath = v.GetString("GCloudCredentialPath")

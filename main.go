@@ -91,10 +91,15 @@ func main() {
 	router := gin.Default()
 	router.GET("/:cluster/latest", getLatest)
 	router.GET("/:cluster/last6hours", last6hours)
-	if config.SSL {
-		router.RunTLS(config.ServerIPSecure.IP, config.ServerIPSecure.CrtPath, config.ServerIPSecure.KeyPath)
+	if config.ServerSetup.Mode == HTTPS {
+		router.RunTLS(config.ServerSetup.SSLIP, config.ServerSetup.CrtPath, config.ServerSetup.KeyPath)
+	} else if config.Mode == HTTP {
+		router.Run(config.ServerSetup.IP)
+	} else if config.Mode == BOTH {
+		go router.RunTLS(config.ServerSetup.SSLIP, config.ServerSetup.CrtPath, config.ServerSetup.KeyPath)
+		router.Run(config.ServerSetup.IP)
 	} else {
-		router.Run(config.ServerIPSecure.IP)
+		log.Panic("Invalid ServerSetup Mode")
 	}
 }
 
