@@ -30,6 +30,7 @@ type DataPoint1MinResultJSON struct {
 	Submitted int    `json:"submitted"`
 	Confirmed int    `json:"confirmed"`
 	Loss      string `json:"loss"`
+	Mean      int    `json:"mean_ms"`
 	TimeStamp string `json:"ts"`
 	Error     string `json:"error"`
 }
@@ -92,7 +93,7 @@ func ToReportJoson(r *PingResult) ReportResultJSON {
 
 func To1MinWindowJson(r *PingResult) DataPoint1MinResultJSON {
 	// Check result
-	jsonResult := DataPoint1MinResultJSON{Submitted: r.Submitted, Confirmed: r.Confirmed, Error: ErrorsToString(r.Error)}
+	jsonResult := DataPoint1MinResultJSON{Submitted: r.Submitted, Confirmed: r.Confirmed, Mean: int(r.Mean), Error: ErrorsToString(r.Error)}
 	loss := fmt.Sprintf("%3.1f%s", r.Loss, "%")
 	jsonResult.Loss = loss
 	ts := time.Unix(r.TimeStamp, 0)
@@ -178,6 +179,8 @@ func generateDataPoint1Min(startTime int64, endTime int64, pr []PingResult) ([]D
 	nodata := 0
 	for periodend := endTime; periodend > startTime; periodend = periodend - window {
 		count := 0
+		sumOfMean := float64(0)
+		countSuccess := 0
 		windowResult := PingResult{}
 		for _, result := range pr {
 			if result.TimeStamp <= periodend && result.TimeStamp > periodend-window {
@@ -185,6 +188,11 @@ func generateDataPoint1Min(startTime int64, endTime int64, pr []PingResult) ([]D
 				windowResult.Confirmed = windowResult.Confirmed + result.Confirmed
 				windowResult.TimeStamp = periodend // use the newest one for easier tracking
 				windowResult.Hostname = result.Hostname
+				if len(result.Error) <= 0 {
+					sumOfMean = sumOfMean + float64(result.Mean)
+					countSuccess++
+				}
+
 				count++
 			}
 		}
@@ -192,11 +200,15 @@ func generateDataPoint1Min(startTime int64, endTime int64, pr []PingResult) ([]D
 			windowResult.Error = []string{"No Data"}
 			windowResult.Submitted = 0
 			windowResult.Confirmed = 0
+			windowResult.Mean = 0
 			windowResult.TimeStamp = periodend
 			nodata++
 		} else {
 			if windowResult.Submitted > 0 {
 				windowResult.Loss = (float64(windowResult.Submitted-windowResult.Confirmed) / float64(windowResult.Submitted)) * 100
+			}
+			if countSuccess > 0 {
+				windowResult.Mean = int64(sumOfMean / float64(countSuccess))
 			}
 		}
 
@@ -211,7 +223,7 @@ func generateDataPoint1Min(startTime int64, endTime int64, pr []PingResult) ([]D
 	for _, e := range datapoint1MinRet {
 		ret = append(ret, To1MinWindowJson(&e))
 		if e.Loss > 0 {
-			log.Println("Loss:", e.Loss, "ts:", e.TimeStamp, " date:", ret[len(ret)-1].TimeStamp)
+			log.Println("Loss:", e.Loss, "ts:", e.TimeStamp, "mean_ms", e.Mean, " date:", ret[len(ret)-1].TimeStamp)
 
 		}
 	}
