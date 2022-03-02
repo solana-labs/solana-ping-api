@@ -9,6 +9,7 @@ import (
 	"time"
 
 	_ "github.com/GoogleCloudPlatform/cloudsql-proxy/proxy/dialers/postgres"
+	"github.com/gin-contrib/timeout"
 	"github.com/gin-gonic/gin"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -88,7 +89,7 @@ func main() {
 	go launchWorkers()
 	router := gin.Default()
 	router.GET("/:cluster/latest", getLatest)
-	router.GET("/:cluster/last6hours", last6hours)
+	router.GET("/:cluster/last6hours", timeout.New(timeout.WithTimeout(10*time.Second), timeout.WithHandler(last6hours)))
 	router.GET("/health", health)
 	if config.ServerSetup.Mode == HTTPS {
 		router.RunTLS(config.ServerSetup.SSLIP, config.ServerSetup.CrtPath, config.ServerSetup.KeyPath)
