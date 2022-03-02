@@ -63,11 +63,12 @@ type Slack struct {
 	ReportTime int
 }
 type ServerSetup struct {
-	Mode    ConnectionMode
-	IP      string
-	SSLIP   string
-	KeyPath string
-	CrtPath string
+	Mode          ConnectionMode
+	IP            string
+	SSLIP         string
+	KeyPath       string
+	CrtPath       string
+	NoPingService bool
 }
 
 type Config struct {
@@ -113,7 +114,7 @@ func loadConfig() Config {
 	c.ServerSetup.SSLIP = v.GetString("ServerSetup.SSLIP")
 	c.ServerSetup.KeyPath = v.GetString("ServerSetup.KeyPath")
 	c.ServerSetup.CrtPath = v.GetString("ServerSetup.CrtPath")
-
+	c.ServerSetup.NoPingService = v.GetBool("ServerSetup.NoPingService")
 	c.UseGCloudDB = v.GetBool("UseGCloudDB")
 	c.GCloudCredentialPath = v.GetString("GCloudCredentialPath")
 	c.DBConn = v.GetString("DBConn")

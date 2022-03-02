@@ -214,18 +214,10 @@ func generateDataPoint1Min(startTime int64, endTime int64, pr []PingResult) ([]D
 
 		windowResult.PingType = string(DataPoint1Min)
 		datapoint1MinRet = append(datapoint1MinRet, windowResult)
-
-		if windowResult.Loss > 0 {
-			log.Println(windowResult)
-		}
 	}
 	ret := []DataPoint1MinResultJSON{}
 	for _, e := range datapoint1MinRet {
 		ret = append(ret, To1MinWindowJson(&e))
-		if e.Loss > 0 {
-			log.Println("Loss:", e.Loss, "ts:", e.TimeStamp, "mean_ms", e.Mean, " date:", ret[len(ret)-1].TimeStamp)
-
-		}
 	}
 	return ret, nodata
 }

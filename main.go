@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -85,8 +86,10 @@ func main() {
 		log.Fatalf("failed to start trace: %v", err)
 	}
 	defer trace.Stop()
+	if !config.ServerSetup.NoPingService {
+		go launchWorkers()
+	}
 
-	go launchWorkers()
 	router := gin.Default()
 	router.GET("/:cluster/latest", getLatest)
 	router.GET("/:cluster/last6hours", timeout.New(timeout.WithTimeout(10*time.Second), timeout.WithHandler(last6hours)))
@@ -129,6 +132,7 @@ func getLatest(c *gin.Context) {
 }
 func last6hours(c *gin.Context) {
 	cluster := c.Param("cluster")
+	fmt.Println("cluster:", cluster)
 	var ret []DataPoint1MinResultJSON
 	switch cluster {
 	case "mainnet-beta":
@@ -160,7 +164,7 @@ func GetLatestResult(c Cluster) DataPoint1MinResultJSON {
 
 //GetLatestResult return the latest 6hr DataPoint1Min PingResult from the cluster and convert it into PingResultJSON
 func GetLast6hours(c Cluster) []DataPoint1MinResultJSON {
-	if !IsDataPoint1MinClusterActive(c) {
+	if !IsDataPoint1MinClusterActive(c) && !config.ServerSetup.NoPingService {
 		return []DataPoint1MinResultJSON{}
 	}
 	lastRecord := getLastN(c, DataPoint1Min, 1)

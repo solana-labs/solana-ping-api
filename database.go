@@ -48,7 +48,7 @@ func getAfter(c Cluster, pType PingType, t int64) []PingResult {
 	dbMtx.Lock()
 	database.Order("time_stamp desc").First(&r)
 	database.Order("time_stamp desc").Where("cluster=? AND ping_type=? AND time_stamp > ?", c, string(pType), t).Find(&ret)
-	log.Println("Latest in DB:", r.TimeStamp, " after:", t, " found:", len(ret))
+	//log.Println("Latest in DB:", r.TimeStamp, " after:", t, " found:", len(ret))
 	dbMtx.Unlock()
 	return ret
 }
