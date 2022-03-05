@@ -4,6 +4,7 @@ ServerSetup:
  SSLIP: "0.0.0.0:8443"
  KeyPath: "PathToCertificates/server.key"
  CrtPath: "PathToCertificates/server.crt"
+ NoPingService: false
 UseGCloudDB: false                                                # If use google cloud database, set up UseGCloudDB: true and                                                        
 GCloudCredentialPath:  "/home/xxxx/gcloud/credential/dev.json"    #give GCloudCredentialPath $GOOGLE_APPLICATION_CREDENTIALS value
 DBConn: "user= password= host= port=5432 dbname=pingresult"
@@ -23,8 +24,15 @@ SolanaConfig:
  MainnetPath: "config-mainnet-beta.yml"
  TestnetPath: "config-testnet.yml"
  DevnetPath: "config-devnet.yml"
+Slack:                                                      # Slack Webhook Setup
+ WebHook: 
+ ReportTime: 600
+ Clusters:
+  - MainnetBeta
+#  - Testnet
+#  - Devnet
 SolanaPing:
- AlternativeEnpoint: #if AlternativeEnpoint is set, server will use alternative endpoint
+ AlternativeEnpoint:                                        #if AlternativeEnpoint is set, server will use alternative endpoint
   Mainnet:
   Testnet:
   Devnet:
@@ -34,24 +42,16 @@ SolanaPing:
   BatchCount: 10                                              # number of transaction will test in a single ping operation
   BatchInverval: 1                                            # wait sec for each batch transaction
   TxTimeout: 10                                               # timeout in sec for each transaction send
-  WaitConfirmationTimeout: 50                                 # timeout in sec for check confirm status 
+  WaitConfirmationTimeout: 35                                 # timeout in sec for check confirm status 
   StatusCheckInterval: 2                                      # wait sec for each status confirm-check 
   MinPerPingTime: 15                                          # If Ping operation is less than  MinPerPingTime, it will wait to make per Ping time = MinPerPingTime
-  MaxPerPingTime: 500                                         # If Ping operation has not complete with 500, it will consider timeout and terminated
+  MaxPerPingTime: 300                                         # If Ping operation has not complete with 500, it will consider timeout and terminated
  DataPoint1Min:                                             # Ping for Explorer Setup 
-  Receiver: "9qT3WeLV5o3t3GVgCk9A3mpTRjSb9qBvnfrAsVKLhmU5"
-  NumWorkers: 3
-  BatchCount: 1
-  BatchInverval: 1
-  TxTimeout: 10
-  WaitConfirmationTimeout: 45
-  StatusCheckTime: 2
-  MinPerPingTime: 15
-  MaxPerPingTime: 55
-Slack:                                                      # Slack Webhook Setup
- WebHook:
- ReportTime: 600
- Clusters:
-  - MainnetBeta
-#  - Testnet
-#  - Devnet
+  Receiver: "9qT3WeLV5o3t3GVgCk9A3mpTRjSb9qBvnfrAsVKLhmU5"    # Ping for Slack Report Setup
+  NumWorkers: 5                                               # number of workers will run. This is a concurrent process number
+  BatchCount: 1                                               # number of transaction will test in a single ping operation
+  BatchInverval: 1                                            # wait sec for each batch transaction
+  TxTimeout: 10                                               # timeout in sec for each transaction send
+  WaitConfirmationTimeout: 35                                 # timeout in sec for check confirm status 
+  StatusCheckTime: 1                                          # wait sec for each status confirm-check 
+  MinPerPingTime: 10                                          # If Ping operation is less than  MinPerPingTime, it will wait to make per Ping time = MinPerPingTime
