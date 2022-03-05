@@ -11,13 +11,13 @@
 - download executable file 
 - or build from source
     - Install golang 
-    - clone from git@github.com:pieceofr/solana-ping-api.git
+    - clone from github.com/solana-labs/solana-ping-api
     - go mod tidy to download packages
     - go build 
 - mkdir ~/.config/ping-api
 - put config.yaml in ~/.config/ping-api/config.yaml
 
-## sugguest setup 
+## sugguested setup
 - mkdir ~/ping-api-server
 - cp scripts in script to ~/ping-api-server
 - make solana-ping-api system service 
