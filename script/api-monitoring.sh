@@ -4,7 +4,7 @@ declare -A cluster_query_cmd
 cluster_query_cmd[mainnet]="https://ping.solana.com/mainnet-beta/last6hours"
 cluster_query_cmd[testnet]="https://ping.solana.com/testnet/last6hours"
 cluster_query_cmd[devnet]="https://ping.solana.com/devnet/last6hours"
-slack_webhook="https://hooks.slack.com/services/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"
+slack_webhook=
 restart_time_file="$PWD/ping_server_resart_times.out"
 restart_times=0
 restart_cmd=""
@@ -29,7 +29,7 @@ alive_check() {
 	do
         echo retry=$retry
 		if [[ $retry -gt 0 ]];then
-			sleep 5
+			sleep 10
 		fi
 		alive_status_code=$(curl -o /dev/null -s -w "%{http_code}\n" --connect-timeout 10 ${cluster_query_cmd[$cluster]})
 		if [[ $alive_status_code == 204 || $alive_status_code == 200 ]];then
