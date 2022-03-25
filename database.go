@@ -49,3 +49,7 @@ func getAfter(c Cluster, pType PingType, t int64) []PingResult {
 	dbMtx.Unlock()
 	return ret
 }
+
+func deleteTimeBefore(t int64) {
+	database.Where("time_stamp < ?", t).Delete(&[]PingResult{})
+}

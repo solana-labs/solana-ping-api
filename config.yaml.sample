@@ -5,6 +5,7 @@ ServerSetup:
  KeyPath: "PathToCertificates/server.key"
  CrtPath: "PathToCertificates/server.crt"
  NoPingService: false
+ RetensionService: false                                 
 UseGCloudDB: false                                                # If use google cloud database, set up UseGCloudDB: true and                                                        
 GCloudCredentialPath:  "/home/xxxx/gcloud/credential/dev.json"    #give GCloudCredentialPath $GOOGLE_APPLICATION_CREDENTIALS value
 DBConn: "user= password= host= port=5432 dbname=pingresult"
@@ -55,3 +56,6 @@ SolanaPing:
   WaitConfirmationTimeout: 35                                 # timeout in sec for check confirm status 
   StatusCheckTime: 1                                          # wait sec for each status confirm-check 
   MinPerPingTime: 10                                          # If Ping operation is less than  MinPerPingTime, it will wait to make per Ping time = MinPerPingTime
+Retension:
+ KeepHours: 120                                               # Keep how many hours record in database. This affects query speed
+ UpdateIntervalSec: 10800                                     # Interval to perform remove old data , if less than 300 sec , it set to 300 sec

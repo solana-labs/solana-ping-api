@@ -48,6 +48,7 @@ func init() {
 	log.Println("SolanaConfigFile/Devnet:", config.SolanaConfigInfo.ConfigDevnet)
 	log.Println("SolanaPing:", config.SolanaPing)
 	log.Println("Slack:", config.Slack)
+	log.Println("Retension:", config.Retension)
 
 	if config.UseGCloudDB {
 		gormDB, err := gorm.Open(postgres.New(postgres.Config{
@@ -86,9 +87,7 @@ func main() {
 		log.Fatalf("failed to start trace: %v", err)
 	}
 	defer trace.Stop()
-	if !config.ServerSetup.NoPingService {
-		go launchWorkers()
-	}
+	go launchWorkers()
 
 	router := gin.Default()
 	router.GET("/:cluster/latest", getLatest)

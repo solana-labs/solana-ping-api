@@ -63,12 +63,17 @@ type Slack struct {
 	ReportTime int
 }
 type ServerSetup struct {
-	Mode          ConnectionMode
-	IP            string
-	SSLIP         string
-	KeyPath       string
-	CrtPath       string
-	NoPingService bool
+	Mode             ConnectionMode
+	IP               string
+	SSLIP            string
+	KeyPath          string
+	CrtPath          string
+	NoPingService    bool
+	RetensionService bool
+}
+type Retension struct {
+	KeepHours         int64
+	UpdateIntervalSec int64
 }
 
 type Config struct {
@@ -85,6 +90,7 @@ type Config struct {
 	SolanaConfigInfo
 	SolanaPing
 	Slack
+	Retension
 }
 
 func loadConfig() Config {
@@ -115,6 +121,7 @@ func loadConfig() Config {
 	c.ServerSetup.KeyPath = v.GetString("ServerSetup.KeyPath")
 	c.ServerSetup.CrtPath = v.GetString("ServerSetup.CrtPath")
 	c.ServerSetup.NoPingService = v.GetBool("ServerSetup.NoPingService")
+	c.ServerSetup.RetensionService = v.GetBool(("ServerSetup.RetensionService"))
 	c.UseGCloudDB = v.GetBool("UseGCloudDB")
 	c.GCloudCredentialPath = v.GetString("GCloudCredentialPath")
 	c.DBConn = v.GetString("DBConn")
@@ -203,6 +210,10 @@ func loadConfig() Config {
 	gcloudCredential := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
 	if len(gcloudCredential) == 0 && len(c.GCloudCredentialPath) != 0 {
 		os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", c.GCloudCredentialPath)
+	}
+	c.Retension = Retension{
+		KeepHours:         v.GetInt64("Retension.KeepHours"),
+		UpdateIntervalSec: v.GetInt64("Retension.UpdateIntervalSec"),
 	}
 	return c
 }

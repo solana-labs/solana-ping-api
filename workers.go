@@ -17,23 +17,30 @@ const (
 
 func launchWorkers() {
 	time.Sleep(2 * time.Second) // let http server start first
-	for _, c := range config.ReportClusters {
-		for i := 0; i < config.Report.NumWorkers; i++ {
-			go pingReportWorker(c)
-			time.Sleep(10 * time.Second)
+	if !config.ServerSetup.NoPingService {
+		for _, c := range config.ReportClusters {
+			for i := 0; i < config.Report.NumWorkers; i++ {
+				go pingReportWorker(c)
+				time.Sleep(10 * time.Second)
+			}
 		}
-	}
-	for _, c := range config.DataPoint1MinClusters {
-		for i := 0; i < config.DataPoint1Min.NumWorkers; i++ {
-			go pingDataPoint1MinWorker(c)
-			time.Sleep(10 * time.Second)
-		}
+		for _, c := range config.DataPoint1MinClusters {
+			for i := 0; i < config.DataPoint1Min.NumWorkers; i++ {
+				go pingDataPoint1MinWorker(c)
+				time.Sleep(10 * time.Second)
+			}
 
+		}
 	}
 
 	time.Sleep(30 * time.Second)
 	for _, c := range config.Slack.Clusters {
 		go slackReportWorker(c)
+	}
+
+	time.Sleep(30 * time.Second)
+	if config.ServerSetup.RetensionService {
+		go RetensionServiceWorker()
 	}
 
 }
@@ -150,4 +157,20 @@ func slackReportWorker(cluster Cluster) {
 		time.Sleep(time.Duration(config.Slack.ReportTime) * time.Second)
 	}
 
+}
+
+func RetensionServiceWorker() {
+	log.Println(">> Retension Service Worker start!")
+	for {
+		now := time.Now().UTC().Unix()
+		if config.Retension.KeepHours < 6 {
+			config.Retension.KeepHours = 6
+		}
+		timeB4 := now - (config.Retension.KeepHours * 60)
+		deleteTimeBefore(timeB4)
+		if config.Retension.UpdateIntervalSec < 300 {
+			config.Retension.UpdateIntervalSec = 300
+		}
+		time.Sleep(time.Duration(config.Retension.UpdateIntervalSec))
+	}
 }
