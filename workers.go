@@ -166,11 +166,11 @@ func RetensionServiceWorker() {
 		if config.Retension.KeepHours < 6 {
 			config.Retension.KeepHours = 6
 		}
-		timeB4 := now - (config.Retension.KeepHours * 60)
+		timeB4 := now - (config.Retension.KeepHours * 60 * 60)
 		deleteTimeBefore(timeB4)
 		if config.Retension.UpdateIntervalSec < 300 {
 			config.Retension.UpdateIntervalSec = 300
 		}
-		time.Sleep(time.Duration(config.Retension.UpdateIntervalSec))
+		time.Sleep(time.Duration(config.Retension.UpdateIntervalSec) * time.Second)
 	}
 }
