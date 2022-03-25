@@ -41,14 +41,11 @@ func getLastN(c Cluster, pType PingType, n int) []PingResult {
 	dbMtx.Unlock()
 	return ret
 }
-
 func getAfter(c Cluster, pType PingType, t int64) []PingResult {
 	ret := []PingResult{}
-	r := PingResult{}
+	now := time.Now().UTC().Unix()
 	dbMtx.Lock()
-	database.Order("time_stamp desc").First(&r)
-	database.Order("time_stamp desc").Where("cluster=? AND ping_type=? AND time_stamp > ?", c, string(pType), t).Find(&ret)
-	//log.Println("Latest in DB:", r.TimeStamp, " after:", t, " found:", len(ret))
+	database.Where("cluster=? AND ping_type=? AND time_stamp > ? AND time_stamp < ?", c, string(pType), t, now).Find(&ret)
 	dbMtx.Unlock()
 	return ret
 }
