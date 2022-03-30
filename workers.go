@@ -86,6 +86,7 @@ func createRPCClient(cluster Cluster) (*client.Client, error) {
 
 func pingReportWorker(cluster Cluster) {
 	log.Println(">> Solana pingReportWorker for ", cluster, " start!")
+	defer log.Println(">> Solana pingReportWorker for ", cluster, " end!")
 	c, err := createRPCClient(cluster)
 	if err != nil {
 		return
@@ -112,6 +113,7 @@ func pingReportWorker(cluster Cluster) {
 
 func pingDataPoint1MinWorker(cluster Cluster) {
 	log.Println(">> Solana DataPoint1MinWorker for ", cluster, " start!")
+	defer log.Println(">> Solana DataPoint1MinWorker for ", cluster, " end!")
 	c, err := createRPCClient(cluster)
 	if err != nil {
 		return
@@ -141,6 +143,7 @@ var lastReporUnixTime int64
 
 func slackReportWorker(cluster Cluster) {
 	log.Println(">> Slack Report Worker for ", cluster, " start!")
+	defer log.Println(">> Slack Report Worker for ", cluster, " end!")
 	for {
 		if lastReporUnixTime == 0 {
 			lastReporUnixTime = time.Now().UTC().Unix() - int64(config.SlackReport.ReportTime)
@@ -168,6 +171,7 @@ func slackReportWorker(cluster Cluster) {
 
 func slackAlertWorker(cluster Cluster) {
 	log.Println(">> Slack Alert Worker for ", cluster, " start!")
+	defer log.Println(">> Slack Alert Worker for ", cluster, " end!")
 	for {
 		lastDataWindowUnixTime := time.Now().UTC().Unix() - int64(config.SlackAlert.DataWindow)
 		data := getAfter(cluster, DataPoint1Min, lastDataWindowUnixTime)
@@ -194,6 +198,7 @@ func slackAlertWorker(cluster Cluster) {
 
 func RetensionServiceWorker() {
 	log.Println(">> Retension Service Worker start!")
+	defer log.Println(">> Retension Service Worker end!")
 	for {
 		now := time.Now().UTC().Unix()
 		if config.Retension.KeepHours < 6 {
