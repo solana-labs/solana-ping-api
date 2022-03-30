@@ -34,8 +34,9 @@ const (
 )
 
 func init() {
+	log.Println("--- Config Start --- ")
 	config = loadConfig()
-	log.Println("ServerSetup:", config.ServerSetup)
+	log.Println("ServerSetup Config:", config.ServerSetup)
 	log.Println("Database UseGCloudDB:", config.UseGCloudDB, " GCloudCredentialPath", config.GCloudCredentialPath, " DBConn:", config.DBConn,
 		" Logfile:", config.Logfile, " Tracefile:", config.Tracefile)
 	log.Println("ReportClusters:", config.ReportClusters, " DataPoint1MinClusters:", config.DataPoint1MinClusters)
@@ -48,8 +49,14 @@ func init() {
 	log.Println("SolanaConfigFile/Devnet:", config.SolanaConfigInfo.ConfigDevnet)
 	log.Println("SolanaPing:", config.SolanaPing)
 	log.Println("SlackReport:", config.SlackReport)
-	log.Println("SlackAlert:", config.SlackReport)
+	log.Println("SlackAlert:", config.SlackAlert)
 	log.Println("Retension:", config.Retension)
+	log.Println("==== Extra Services Provides ===")
+	log.Println("NoPingService:", config.ServerSetup.NoPingService)
+	log.Println("RetensionService:", config.ServerSetup.RetensionService)
+	log.Println("NoSlackReportService:", config.ServerSetup.NoSlackReportService)
+	log.Println("NoSlackAlertService:", config.ServerSetup.NoSlackAlertService)
+	log.Println("--- Config End --- ")
 
 	if config.UseGCloudDB {
 		gormDB, err := gorm.Open(postgres.New(postgres.Config{

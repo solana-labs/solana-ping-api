@@ -5,7 +5,9 @@ ServerSetup:
  KeyPath: "PathToCertificates/server.key"
  CrtPath: "PathToCertificates/server.crt"
  NoPingService: false
- RetensionService: false                                 
+ RetensionService: false
+ NoSlackReportService: false
+ NoSlackAlertService: false                            
 UseGCloudDB: false                                                # If use google cloud database, set up UseGCloudDB: true and                                                        
 GCloudCredentialPath:  "/home/xxxx/gcloud/credential/dev.json"    #give GCloudCredentialPath $GOOGLE_APPLICATION_CREDENTIALS value
 DBConn: "user= password= host= port=5432 dbname=pingresult"
@@ -35,7 +37,7 @@ SlackReport:                                                      # Send a repor
 SlackAlert:                                                      # Send alert when loss of ping reach a value
  WebHook: 
  DataWindow: 300                                                 # how much data to fetch for previous n seconds
- AlertThredhold: 20                                              # thredhold of loss in percentage
+ LossThredhold: 20                                              # thredhold of loss in percentage
  Clusters:                                                       # clusters to monitor
   - MainnetBeta
   - MainnetBeta

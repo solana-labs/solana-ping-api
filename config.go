@@ -63,19 +63,21 @@ type SlackReport struct {
 	ReportTime int
 }
 type SlackAlert struct {
-	Clusters       []Cluster
-	WebHook        string
-	DataWindow     int
-	AlertThredhold int
+	Clusters      []Cluster
+	WebHook       string
+	DataWindow    int
+	LossThredhold int
 }
 type ServerSetup struct {
-	Mode             ConnectionMode
-	IP               string
-	SSLIP            string
-	KeyPath          string
-	CrtPath          string
-	NoPingService    bool
-	RetensionService bool
+	Mode                 ConnectionMode
+	IP                   string
+	SSLIP                string
+	KeyPath              string
+	CrtPath              string
+	NoPingService        bool
+	RetensionService     bool
+	NoSlackReportService bool
+	NoSlackAlertService  bool
 }
 type Retension struct {
 	KeepHours         int64
@@ -128,7 +130,10 @@ func loadConfig() Config {
 	c.ServerSetup.KeyPath = v.GetString("ServerSetup.KeyPath")
 	c.ServerSetup.CrtPath = v.GetString("ServerSetup.CrtPath")
 	c.ServerSetup.NoPingService = v.GetBool("ServerSetup.NoPingService")
-	c.ServerSetup.RetensionService = v.GetBool(("ServerSetup.RetensionService"))
+	c.ServerSetup.RetensionService = v.GetBool("ServerSetup.RetensionService")
+	c.ServerSetup.NoSlackReportService = v.GetBool("ServerSetup.NoSlackReportService")
+	c.ServerSetup.NoSlackAlertService = v.GetBool("ServerSetup.NoSlackAlertService")
+
 	c.UseGCloudDB = v.GetBool("UseGCloudDB")
 	c.GCloudCredentialPath = v.GetString("GCloudCredentialPath")
 	c.DBConn = v.GetString("DBConn")
@@ -220,10 +225,10 @@ func loadConfig() Config {
 		sCluster = append(sCluster, Cluster(e))
 	}
 	c.SlackAlert = SlackAlert{
-		Clusters:       sCluster,
-		WebHook:        v.GetString("SlackAlert.WebHook"),
-		DataWindow:     v.GetInt("SlackAlert.DataWindow"),
-		AlertThredhold: v.GetInt("SlackAlert.AlertThredhold"),
+		Clusters:      sCluster,
+		WebHook:       v.GetString("SlackAlert.WebHook"),
+		DataWindow:    v.GetInt("SlackAlert.DataWindow"),
+		LossThredhold: v.GetInt("SlackAlert.LossThredhold"),
 	}
 
 	gcloudCredential := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")

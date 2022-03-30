@@ -54,10 +54,11 @@ type SlackPayload struct {
 
 //statisticResult for caucualate report
 type statisticResult struct {
-	Submiited float64
+	Submitted float64
 	Confirmed float64
 	Loss      float64
 	Count     int
+	ErrList   map[string]int
 	ErrCount  int
 }
 
@@ -101,9 +102,12 @@ func To1MinWindowJson(r *PingResult) DataPoint1MinResultJSON {
 	return jsonResult
 }
 
-//ToPayload get the report within specified minutes
-func (s *SlackPayload) ToPayload(c Cluster, data []PingResult, stats statisticResult) {
+//ToReportPayload get the report within specified minutes
+func (s *SlackPayload) ToReportPayload(c Cluster, data []PingResult, stats *statisticResult) {
 	records, err := reportBody(data, stats)
+	if err == NoPingResultRecord {
+		records = "no data availible"
+	}
 	description := "( Submitted, Confirmed, Loss, min/mean/max/stddev ms )"
 	body := Block{}
 	if err == nil {
@@ -125,32 +129,65 @@ func (s *SlackPayload) ToPayload(c Cluster, data []PingResult, stats statisticRe
 	}
 }
 
-func generateReportData(pr []PingResult) statisticResult {
+// ToAlertPayload get the report within specified minutes
+func (s *SlackPayload) ToAlertPayload(c Cluster, data []PingResult, stats *statisticResult) {
+	records, err := alertBody(stats)
+	if err == NoPingResultRecord {
+		records = "no data availible"
+	}
+	body := Block{}
+	if err == nil {
+		header := Block{
+			BlockType: "section",
+			BlockText: SlackText{
+				SType: "mrkdwn",
+				SText: fmt.Sprintf("Ping Alert! %s reports %d seconds data over %d%s loss", config.HostName, config.SlackAlert.DataWindow, config.SlackAlert.LossThredhold, "%"),
+			},
+		}
+		s.Blocks = append(s.Blocks, header)
+		body = Block{
+			BlockType: "section",
+			BlockText: SlackText{SType: "mrkdwn", SText: fmt.Sprintf("```%s```", records)},
+		}
+		s.Blocks = append(s.Blocks, body)
+	}
+}
+
+func generateStatisticData(pr []PingResult) *statisticResult {
 	var sumSub, sumConf float64
 	count := 0
-	errCount := 0
 	result := statisticResult{}
+	result.ErrList = make(map[string]int) // initiialize map
 	for _, e := range pr {
 		sumSub += float64(e.Submitted)
 		sumConf += float64(e.Confirmed)
 		count++
 		if len(e.Error) > 0 {
-			errCount++
+			for _, e := range e.Error {
+				result.ErrList[string(e)] = result.ErrList[string(e)] + 1
+			}
 		}
 	}
-	if count <= 0 {
-		return result
+	if count <= 0 { // return an default result
+		return &result
 	}
-	result.Submiited = float64(sumSub) / float64(count)
-	result.Confirmed = float64(sumConf) / float64(count)
-	result.Loss = (result.Submiited - result.Confirmed) / result.Submiited
-	result.ErrCount = errCount
-	result.Count = count
 
-	return result
+	result.Submitted = float64(sumSub) 
+	result.Confirmed = float64(sumConf)
+	if result.Submitted > 0 {
+		result.Loss = (result.Submitted - result.Confirmed) / result.Submitted
+	} else {
+		result.Loss = 100
+	}
+
+	for _, c := range result.ErrList {
+		result.ErrCount = result.ErrCount + c
+	}
+	result.Count = count
+	return &result
 }
 
-func reportBody(pr []PingResult, st statisticResult) (string, error) {
+func reportBody(pr []PingResult, st *statisticResult) (string, error) {
 	if st.Count <= 0 {
 		return "()", NoPingResultRecord
 	}
@@ -170,6 +207,27 @@ func reportBody(pr []PingResult, st statisticResult) (string, error) {
 
 		log.Println("reportBody:", text)
 	}
+	return text, nil
+}
+
+func alertBody(st *statisticResult) (string, error) {
+	if st.Count <= 0 {
+		return "()", NoPingResultRecord
+	}
+	text := ""
+
+	loss := float64(100)
+	if st.Submitted > 0 {
+		loss = st.Loss * 100
+	}
+	errListDisplay := ""
+	if len(st.ErrList) > 0 {
+		for k, _ := range st.ErrList {
+			errListDisplay = errListDisplay + fmt.Sprintf("   *%s\n", k)
+		}
+	}
+	text = fmt.Sprintf("Submitted: %d, Confirmed: %d, Loss: %3.1f%s \nError List:\n%s\n", int(st.Submitted), int(st.Confirmed), loss, "%", errListDisplay)
+	log.Println("alertBody:", text)
 	return text, nil
 }
 

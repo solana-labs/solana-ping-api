@@ -25,6 +25,6 @@ func SlackSend(webhookURL string, payload *SlackPayload) []error {
 		return []error{fmt.Errorf("slack sending msg. Status: %v", resp.Status)}
 	}
 
-	log.Println("Slack Send Successfully =>")
+	log.Println("Slack send successfully! =>" , webhookURL)
 	return nil
 }
