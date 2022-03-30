@@ -33,7 +33,6 @@ In config.yaml ServerSetup:
  NoSlackReportService: true
  NoSlackAlertService: true    
 ```
-### Run
 
 ## Installation
 - download executable file 
