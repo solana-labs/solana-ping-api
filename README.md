@@ -7,6 +7,33 @@
 - store results of solana ping
 - provide frequently datapoint for Solan Explorer
 - active monitoring confirmation loss and send an alert to slack
+## Server Setup
+### PingService
+This is similar to  "solana ping" tool in solana tool but can do concurrent rpc query.
+It send transactions to rpc endpoint and wait for transactions is confirmed. 
+Use `NoPingService: false` to turn on. The default is On. 
+
+### RetensionService
+Use `RetensionService: true` to turn on. Default is Off.
+Clean database data periodically.
+
+### SlackReportService
+Use `NoSlackReportService: false` to turn on. Default is On.
+Fetch Report Data and a send summary to a channel periodically.
+
+### SlackAlertService
+Use `NoSlackAlertService: false` to turn on. Default is On.
+If Loss is greater than a thredhold, send alert to a channel
+
+### Example:Run only API Query Server
+In config.yaml ServerSetup: 
+```
+ NoPingService: true           
+ RetensionService: false        
+ NoSlackReportService: true
+ NoSlackAlertService: true    
+```
+### Run
 
 ## Installation
 - download executable file 
