@@ -136,12 +136,18 @@ func (s *SlackPayload) ToAlertPayload(c Cluster, data []PingResult, stats *stati
 		records = "no data availible"
 	}
 	body := Block{}
+	lossPercent := float64(100)
+	if stats.Submitted > 0 {
+		lossPercent = (float64(stats.Submitted-stats.Confirmed) / float64(stats.Submitted)) * 100
+	}
+	slackText := fmt.Sprintf("Ping Alert! %s reports %3.1f%s loss ( > %d%s) for %d seconds data", 
+			config.HostName, lossPercent, "%", config.SlackAlert.LossThredhold, config.SlackAlert.DataWindow)
 	if err == nil {
 		header := Block{
 			BlockType: "section",
 			BlockText: SlackText{
 				SType: "mrkdwn",
-				SText: fmt.Sprintf("Ping Alert! %s reports %d seconds data over %d%s loss", config.HostName, config.SlackAlert.DataWindow, config.SlackAlert.LossThredhold, "%"),
+				SText: slackText,
 			},
 		}
 		s.Blocks = append(s.Blocks, header)
