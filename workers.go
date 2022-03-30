@@ -34,7 +34,7 @@ func launchWorkers() {
 	}
 
 	time.Sleep(30 * time.Second)
-	for _, c := range config.Slack.Clusters {
+	for _, c := range config.SlackReport.Clusters {
 		go slackReportWorker(c)
 	}
 
@@ -136,7 +136,7 @@ func slackReportWorker(cluster Cluster) {
 	log.Println(">> Slack Report Worker for ", cluster, " start!")
 	for {
 		if lastReporUnixTime == 0 {
-			lastReporUnixTime = time.Now().UTC().Unix() - int64(config.Slack.ReportTime)
+			lastReporUnixTime = time.Now().UTC().Unix() - int64(config.SlackReport.ReportTime)
 			log.Println("reconstruct lastReport time=", lastReporUnixTime, "time now=", time.Now().UTC().Unix())
 		}
 		data := getAfter(cluster, Report, lastReporUnixTime)
@@ -149,12 +149,12 @@ func slackReportWorker(cluster Cluster) {
 		stats := generateReportData(data)
 		payload := SlackPayload{}
 		payload.ToPayload(cluster, data, stats)
-		err := SlackSend(config.Slack.WebHook, &payload)
+		err := SlackSend(config.SlackReport.WebHook, &payload)
 		if err != nil {
 			log.Println("SlackSend Error:", err)
 		}
 
-		time.Sleep(time.Duration(config.Slack.ReportTime) * time.Second)
+		time.Sleep(time.Duration(config.SlackReport.ReportTime) * time.Second)
 	}
 
 }

@@ -25,10 +25,19 @@ SolanaConfig:
  MainnetPath: "config-mainnet-beta.yml"
  TestnetPath: "config-testnet.yml"
  DevnetPath: "config-devnet.yml"
-Slack:                                                      # Slack Webhook Setup
+SlackReport:                                                      # Send a report tp slack
  WebHook: 
- ReportTime: 600
- Clusters:
+ ReportTime: 600                                                  # data window
+ Clusters:                                                        # clusters to monitor
+  - MainnetBeta
+#  - Testnet
+#  - Devnet
+SlackAlert:                                                      # Send alert when loss of ping reach a value
+ WebHook: 
+ DataWindow: 300                                                 # how much data to fetch for previous n seconds
+ AlertThredhold: 20                                              # thredhold of loss in percentage
+ Clusters:                                                       # clusters to monitor
+  - MainnetBeta
   - MainnetBeta
 #  - Testnet
 #  - Devnet

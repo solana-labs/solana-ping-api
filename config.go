@@ -57,10 +57,16 @@ type SolanaPing struct {
 	DataPoint1Min      PingConfig
 }
 
-type Slack struct {
+type SlackReport struct {
 	Clusters   []Cluster
 	WebHook    string
 	ReportTime int
+}
+type SlackAlert struct {
+	Clusters       []Cluster
+	WebHook        string
+	DataWindow     int
+	AlertThredhold int
 }
 type ServerSetup struct {
 	Mode             ConnectionMode
@@ -89,7 +95,8 @@ type Config struct {
 	DataPoint1MinClusters []Cluster
 	SolanaConfigInfo
 	SolanaPing
-	Slack
+	SlackReport
+	SlackAlert
 	Retension
 }
 
@@ -199,14 +206,26 @@ func loadConfig() Config {
 	}
 
 	sCluster := []Cluster{}
-	for _, e := range v.GetStringSlice("Slack.Clusters") {
+	for _, e := range v.GetStringSlice("SlackReport.Clusters") {
 		sCluster = append(sCluster, Cluster(e))
 	}
-	c.Slack = Slack{
+	c.SlackReport = SlackReport{
 		Clusters:   sCluster,
-		WebHook:    v.GetString("Slack.WebHook"),
-		ReportTime: v.GetInt("Slack.ReportTime"),
+		WebHook:    v.GetString("SlackReport.WebHook"),
+		ReportTime: v.GetInt("SlackReport.ReportTime"),
 	}
+
+	sCluster = []Cluster{}
+	for _, e := range v.GetStringSlice("SlackAlert.Clusters") {
+		sCluster = append(sCluster, Cluster(e))
+	}
+	c.SlackAlert = SlackAlert{
+		Clusters:       sCluster,
+		WebHook:        v.GetString("SlackAlert.WebHook"),
+		DataWindow:     v.GetInt("SlackAlert.DataWindow"),
+		AlertThredhold: v.GetInt("SlackAlert.AlertThredhold"),
+	}
+
 	gcloudCredential := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
 	if len(gcloudCredential) == 0 && len(c.GCloudCredentialPath) != 0 {
 		os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", c.GCloudCredentialPath)

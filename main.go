@@ -47,7 +47,8 @@ func init() {
 	log.Println("SolanaConfigFile/Testnet:", config.SolanaConfigInfo.ConfigTestnet)
 	log.Println("SolanaConfigFile/Devnet:", config.SolanaConfigInfo.ConfigDevnet)
 	log.Println("SolanaPing:", config.SolanaPing)
-	log.Println("Slack:", config.Slack)
+	log.Println("SlackReport:", config.SlackReport)
+	log.Println("SlackAlert:", config.SlackReport)
 	log.Println("Retension:", config.Retension)
 
 	if config.UseGCloudDB {

@@ -4,8 +4,9 @@
 - execute solana ping command
 - provide http API service
 - generate a report and send to slack
-- store result of solana ping
-- provide different kind of datapoints
+- store results of solana ping
+- provide frequently datapoint for Solan Explorer
+- active monitoring confirmation loss and send an alert to slack
 
 ## Installation
 - download executable file 
