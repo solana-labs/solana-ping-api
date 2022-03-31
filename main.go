@@ -204,6 +204,11 @@ func test(c *gin.Context) {
 	beginOfPast10min := now - 30*60
 	records := getAfter(Testnet, DataPoint1Min, beginOfPast10min)
 	groups := grouping1Min(records, beginOfPast10min, now)
-	PrintStatistic(statisticCompute(groups))
-	c.Data(200, c.ContentType(), []byte("OK"))
+	groupsStat := statisticCompute(groups)
+	ret := []DataPoint1MinResultJSON{}
+	for _, g := range groupsStat.GroupsSatistic {
+		ret = append(ret, PingResultToJson(&g))
+	}
+
+	c.IndentedJSON(http.StatusOK, ret)
 }

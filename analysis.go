@@ -5,6 +5,11 @@ import (
 	"log"
 )
 
+type Group1Min struct {
+	Result    []PingResult
+	TimeStamp int64
+}
+
 type PingSatistic struct {
 	Submitted   float64
 	Confirmed   float64
@@ -12,6 +17,7 @@ type PingSatistic struct {
 	Count       int
 	TimeMeasure TakeTime
 	Errors      []string
+	TimeStamp   int64
 }
 
 type GroupsRawStatistic struct {
@@ -36,23 +42,24 @@ func GetDisplayExpections() []PingResultError {
 }
 
 // grouping1Min: group []PingResult into 1 min group.
-func grouping1Min(pr []PingResult, startTime int64, endTime int64) [][]PingResult {
+func grouping1Min(pr []PingResult, startTime int64, endTime int64) []Group1Min {
 	window := int64(60)
-	groups := [][]PingResult{}
+	groups := []Group1Min{}
 	for periodend := endTime; periodend > startTime; periodend = periodend - window {
-		aGroup := []PingResult{}
+		minGroup := Group1Min{}
 		for _, pResult := range pr {
 			if pResult.TimeStamp <= periodend && pResult.TimeStamp > periodend-window {
-				aGroup = append(aGroup, pResult)
+				minGroup.Result = append(minGroup.Result, pResult)
 			}
 		}
+		minGroup.TimeStamp = periodend
 		// printPingResultGroup(aGroup, periodend, periodend-window)
-		groups = append(groups, aGroup)
+		groups = append(groups, minGroup)
 	}
 	return groups
 }
 
-func statisticCompute(groups [][]PingResult) *GroupsRawStatistic {
+func statisticCompute(groups []Group1Min) *GroupsRawStatistic {
 	stat := GroupsRawStatistic{}
 	stat.GroupsSatistic = []PingSatistic{}
 	stat.RawGroupsSatistic = []PingSatistic{}
@@ -62,7 +69,7 @@ func statisticCompute(groups [][]PingResult) *GroupsRawStatistic {
 	for _, group := range groups {
 		gStat := PingSatistic{}
 		rawGStat := PingSatistic{}
-		for _, res := range group {
+		for _, res := range group.Result {
 			errorException := false
 			if len(res.Error) > 0 {
 				for _, e := range res.Error {
@@ -79,12 +86,14 @@ func statisticCompute(groups [][]PingResult) *GroupsRawStatistic {
 			rawGStat.Confirmed += float64(res.Confirmed)
 			rawGStat.Count += 1
 			rawGStat.TimeMeasure.AddTime(res.TakeTime)
+			rawGStat.TimeStamp = res.TimeStamp
 			// Filer Data Statistic
 			if !errorException {
 				gStat.Submitted += float64(res.Submitted)
 				gStat.Confirmed += float64(res.Confirmed)
 				gStat.Count += 1
 				gStat.TimeMeasure.AddTime(res.TakeTime)
+				gStat.TimeStamp = res.TimeStamp
 			}
 
 		}
