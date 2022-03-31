@@ -39,7 +39,6 @@ func init() {
 	log.Println("ServerSetup Config:", config.ServerSetup)
 	log.Println("Database UseGCloudDB:", config.UseGCloudDB, " GCloudCredentialPath", config.GCloudCredentialPath, " DBConn:", config.DBConn,
 		" Logfile:", config.Logfile, " Tracefile:", config.Tracefile)
-	log.Println("ReportClusters:", config.ReportClusters, " DataPoint1MinClusters:", config.DataPoint1MinClusters)
 	log.Println("SolanaConfig/Dir:", config.SolanaConfigInfo.Dir,
 		" SolanaConfig/Mainnet", config.SolanaConfigInfo.MainnetPath,
 		" SolanaConfig/Testnet", config.SolanaConfigInfo.TestnetPath,
@@ -51,7 +50,7 @@ func init() {
 	log.Println("SlackReport:", config.SlackReport)
 	log.Println("SlackAlert:", config.SlackAlert)
 	log.Println("Retension:", config.Retension)
-	log.Println("==== Extra Services Provides ===")
+	log.Println("====  Services Setup ===")
 	log.Println("NoPingService:", config.ServerSetup.NoPingService)
 	log.Println("RetensionService:", config.ServerSetup.RetensionService)
 	log.Println("NoSlackReportService:", config.ServerSetup.NoSlackReportService)
@@ -158,7 +157,7 @@ func last6hours(c *gin.Context) {
 
 //GetLatestResult return the latest DataPoint1Min PingResult from the cluster and convert it into PingResultJSON
 func GetLatestResult(c Cluster) DataPoint1MinResultJSON {
-	if !IsReportClusterActive(c) {
+	if !IsClusterActive(c) && !config.ServerSetup.NoPingService {
 		return DataPoint1MinResultJSON{}
 	}
 	records := getLastN(c, DataPoint1Min, 1)
@@ -171,7 +170,7 @@ func GetLatestResult(c Cluster) DataPoint1MinResultJSON {
 
 //GetLatestResult return the latest 6hr DataPoint1Min PingResult from the cluster and convert it into PingResultJSON
 func GetLast6hours(c Cluster) []DataPoint1MinResultJSON {
-	if !IsDataPoint1MinClusterActive(c) && !config.ServerSetup.NoPingService {
+	if !IsClusterActive(c) && !config.ServerSetup.NoPingService {
 		return []DataPoint1MinResultJSON{}
 	}
 	lastRecord := getLastN(c, DataPoint1Min, 1)
@@ -190,17 +189,8 @@ func GetLast6hours(c Cluster) []DataPoint1MinResultJSON {
 	return results
 }
 
-func IsReportClusterActive(c Cluster) bool {
-	for _, existedCluster := range config.ReportClusters {
-		if c == existedCluster { // cluster existed
-			return true
-		}
-	}
-	return false
-}
-
-func IsDataPoint1MinClusterActive(c Cluster) bool {
-	for _, existedCluster := range config.DataPoint1MinClusters {
+func IsClusterActive(c Cluster) bool {
+	for _, existedCluster := range config.SolanaPing.Clusters {
 		if c == existedCluster { // cluster existed
 			return true
 		}

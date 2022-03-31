@@ -13,15 +13,6 @@ GCloudCredentialPath:  "/home/xxxx/gcloud/credential/dev.json"    #give GCloudCr
 DBConn: "user= password= host= port=5432 dbname=pingresult"
 Logfile:
 Tracefile: /home/sol/ping-api-server/log/trace.log
-Clusters:                                                         # Clusters to perform Report and DataPoint1Min, user # to disable Clusters
- Report:
-  - MainnetBeta
-#  - Testnet
-#  - Devnet
- DataPoint1Min:
-  - MainnetBeta
-  - Testnet
-  - Devnet
 SolanaConfig:
  Dir: "/home/sol/.config/solana/cli/"
  MainnetPath: "config-mainnet-beta.yml"
@@ -48,17 +39,11 @@ SolanaPing:
   Mainnet:
   Testnet:
   Devnet:
- Report:                                                    # Ping for Slack Report Setup
-  Receiver: "9qT3WeLV5o3t3GVgCk9A3mpTRjSb9qBvnfrAsVKLhmU5"    # The address recieve SOL
-  NumWorkers: 1                                               # number of workers will run. This is a concurrent process number
-  BatchCount: 10                                              # number of transaction will test in a single ping operation
-  BatchInverval: 1                                            # wait sec for each batch transaction
-  TxTimeout: 10                                               # timeout in sec for each transaction send
-  WaitConfirmationTimeout: 35                                 # timeout in sec for check confirm status 
-  StatusCheckInterval: 2                                      # wait sec for each status confirm-check 
-  MinPerPingTime: 15                                          # If Ping operation is less than  MinPerPingTime, it will wait to make per Ping time = MinPerPingTime
-  MaxPerPingTime: 300                                         # If Ping operation has not complete with 500, it will consider timeout and terminated
- DataPoint1Min:                                             # Ping for Explorer Setup 
+ Clusters:                                                         # Clusters to perform Report and DataPoint1Min, user # to disable Clusters
+  - MainnetBeta
+  - Testnet
+  - Devnet
+ PingConfig:                                             # Ping for Explorer Setup 
   Receiver: "9qT3WeLV5o3t3GVgCk9A3mpTRjSb9qBvnfrAsVKLhmU5"    # Ping for Slack Report Setup
   NumWorkers: 5                                               # number of workers will run. This is a concurrent process number
   BatchCount: 1                                               # number of transaction will test in a single ping operation

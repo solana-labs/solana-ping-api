@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/portto/solana-go-sdk/client"
-	"github.com/portto/solana-go-sdk/rpc"
 	"log"
 	"time"
+
+	"github.com/portto/solana-go-sdk/client"
+	"github.com/portto/solana-go-sdk/rpc"
 )
 
 type PingType string
@@ -17,15 +18,9 @@ const (
 
 func launchWorkers() {
 	if !config.ServerSetup.NoPingService {
-		for _, c := range config.ReportClusters {
-			for i := 0; i < config.Report.NumWorkers; i++ {
-				go pingReportWorker(c)
-				time.Sleep(10 * time.Second)
-			}
-		}
-		for _, c := range config.DataPoint1MinClusters {
-			for i := 0; i < config.DataPoint1Min.NumWorkers; i++ {
-				go pingDataPoint1MinWorker(c)
+		for _, c := range config.SolanaPing.Clusters {
+			for i := 0; i < config.PingConfig.NumWorkers; i++ {
+				go pingDataWorker(c)
 				time.Sleep(10 * time.Second)
 			}
 
@@ -84,34 +79,7 @@ func createRPCClient(cluster Cluster) (*client.Client, error) {
 	return c, nil
 }
 
-func pingReportWorker(cluster Cluster) {
-	log.Println(">> Solana pingReportWorker for ", cluster, " start!")
-	defer log.Println(">> Solana pingReportWorker for ", cluster, " end!")
-	c, err := createRPCClient(cluster)
-	if err != nil {
-		return
-	}
-	for {
-		if c == nil {
-			c, err = createRPCClient(cluster)
-			if err != nil {
-				return
-			}
-		}
-		result, err := Ping(cluster, c, config.HostName, Report, config.SolanaPing.Report)
-		if err != nil {
-			log.Println("pingReportWorker Error:", err)
-			continue
-		}
-		addRecord(result)
-		waitTime := config.SolanaPing.Report.MinPerPingTime - result.TakeTime
-		if waitTime > 0 {
-			time.Sleep(time.Duration(waitTime) * time.Second)
-		}
-	}
-}
-
-func pingDataPoint1MinWorker(cluster Cluster) {
+func pingDataWorker(cluster Cluster) {
 	log.Println(">> Solana DataPoint1MinWorker for ", cluster, " start!")
 	defer log.Println(">> Solana DataPoint1MinWorker for ", cluster, " end!")
 	c, err := createRPCClient(cluster)
@@ -125,13 +93,13 @@ func pingDataPoint1MinWorker(cluster Cluster) {
 				return
 			}
 		}
-		result, err := Ping(cluster, c, config.HostName, DataPoint1Min, config.SolanaPing.DataPoint1Min)
+		result, err := Ping(cluster, c, config.HostName, DataPoint1Min, config.SolanaPing.PingConfig)
 		if err != nil {
 			log.Println("pingReportWorker Error:", err)
 			continue
 		}
 		addRecord(result)
-		waitTime := config.SolanaPing.DataPoint1Min.MinPerPingTime - (result.TakeTime / 1000)
+		waitTime := config.SolanaPing.PingConfig.MinPerPingTime - (result.TakeTime / 1000)
 		if waitTime > 0 {
 			log.Println("---wait for ---", waitTime, " sec")
 			time.Sleep(time.Duration(waitTime) * time.Second)
