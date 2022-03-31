@@ -100,6 +100,8 @@ func main() {
 	router.GET("/:cluster/latest", getLatest)
 	router.GET("/:cluster/last6hours", timeout.New(timeout.WithTimeout(10*time.Second), timeout.WithHandler(last6hours)))
 	router.GET("/health", health)
+	router.GET("/test", test)
+
 	if config.ServerSetup.Mode == HTTPS {
 		router.RunTLS(config.ServerSetup.SSLIP, config.ServerSetup.CrtPath, config.ServerSetup.KeyPath)
 		log.Println("HTTPS server is up!", " IP:", config.ServerSetup.SSLIP)
@@ -196,4 +198,12 @@ func IsClusterActive(c Cluster) bool {
 		}
 	}
 	return false
+}
+func test(c *gin.Context) {
+	now := time.Now().UTC().Unix()
+	beginOfPast10min := now - 30*60
+	records := getAfter(Testnet, DataPoint1Min, beginOfPast10min)
+	groups := grouping1Min(records, beginOfPast10min, now)
+	PrintStatistic(statisticCompute(groups))
+	c.Data(200, c.ContentType(), []byte("OK"))
 }

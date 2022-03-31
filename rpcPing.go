@@ -82,6 +82,10 @@ func (t *TakeTime) Add() {
 	t.Times = append(t.Times, (t.End - t.Start))
 }
 
+func (t *TakeTime) AddTime(ts int64) {
+	t.Times = append(t.Times, ts)
+}
+
 func (t *TakeTime) TotalTime() int64 {
 	sum := int64(0)
 	for _, ts := range t.Times {

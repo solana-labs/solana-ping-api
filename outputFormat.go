@@ -140,8 +140,8 @@ func (s *SlackPayload) ToAlertPayload(c Cluster, data []PingResult, stats *stati
 	if stats.Submitted > 0 {
 		lossPercent = (float64(stats.Submitted-stats.Confirmed) / float64(stats.Submitted)) * 100
 	}
-	slackText := fmt.Sprintf("Ping Alert! %s reports %3.1f%s loss.", 
-			config.HostName, lossPercent, "%")
+	slackText := fmt.Sprintf("Ping Alert! %s reports %3.1f%s loss.",
+		config.HostName, lossPercent, "%")
 	if err == nil {
 		header := Block{
 			BlockType: "section",
@@ -178,7 +178,7 @@ func generateStatisticData(pr []PingResult) *statisticResult {
 		return &result
 	}
 
-	result.Submitted = float64(sumSub) 
+	result.Submitted = float64(sumSub)
 	result.Confirmed = float64(sumConf)
 	if result.Submitted > 0 {
 		result.Loss = (result.Submitted - result.Confirmed) / result.Submitted
@@ -234,8 +234,8 @@ func alertBody(st *statisticResult) (string, error) {
 			}
 		}
 	}
-	text = fmt.Sprintf("Submitted: %d, Confirmed: %d, Loss: %3.1f%s, Loss-Thredhold: %d%s, DataWindow: %d secs.\nError List:\n%s\n", 
-			int(st.Submitted), int(st.Confirmed), loss, "%", config.SlackAlert.LossThredhold, "%",config.SlackAlert.DataWindow ,errListDisplay)
+	text = fmt.Sprintf("Submitted: %d, Confirmed: %d, Loss: %3.1f%s, Loss-Thredhold: %d%s, DataWindow: %d secs.\nError List:\n%s\n",
+		int(st.Submitted), int(st.Confirmed), loss, "%", config.SlackAlert.LossThredhold, "%", config.SlackAlert.DataWindow, errListDisplay)
 	log.Println("alertBody:", text)
 	return text, nil
 }
