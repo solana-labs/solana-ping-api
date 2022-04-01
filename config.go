@@ -65,7 +65,6 @@ type SlackReport struct {
 }
 type SlackAlert struct {
 	WebHook       string
-	DataWindow    int
 	LossThredhold int
 }
 type ServerSetup struct {
@@ -203,7 +202,6 @@ func loadConfig() Config {
 	}
 	c.SlackReport.SlackAlert = SlackAlert{
 		WebHook:       v.GetString("SlackReport.SlackAlert.WebHook"),
-		DataWindow:    v.GetInt("SlackReport.SlackAlert.DataWindow"),
 		LossThredhold: v.GetInt("SlackReport.SlackAlert.LossThredhold"),
 	}
 
