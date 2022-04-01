@@ -116,7 +116,7 @@ func (t *TakeTime) Statistic() (max int64, mean float64, min int64, stddev float
 		count++
 
 	}
-	if count >= 0 {
+	if count > 0 {
 		mean = float64(sum) / float64(count)
 		for _, ts := range t.Times {
 			if ts > 0 { // if ts = 0 , ping fail.

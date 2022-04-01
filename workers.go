@@ -27,22 +27,13 @@ func launchWorkers() {
 		}
 	}
 
-	if !config.ServerSetup.NoSlackReportService {
-		time.Sleep(2 * time.Second)
-		for _, c := range config.SlackReport.Clusters {
-			go slackReportWorker(c)
-		}
-	}
-	if !config.ServerSetup.NoSlackAlertService {
-		time.Sleep(2 * time.Second)
-		for _, c := range config.SlackAlert.Clusters {
-			go slackAlertWorker(c)
-		}
-	}
-
 	if config.ServerSetup.RetensionService {
 		time.Sleep(2 * time.Second)
 		go RetensionServiceWorker()
+	}
+
+	for _, c := range config.SlackReport.Clusters {
+		go reportWorker(c)
 	}
 
 }
@@ -109,61 +100,6 @@ func pingDataWorker(cluster Cluster) {
 
 var lastReporUnixTime int64
 
-func slackReportWorker(cluster Cluster) {
-	log.Println(">> Slack Report Worker for ", cluster, " start!")
-	defer log.Println(">> Slack Report Worker for ", cluster, " end!")
-	for {
-		if lastReporUnixTime == 0 {
-			lastReporUnixTime = time.Now().UTC().Unix() - int64(config.SlackReport.ReportTime)
-			log.Println("reconstruct lastReport time=", lastReporUnixTime, "time now=", time.Now().UTC().Unix())
-		}
-		data := getAfter(cluster, Report, lastReporUnixTime)
-		if len(data) <= 0 { // No Data
-			log.Println(cluster, " getAfter return empty")
-			time.Sleep(30 * time.Second)
-			continue
-		}
-		lastReporUnixTime = time.Now().UTC().Unix()
-		stats := generateStatisticData(data)
-		payload := SlackPayload{}
-		payload.ToReportPayload(cluster, data, stats)
-		err := SlackSend(config.SlackReport.WebHook, &payload)
-		if err != nil {
-			log.Println("SlackSend Error:", err)
-		}
-
-		time.Sleep(time.Duration(config.SlackReport.ReportTime) * time.Second)
-	}
-
-}
-
-func slackAlertWorker(cluster Cluster) {
-	log.Println(">> Slack Alert Worker for ", cluster, " start!")
-	defer log.Println(">> Slack Alert Worker for ", cluster, " end!")
-	for {
-		lastDataWindowUnixTime := time.Now().UTC().Unix() - int64(config.SlackAlert.DataWindow)
-		data := getAfter(cluster, DataPoint1Min, lastDataWindowUnixTime)
-		if len(data) <= 0 { // No Data
-			log.Println(cluster, " getAfter return empty")
-			time.Sleep(30 * time.Second)
-			continue
-		}
-		stats := generateStatisticData(data)
-		if config.SlackAlert.LossThredhold < 0 && config.SlackAlert.LossThredhold > 100 { //If not with 0-100 percent range
-			config.SlackAlert.LossThredhold = DefaultAlertThredHold
-		}
-		if stats.Loss*100 > float64(config.SlackAlert.LossThredhold) {
-			// send alert
-			payload := SlackPayload{}
-			payload.ToAlertPayload(cluster, data, stats)
-			SlackSend(config.SlackAlert.WebHook, &payload)
-		}
-
-		time.Sleep(time.Duration(config.SlackAlert.DataWindow) * time.Second)
-	}
-
-}
-
 func RetensionServiceWorker() {
 	log.Println(">> Retension Service Worker start!")
 	defer log.Println(">> Retension Service Worker end!")
@@ -178,5 +114,47 @@ func RetensionServiceWorker() {
 			config.Retension.UpdateIntervalSec = 300
 		}
 		time.Sleep(time.Duration(config.Retension.UpdateIntervalSec) * time.Second)
+	}
+}
+
+var lastReporTime int64
+
+func reportWorker(cluster Cluster) {
+	log.Println(">> Slack Report Worker for ", cluster, " start!")
+	defer log.Println(">> Slack Report Worker for ", cluster, " end!")
+	for {
+		now := time.Now().UTC().Unix()
+		if lastReporTime == 0 {
+			lastReporTime = now - int64(config.SlackReport.ReportTime)
+			log.Println("reconstruct lastReport time=", lastReporTime, "time now=", time.Now().UTC().Unix())
+		}
+		data := getAfter(cluster, DataPoint1Min, lastReporTime)
+		if len(data) <= 0 { // No Data
+			log.Println(cluster, " getAfter return empty")
+			time.Sleep(30 * time.Second)
+			continue
+		}
+
+		groups := grouping1Min(data, lastReporTime, now)
+		groupsStat := statisticCompute(groups)
+		lastReporTime = now
+		payload := SlackPayload{}
+		payload.ReportPayload(cluster, groupsStat)
+		err := SlackSend(config.SlackReport.WebHook, &payload)
+		if err != nil {
+			log.Println("SlackSend Error:", err)
+		}
+
+		gStat := groupsStat.GetGroupsAllStatistic(false)
+		loss := gStat.Loss * 100
+		if loss > float64(config.SlackAlert.LossThredhold) {
+			payload := SlackPayload{}
+			payload.AlertPayload(cluster, &gStat)
+			err := SlackSend(config.SlackReport.WebHook, &payload)
+			if err != nil {
+				log.Println("SlackSend Error:", err)
+			}
+		}
+		time.Sleep(time.Duration(config.SlackReport.ReportTime) * time.Second)
 	}
 }

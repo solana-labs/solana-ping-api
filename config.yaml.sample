@@ -25,7 +25,7 @@ SlackReport:                                                      # Send a repor
   - MainnetBeta
 #  - Testnet
 #  - Devnet
-SlackAlert:                                                      # Send alert when loss of ping reach a value
+SlackAlert:                                                     # Send alert when loss of ping reach a value
  WebHook: 
  DataWindow: 300                                                 # how much data to fetch for previous n seconds
  LossThredhold: 20                                              # thredhold of loss in percentage

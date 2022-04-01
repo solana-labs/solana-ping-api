@@ -201,12 +201,14 @@ func IsClusterActive(c Cluster) bool {
 }
 func test(c *gin.Context) {
 	now := time.Now().UTC().Unix()
-	beginOfPast10min := now - 30*60
-	records := getAfter(Testnet, DataPoint1Min, beginOfPast10min)
+	//now := int64(1648733636)
+	beginOfPast10min := now - 10*60
+	records := getAfter(MainnetBeta, DataPoint1Min, beginOfPast10min)
 	groups := grouping1Min(records, beginOfPast10min, now)
 	groupsStat := statisticCompute(groups)
+	PrintStatistic(groupsStat)
 	ret := []DataPoint1MinResultJSON{}
-	for _, g := range groupsStat.GroupsSatistic {
+	for _, g := range groupsStat.PingStatisticList {
 		ret = append(ret, PingResultToJson(&g))
 	}
 
