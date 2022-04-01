@@ -149,7 +149,7 @@ func reportErrorBlock(data *GroupsAllStatistic) string {
 		}
 	}
 	if len(exceededText) > 0 || len(errorText) > 0 {
-		return fmt.Sprintf("Error List:%s\n%s", exceededText, errorText)
+		return fmt.Sprintf("Error List:\n%s\n%s", exceededText, errorText)
 	}
 	return ""
 }
