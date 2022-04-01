@@ -19,6 +19,7 @@ const (
 func launchWorkers() {
 	if config.ServerSetup.PingService {
 		for _, c := range config.SolanaPing.Clusters {
+
 			for i := 0; i < config.PingConfig.NumWorkers; i++ {
 				go pingDataWorker(c)
 				time.Sleep(10 * time.Second)
@@ -152,7 +153,7 @@ func reportWorker(cluster Cluster) {
 			if loss > float64(config.SlackReport.SlackAlert.LossThredhold) {
 				payload := SlackPayload{}
 				payload.AlertPayload(cluster, &gStat)
-				err := SlackSend(config.SlackReport.WebHook, &payload)
+				err := SlackSend(config.SlackReport.SlackAlert.WebHook, &payload)
 				if err != nil {
 					log.Println("SlackSend Error:", err)
 				}

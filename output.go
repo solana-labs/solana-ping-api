@@ -90,7 +90,7 @@ func (s *SlackPayload) ReportPayload(c Cluster, data *GroupsAllStatistic) {
 	body := Block{}
 	records := reportRecordBlock(data)
 	description := "( Submitted, Confirmed, Loss, min/mean/max/stddev ms )"
-	memo := "* rpc error : context deadline exceeded does not count as trascation\n** BlockhashNotFound does not show in Error List"
+	memo := "* rpc error : context deadline exceeded does not count as a transaction\n** BlockhashNotFound error does not show in Error List"
 	errorRecords := reportErrorBlock(data)
 	body = Block{
 		BlockType: "section",
