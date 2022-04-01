@@ -17,7 +17,7 @@ const (
 )
 
 func launchWorkers() {
-	if !config.ServerSetup.NoPingService {
+	if config.ServerSetup.PingService {
 		for _, c := range config.SolanaPing.Clusters {
 			for i := 0; i < config.PingConfig.NumWorkers; i++ {
 				go pingDataWorker(c)
@@ -32,8 +32,10 @@ func launchWorkers() {
 		go RetensionServiceWorker()
 	}
 
-	for _, c := range config.SlackReport.Clusters {
-		go reportWorker(c)
+	if config.ServerSetup.SlackReportService {
+		for _, c := range config.SlackReport.Clusters {
+			go reportWorker(c)
+		}
 	}
 
 }
@@ -124,7 +126,7 @@ func reportWorker(cluster Cluster) {
 	defer log.Println(">> Slack Report Worker for ", cluster, " end!")
 	for {
 		now := time.Now().UTC().Unix()
-		if lastReporTime == 0 {
+		if lastReporTime == 0 { // server restart
 			lastReporTime = now - int64(config.SlackReport.ReportTime)
 			log.Println("reconstruct lastReport time=", lastReporTime, "time now=", time.Now().UTC().Unix())
 		}
@@ -144,15 +146,16 @@ func reportWorker(cluster Cluster) {
 		if err != nil {
 			log.Println("SlackSend Error:", err)
 		}
-
-		gStat := groupsStat.GetGroupsAllStatistic(false)
-		loss := gStat.Loss * 100
-		if loss > float64(config.SlackAlert.LossThredhold) {
-			payload := SlackPayload{}
-			payload.AlertPayload(cluster, &gStat)
-			err := SlackSend(config.SlackReport.WebHook, &payload)
-			if err != nil {
-				log.Println("SlackSend Error:", err)
+		if config.ServerSetup.SlackAlertService {
+			gStat := groupsStat.GetGroupsAllStatistic(false)
+			loss := gStat.Loss * 100
+			if loss > float64(config.SlackReport.SlackAlert.LossThredhold) {
+				payload := SlackPayload{}
+				payload.AlertPayload(cluster, &gStat)
+				err := SlackSend(config.SlackReport.WebHook, &payload)
+				if err != nil {
+					log.Println("SlackSend Error:", err)
+				}
 			}
 		}
 		time.Sleep(time.Duration(config.SlackReport.ReportTime) * time.Second)

@@ -6,6 +6,54 @@ import (
 	"time"
 )
 
+//ReportPingResultJSON is a struct convert from PingResult to desire json output struct
+type DataPoint1MinResultJSON struct {
+	Submitted int    `json:"submitted"`
+	Confirmed int    `json:"confirmed"`
+	Loss      string `json:"loss"`
+	Mean      int    `json:"mean_ms"`
+	TimeStamp string `json:"ts"`
+	Error     string `json:"error"`
+}
+
+//SlackText slack structure
+type SlackText struct {
+	SText string `json:"text"`
+	SType string `json:"type"`
+}
+
+//Block slack structure
+type Block struct {
+	BlockType string    `json:"type"`
+	BlockText SlackText `json:"text"`
+}
+
+//SlackPayload slack structure
+type SlackPayload struct {
+	Blocks []Block `json:"blocks"`
+}
+
+func ErrorsToString(errs []string) (errsString string) {
+	for i, e := range errs {
+		if i == 0 {
+			errsString = e
+		} else {
+			errsString = errsString + ";" + e
+		}
+	}
+	return
+}
+
+func To1MinWindowJson(r *PingResult) DataPoint1MinResultJSON {
+	// Check result
+	jsonResult := DataPoint1MinResultJSON{Submitted: r.Submitted, Confirmed: r.Confirmed, Mean: int(r.Mean), Error: ErrorsToString(r.Error)}
+	loss := fmt.Sprintf("%3.1f%s", r.Loss, "%")
+	jsonResult.Loss = loss
+	ts := time.Unix(r.TimeStamp, 0)
+	jsonResult.TimeStamp = ts.Format(time.RFC3339)
+	return jsonResult
+}
+
 // PingResultToJson convert PingSatistic to  RingResult Json format for API
 func PingResultToJson(stat *PingSatistic) DataPoint1MinResultJSON {
 	_, mean, _, _, _ := stat.TimeMeasure.Statistic()

@@ -61,23 +61,23 @@ type SlackReport struct {
 	Clusters   []Cluster
 	WebHook    string
 	ReportTime int
+	SlackAlert
 }
 type SlackAlert struct {
-	Clusters      []Cluster
 	WebHook       string
 	DataWindow    int
 	LossThredhold int
 }
 type ServerSetup struct {
-	Mode                 ConnectionMode
-	IP                   string
-	SSLIP                string
-	KeyPath              string
-	CrtPath              string
-	NoPingService        bool
-	RetensionService     bool
-	NoSlackReportService bool
-	NoSlackAlertService  bool
+	Mode               ConnectionMode
+	IP                 string
+	SSLIP              string
+	KeyPath            string
+	CrtPath            string
+	PingService        bool
+	RetensionService   bool
+	SlackReportService bool
+	SlackAlertService  bool
 }
 type Retension struct {
 	KeepHours         int64
@@ -96,7 +96,6 @@ type Config struct {
 	SolanaConfigInfo
 	SolanaPing
 	SlackReport
-	SlackAlert
 	Retension
 }
 
@@ -127,10 +126,10 @@ func loadConfig() Config {
 	c.ServerSetup.SSLIP = v.GetString("ServerSetup.SSLIP")
 	c.ServerSetup.KeyPath = v.GetString("ServerSetup.KeyPath")
 	c.ServerSetup.CrtPath = v.GetString("ServerSetup.CrtPath")
-	c.ServerSetup.NoPingService = v.GetBool("ServerSetup.NoPingService")
+	c.ServerSetup.PingService = v.GetBool("ServerSetup.PingService")
 	c.ServerSetup.RetensionService = v.GetBool("ServerSetup.RetensionService")
-	c.ServerSetup.NoSlackReportService = v.GetBool("ServerSetup.NoSlackReportService")
-	c.ServerSetup.NoSlackAlertService = v.GetBool("ServerSetup.NoSlackAlertService")
+	c.ServerSetup.SlackReportService = v.GetBool("ServerSetup.SlackReportService")
+	c.ServerSetup.SlackAlertService = v.GetBool("ServerSetup.SlackAlertService")
 
 	c.UseGCloudDB = v.GetBool("UseGCloudDB")
 	c.GCloudCredentialPath = v.GetString("GCloudCredentialPath")
@@ -202,16 +201,10 @@ func loadConfig() Config {
 		WebHook:    v.GetString("SlackReport.WebHook"),
 		ReportTime: v.GetInt("SlackReport.ReportTime"),
 	}
-
-	sCluster = []Cluster{}
-	for _, e := range v.GetStringSlice("SlackAlert.Clusters") {
-		sCluster = append(sCluster, Cluster(e))
-	}
-	c.SlackAlert = SlackAlert{
-		Clusters:      sCluster,
-		WebHook:       v.GetString("SlackAlert.WebHook"),
-		DataWindow:    v.GetInt("SlackAlert.DataWindow"),
-		LossThredhold: v.GetInt("SlackAlert.LossThredhold"),
+	c.SlackReport.SlackAlert = SlackAlert{
+		WebHook:       v.GetString("SlackReport.SlackAlert.WebHook"),
+		DataWindow:    v.GetInt("SlackReport.SlackAlert.DataWindow"),
+		LossThredhold: v.GetInt("SlackReport.SlackAlert.LossThredhold"),
 	}
 
 	gcloudCredential := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")

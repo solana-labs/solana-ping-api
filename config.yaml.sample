@@ -4,10 +4,10 @@ ServerSetup:
  SSLIP: "0.0.0.0:8443"
  KeyPath: "PathToCertificates/server.key"
  CrtPath: "PathToCertificates/server.crt"
- NoPingService: false
+ PingService: true
  RetensionService: false
- NoSlackReportService: false
- NoSlackAlertService: false                            
+ SlackReportService: true
+ SlackAlertService: true                            
 UseGCloudDB: false                                                # If use google cloud database, set up UseGCloudDB: true and                                                        
 GCloudCredentialPath:  "/home/xxxx/gcloud/credential/dev.json"    #give GCloudCredentialPath $GOOGLE_APPLICATION_CREDENTIALS value
 DBConn: "user= password= host= port=5432 dbname=pingresult"
@@ -20,17 +20,12 @@ SolanaConfig:
  DevnetPath: "config-devnet.yml"
 SlackReport:                                                      # Send a report tp slack
  WebHook: 
- ReportTime: 600                                                  # data window
+ ReportTime: 600  
+ SlackAlert:                                                     # Send alert when loss of ping reach a value
+  WebHook: 
+  LossThredhold: 20                                                   # data window
+  LossThredhold: 20                                              # thredhold of loss in percentage
  Clusters:                                                        # clusters to monitor
-  - MainnetBeta
-#  - Testnet
-#  - Devnet
-SlackAlert:                                                     # Send alert when loss of ping reach a value
- WebHook: 
- DataWindow: 300                                                 # how much data to fetch for previous n seconds
- LossThredhold: 20                                              # thredhold of loss in percentage
- Clusters:                                                       # clusters to monitor
-  - MainnetBeta
   - MainnetBeta
 #  - Testnet
 #  - Devnet
