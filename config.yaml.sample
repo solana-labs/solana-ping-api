@@ -18,17 +18,6 @@ SolanaConfig:
  MainnetPath: "config-mainnet-beta.yml"
  TestnetPath: "config-testnet.yml"
  DevnetPath: "config-devnet.yml"
-SlackReport:                                                      # Send a report tp slack
- WebHook: 
- ReportTime: 600  
- SlackAlert:                                                     # Send alert when loss of ping reach a value
-  WebHook: 
-  LossThredhold: 20                                                   # data window
-  LossThredhold: 20                                              # thredhold of loss in percentage
- Clusters:                                                        # clusters to monitor
-  - MainnetBeta
-#  - Testnet
-#  - Devnet
 SolanaPing:
  AlternativeEnpoint:                                        #if AlternativeEnpoint is set, server will use alternative endpoint
   Mainnet:
@@ -50,3 +39,14 @@ SolanaPing:
 Retension:
  KeepHours: 120                                               # Keep how many hours record in database. This affects query speed
  UpdateIntervalSec: 10800                                     # Interval to perform remove old data , if less than 300 sec , it set to 300 sec
+SlackReport:                                                      # Send a report tp slack
+ WebHook: 
+ ReportTime: 600  
+ SlackAlert:                                                     # Send alert when loss of ping reach a value
+  WebHook: 
+  LossThredhold: 20                                                   # data window
+  LossThredhold: 20                                              # thredhold of loss in percentage
+ Clusters:                                                        # clusters to monitor
+  - MainnetBeta
+#  - Testnet
+#  - Devnet
