@@ -187,8 +187,14 @@ func GetLast6hours(c Cluster) []DataPoint1MinResultJSON {
 	if len(records) == 0 {
 		return []DataPoint1MinResultJSON{}
 	}
-	results, _ := generateDataPoint1Min(beginOfPast60Hours, now, records)
-	return results
+	groups := grouping1Min(records, beginOfPast60Hours, now)
+	log.Println("number of group:", len(groups))
+	groupsStat := statisticCompute(groups)
+	ret := []DataPoint1MinResultJSON{}
+	for _, g := range groupsStat.PingStatisticList {
+		ret = append(ret, PingResultToJson(&g))
+	}
+	return ret
 }
 
 func IsClusterActive(c Cluster) bool {

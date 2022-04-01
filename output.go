@@ -2,16 +2,13 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"time"
 )
 
 // PingResultToJson convert PingSatistic to  RingResult Json format for API
 func PingResultToJson(stat *PingSatistic) DataPoint1MinResultJSON {
-	// _, mean, _, _, _ := stat.TimeMeasure.Statistic()
-	max, mean, min, stddev, sum := stat.TimeMeasure.Statistic()
-	log.Println("max:", max, " mean:", mean, " min:", min, " stddev:", stddev, " sum:", sum)
+	_, mean, _, _, _ := stat.TimeMeasure.Statistic()
 	var errorShow string
 	loss := fmt.Sprintf("%3.1f%s", stat.Loss*100, "%")
 	if stat.Count == 0 {
@@ -87,7 +84,6 @@ func reportRecordBlock(data *GroupsAllStatistic) string {
 		if ps.Count > 0 {
 			text = fmt.Sprintf("%s( %3.0f, %3.0f, %3.1f%s, %s )\n", text, ps.Submitted, ps.Confirmed, lossPercentage, "%", timeStatis)
 		}
-		log.Println("reportBody:", text)
 	}
 	return text
 }
