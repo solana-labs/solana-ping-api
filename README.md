@@ -1,37 +1,36 @@
-# Solana Ping API 
+# Solana Ping Service 
 
-## Purpose
-- execute solana ping command
-- provide http API service
-- generate a report and send to slack
-- store results of solana ping
-- provide frequently datapoint for Solan Explorer
-- active monitoring confirmation loss and send an alert to slack
+## Functions Provided
+- High frequently send transactions and record results
+- provide http API service 
+- generate a report and submit to slack periodically
+- actively check confirmation losses and send an warning to slack
+
 ## Server Setup
 ### PingService
 This is similar to  "solana ping" tool in solana tool but can do concurrent rpc query.
 It send transactions to rpc endpoint and wait for transactions is confirmed. 
-Use `NoPingService: false` to turn on. The default is On. 
+Use `PingService: true` to turn on. The default is On. 
 
 ### RetensionService
 Use `RetensionService: true` to turn on. Default is Off.
 Clean database data periodically.
 
 ### SlackReportService
-Use `NoSlackReportService: false` to turn on. Default is On.
-Fetch Report Data and a send summary to a channel periodically.
+Use `SlackReportService: true` to turn on. Default is On.
+send summary of ping result to a slack channel periodically.
 
 ### SlackAlertService
-Use `NoSlackAlertService: false` to turn on. Default is On.
-If Loss is greater than a thredhold, send alert to a channel
+Use `SlackAlertService: true` to turn on. Default is On.
+If confirmation loss is greater than a thredhold, send an alert to a channel
 
 ### Example:Run only API Query Server
 In config.yaml ServerSetup: 
 ```
- NoPingService: true           
+ PingService: true           
  RetensionService: false        
- NoSlackReportService: true
- NoSlackAlertService: true    
+ SlackReportService: true
+ SlackAlertService: true    
 ```
 
 ## Installation
@@ -44,12 +43,12 @@ In config.yaml ServerSetup:
 - mkdir ~/.config/ping-api
 - put config.yaml in ~/.config/ping-api/config.yaml
 
-## sugguested setup
+## setup recommendation
 - mkdir ~/ping-api-server
 - cp scripts in script to ~/ping-api-server
 - make solana-ping-api system service 
     - create a /etc/systemd/system/solana-ping-api.service
-    - remember to di ```sudo systemctl daemon-reload```
+    - remember to reload by ```sudo systemctl daemon-reload```
 
 ```
 [Unit]
