@@ -63,6 +63,7 @@ func PingResultToJson(stat *PingSatistic) DataPoint1MinResultJSON {
 		errorShow = "No Data"
 		loss = fmt.Sprintf("%3.1f%s", float64(0), "%")
 	}
+
 	jsonResult := DataPoint1MinResultJSON{Submitted: int(stat.Submitted), Confirmed: int(stat.Confirmed), Mean: int(mean), Error: errorShow}
 
 	jsonResult.Loss = loss
@@ -72,12 +73,12 @@ func PingResultToJson(stat *PingSatistic) DataPoint1MinResultJSON {
 }
 
 // ReportPayload get the report within specified minutes
-func (s *SlackPayload) ReportPayload(c Cluster, data *GroupsAllStatistic) {
+func (s *SlackPayload) ReportPayload(c Cluster, data *GroupsAllStatistic, globalSatistic GlobalStatistic) {
 	// Header Block
 	headerText := fmt.Sprintf("total-submitted: %3.0f, total-confirmed:%3.0f, average-loss:%3.1f%s",
-		data.GetGroupsAllStatistic(false).Submitted,
-		data.GetGroupsAllStatistic(false).Confirmed,
-		data.GetGroupsAllStatistic(false).Loss*100, "%")
+		globalSatistic.Submitted,
+		globalSatistic.Confirmed,
+		globalSatistic.Loss*100, "%")
 	header := Block{
 		BlockType: "section",
 		BlockText: SlackText{
@@ -90,24 +91,30 @@ func (s *SlackPayload) ReportPayload(c Cluster, data *GroupsAllStatistic) {
 	body := Block{}
 	records := reportRecordBlock(data)
 	description := "( Submitted, Confirmed, Loss, min/mean/max/stddev ms )"
-	memo := "* rpc error : context deadline exceeded does not count as a transaction\n** BlockhashNotFound error does not show in Error List"
+	// memo := "* rpc error : context deadline exceeded does not count as a transaction\n** BlockhashNotFound error does not show in Error List"
 	errorRecords := reportErrorBlock(data)
 	body = Block{
 		BlockType: "section",
-		BlockText: SlackText{SType: "mrkdwn", SText: fmt.Sprintf("```%s\n%s\n%s\n%s```", description, records, memo, errorRecords)},
+		BlockText: SlackText{SType: "mrkdwn", SText: fmt.Sprintf("```%s\n%s\n%s```", description, records, errorRecords)},
 	}
 	s.Blocks = append(s.Blocks, body)
 }
 
-func (s *SlackPayload) AlertPayload(c Cluster, gStat *GlobalStatistic) {
+func (s *SlackPayload) AlertPayload(c Cluster, gStat *GlobalStatistic, errorStistic map[string]int) {
 	var text, timeStatis string
 	if gStat.TimeStatistic.Stddev <= 0 {
 		timeStatis = fmt.Sprintf(" %d/%3.0f/%d/%s ", gStat.TimeStatistic.Min, gStat.TimeStatistic.Mean, gStat.TimeStatistic.Max, "NaN")
 	} else {
 		timeStatis = fmt.Sprintf(" %d/%3.0f/%d/%3.0f ", gStat.TimeStatistic.Min, gStat.TimeStatistic.Mean, gStat.TimeStatistic.Max, gStat.TimeStatistic.Stddev)
 	}
-	text = fmt.Sprintf("{ hostname: %s, submitted: %3.0f, confirmed:%3.0f, loss: %3.1f%s, confirmation: min/mean/max/stddev = %s}",
-		config.HostName, gStat.Submitted, gStat.Confirmed, gStat.Loss*100, "%", timeStatis)
+	errsorStatis := ""
+	for k, v := range errorStistic {
+		display := PingResultError(k).getDisplay()
+		errsorStatis = fmt.Sprintf("%s%s(%d)", errsorStatis, display, v)
+	}
+
+	text = fmt.Sprintf("{ hostname: %s, submitted: %3.0f, confirmed:%3.0f, loss: %3.1f%s, confirmation: min/mean/max/stddev = %s, error: %s}",
+		config.HostName, gStat.Submitted, gStat.Confirmed, gStat.Loss*100, "%", timeStatis, errsorStatis)
 
 	header := Block{
 		BlockType: "section",
@@ -137,19 +144,21 @@ func reportRecordBlock(data *GroupsAllStatistic) string {
 }
 
 func reportErrorBlock(data *GroupsAllStatistic) string {
-	var exceededText, errorText string
+	var exceededText, errorText, blackHashText string
 	if len(data.GlobalErrorStatistic) == 0 {
 		return ""
 	}
 	for k, v := range data.GlobalErrorStatistic {
 		if strings.Contains(k, string(RPCServerDeadlineExceededKey)) {
 			exceededText = fmt.Sprintf("*(count:%d) RPC Server context deadline exceed\n", v)
-		} else if !strings.Contains(k, string(BlockhashNotFoundKey)) {
-			errorText = fmt.Sprintf("%s\n(count: %d) %s", errorText, v, k)
+		} else if strings.Contains(k, string(BlockhashNotFoundKey)) {
+			blackHashText = fmt.Sprintf("*(count:%d) BlockhashNotFound\n", v)
+		} else {
+			errorText = fmt.Sprintf("%s\n(count: %d) %s\n", errorText, v, k)
 		}
 	}
 	if len(exceededText) > 0 || len(errorText) > 0 {
-		return fmt.Sprintf("Error List:\n%s\n%s", exceededText, errorText)
+		return fmt.Sprintf("Error List:\n%s%s%s", exceededText, blackHashText, errorText)
 	}
 	return ""
 }

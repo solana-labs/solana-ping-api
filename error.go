@@ -70,3 +70,13 @@ func (p PingResultError) IsInErrorList(inErrs []PingResultError) bool {
 	}
 	return false
 }
+func (p PingResultError) getDisplay() string {
+	if strings.Contains(string(p), string(RPCServerDeadlineExceededKey)) {
+		return string(RPCServerDeadlineExceededKey)
+	} else if strings.Contains(string(p), string(BlockhashNotFoundKey)) {
+		return string(BlockhashNotFoundKey)
+	} else if strings.Contains(string(p), string(ServiceUnavilable503Key)) {
+		return string(ServiceUnavilable503Key)
+	}
+	return string(p)
+}

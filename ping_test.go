@@ -1,8 +1,6 @@
 package main
 
 import (
-	"log"
-	"testing"
 	"time"
 )
 
@@ -23,17 +21,17 @@ var sch1 = PingResult{
 
 var hook = "https://hooks.slack.com/services/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"
 
-func TestParse(t *testing.T) {
-	pings := []PingResult{sch1}
-	avg := generateStatisticData(pings)
-	payload := SlackPayload{}
-	payload.ToReportPayload(MainnetBeta, pings, avg)
-	err := SlackSend(hook, &payload)
-	if err != nil {
-		log.Print(err)
-	}
+// func TestParse(t *testing.T) {
+// 	pings := []PingResult{sch1}
+// 	avg := generateStatisticData(pings)
+// 	payload := SlackPayload{}
+// 	payload.ToReportPayload(MainnetBeta, pings, avg)
+// 	err := SlackSend(hook, &payload)
+// 	if err != nil {
+// 		log.Print(err)
+// 	}
 
-}
+// }
 
 /*
 func TestConfig(t *testing.T) {

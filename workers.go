@@ -140,19 +140,19 @@ func reportWorker(cluster Cluster) {
 
 		groups := grouping1Min(data, lastReporTime, now)
 		groupsStat := statisticCompute(groups)
+		globalStat := groupsStat.GetGroupsAllStatistic(true) // get raw data
 		lastReporTime = now
 		payload := SlackPayload{}
-		payload.ReportPayload(cluster, groupsStat)
+		payload.ReportPayload(cluster, groupsStat, globalStat)
 		err := SlackSend(config.SlackReport.WebHook, &payload)
 		if err != nil {
 			log.Println("SlackSend Error:", err)
 		}
 		if config.ServerSetup.SlackAlertService {
-			gStat := groupsStat.GetGroupsAllStatistic(false)
-			loss := gStat.Loss * 100
+			loss := globalStat.Loss * 100
 			if loss > float64(config.SlackReport.SlackAlert.LossThredhold) {
 				payload := SlackPayload{}
-				payload.AlertPayload(cluster, &gStat)
+				payload.AlertPayload(cluster, &globalStat, groupsStat.GlobalErrorStatistic)
 				err := SlackSend(config.SlackReport.SlackAlert.WebHook, &payload)
 				if err != nil {
 					log.Println("SlackSend Error:", err)

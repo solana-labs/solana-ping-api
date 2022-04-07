@@ -52,7 +52,10 @@ func (g *GroupsAllStatistic) GetGroupsAllStatistic(raw bool) GlobalStatistic {
 			sumOfSubmitted += pg.Submitted
 			sumOfConfirmed += pg.Confirmed
 			sumOfCount += pg.Count
-			sumTimeMeasure.Times = append(sumTimeMeasure.Times, pg.TimeMeasure.Times...)
+			if len(pg.Errors) == 0 {
+				sumTimeMeasure.Times = append(sumTimeMeasure.Times, pg.TimeMeasure.Times...)
+			}
+
 		}
 
 	} else {
@@ -60,7 +63,9 @@ func (g *GroupsAllStatistic) GetGroupsAllStatistic(raw bool) GlobalStatistic {
 			sumOfSubmitted += pg.Submitted
 			sumOfConfirmed += pg.Confirmed
 			sumOfCount += pg.Count
-			sumTimeMeasure.Times = append(sumTimeMeasure.Times, pg.TimeMeasure.Times...)
+			if len(pg.Errors) == 0 {
+				sumTimeMeasure.Times = append(sumTimeMeasure.Times, pg.TimeMeasure.Times...)
+			}
 		}
 	}
 
@@ -87,7 +92,7 @@ func (g *GroupsAllStatistic) GetGroupsAllStatistic(raw bool) GlobalStatistic {
 // setup statistic exception list
 func GetStatisticExpections() []PingResultError {
 	list := []PingResultError{}
-	list = append(list, RPCServerDeadlineExceeded)
+	//list = append(list, RPCServerDeadlineExceeded)
 	return list
 }
 
@@ -150,11 +155,11 @@ func statisticCompute(groups []Group1Min) *GroupsAllStatistic {
 				gStat.Submitted += float64(res.Submitted)
 				gStat.Confirmed += float64(res.Confirmed)
 				gStat.Count += 1
-				gStat.TimeMeasure.AddTime(res.TakeTime)
+				rawGStat.TimeMeasure.AddTime(res.TakeTime)
 			}
 
 		}
-
+		// raw data
 		if rawGStat.Submitted == 0 { // no data
 			rawGStat.Loss = 1
 		} else {
@@ -169,7 +174,7 @@ func statisticCompute(groups []Group1Min) *GroupsAllStatistic {
 			Sum:    tSum,
 		}
 		stat.RawPingStaticList = append(stat.RawPingStaticList, rawGStat)
-
+		// data with filter
 		if gStat.Submitted == 0 { // no data
 			gStat.Loss = 1
 		} else {
