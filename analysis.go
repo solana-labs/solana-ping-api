@@ -89,7 +89,8 @@ func (g *GroupsAllStatistic) GetGroupsAllStatistic(raw bool) GlobalStatistic {
 // setup statistic exception list
 func GetStatisticExpections() []PingResultError {
 	list := []PingResultError{}
-	//list = append(list, RPCServerDeadlineExceeded)
+	list = append(list, RPCServerDeadlineExceeded)
+	list = append(list, BlockhashNotFound)
 	return list
 }
 
