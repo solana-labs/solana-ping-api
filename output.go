@@ -110,8 +110,9 @@ func (s *SlackPayload) AlertPayload(c Cluster, gStat *GlobalStatistic, errorStis
 	}
 	errsorStatis := ""
 	for k, v := range errorStistic {
-		display := PingResultError(k).getDisplay()
-		errsorStatis = fmt.Sprintf("%s%s(%d)", errsorStatis, display, v)
+		if !PingResultError(k).IsBlockhashNotFound() && !PingResultError(k).IsRPCServerDeadlineExceeded() {
+			errsorStatis = fmt.Sprintf("%s%s(%d)", errsorStatis, k, v)
+		}
 	}
 
 	text = fmt.Sprintf("{ hostname: %s, submitted: %3.0f, confirmed:%3.0f, loss: %3.1f%s, confirmation: min/mean/max/stddev = %s, error: %s}",
