@@ -8,12 +8,13 @@ import (
 
 //ReportPingResultJSON is a struct convert from PingResult to desire json output struct
 type DataPoint1MinResultJSON struct {
-	Submitted int    `json:"submitted"`
-	Confirmed int    `json:"confirmed"`
-	Loss      string `json:"loss"`
-	Mean      int    `json:"mean_ms"`
-	TimeStamp string `json:"ts"`
-	Error     string `json:"error"`
+	Submitted  int    `json:"submitted"`
+	Confirmed  int    `json:"confirmed"`
+	Loss       string `json:"loss"`
+	Mean       int    `json:"mean_ms"`
+	TimeStamp  string `json:"ts"`
+	ErrorCount int    `json:error_count`
+	Error      string `json:"error"`
 }
 
 //SlackText slack structure
@@ -64,7 +65,7 @@ func PingResultToJson(stat *PingSatistic) DataPoint1MinResultJSON {
 		loss = fmt.Sprintf("%3.1f%s", float64(0), "%")
 	}
 
-	jsonResult := DataPoint1MinResultJSON{Submitted: int(stat.Submitted), Confirmed: int(stat.Confirmed), Mean: int(mean), Error: errorShow}
+	jsonResult := DataPoint1MinResultJSON{Submitted: int(stat.Submitted), Confirmed: int(stat.Confirmed), Mean: int(mean), ErrorCount: int(len(stat.Errors)), Error: errorShow}
 
 	jsonResult.Loss = loss
 	ts := time.Unix(stat.TimeStamp, 0).UTC()
