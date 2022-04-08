@@ -40,14 +40,14 @@ func Ping(cluster Cluster, c *client.Client, host string, pType PingType, config
 		hash, err := Transfer(c, configAcct, configAcct, config.Receiver, time.Duration(config.TxTimeout)*time.Second)
 		if err != nil {
 			timer.TimerStop()
-			timer.Add()
+			// timer.Add()
 			resultErrs = append(resultErrs, err.Error())
 			continue
 		}
 		err = waitConfirmation(c, hash, time.Duration(config.WaitConfirmationTimeout)*time.Second, time.Duration(config.StatusCheckInterval)*time.Second)
 		if err != nil {
 			timer.TimerStop()
-			timer.Add()
+			// timer.Add()
 			resultErrs = append(resultErrs, err.Error())
 			continue
 		}

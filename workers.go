@@ -140,7 +140,7 @@ func reportWorker(cluster Cluster) {
 
 		groups := grouping1Min(data, lastReporTime, now)
 		groupsStat := statisticCompute(groups)
-		globalStat := groupsStat.GetGroupsAllStatistic(true) // get raw data
+		globalStat := groupsStat.GetGroupsAllStatistic(false) // get raw data
 		lastReporTime = now
 		payload := SlackPayload{}
 		payload.ReportPayload(cluster, groupsStat, globalStat)

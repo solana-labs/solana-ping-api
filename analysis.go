@@ -131,13 +131,17 @@ func statisticCompute(groups []Group1Min) *GroupsAllStatistic {
 		rawGStat := PingSatistic{}
 		for _, res := range group.Result {
 			errorException := false
+			notExceptionError := false
 			if len(res.Error) > 0 {
 				for _, e := range res.Error {
 					stat.GlobalErrorStatistic[string(e)] = stat.GlobalErrorStatistic[string(e)] + 1
 					if PingResultError(e).IsInErrorList(stat.ErrorExceptionList) {
+						log.Println("ErrorExceptionList:", e)
 						errorException = true
+					} else {
+						gStat.Errors = append(gStat.Errors, string(e))
+						notExceptionError = true
 					}
-					gStat.Errors = append(gStat.Errors, string(e))
 					rawGStat.Errors = append(rawGStat.Errors, string(e))
 				}
 			}
@@ -146,15 +150,18 @@ func statisticCompute(groups []Group1Min) *GroupsAllStatistic {
 			rawGStat.Submitted += float64(res.Submitted)
 			rawGStat.Confirmed += float64(res.Confirmed)
 			rawGStat.Count += 1
-			rawGStat.TimeMeasure.AddTime(res.TakeTime)
-
+			if !notExceptionError {
+				rawGStat.TimeMeasure.AddTime(res.TakeTime)
+			}
 			// Data Statistic (Filtered by error filter)
 			gStat.TimeStamp = group.TimeStamp // Need a ts to present the group
 			if !errorException {
 				gStat.Submitted += float64(res.Submitted)
 				gStat.Confirmed += float64(res.Confirmed)
 				gStat.Count += 1
-				gStat.TimeMeasure.AddTime(res.TakeTime)
+				if !notExceptionError {
+					gStat.TimeMeasure.AddTime(res.TakeTime)
+				}
 			}
 
 		}
