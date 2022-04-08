@@ -13,7 +13,7 @@ type DataPoint1MinResultJSON struct {
 	Loss       string `json:"loss"`
 	Mean       int    `json:"mean_ms"`
 	TimeStamp  string `json:"ts"`
-	ErrorCount int    `json:error_count`
+	ErrorCount int    `json:"error_count"`
 	Error      string `json:"error"`
 }
 
