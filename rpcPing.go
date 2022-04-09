@@ -47,12 +47,14 @@ func Ping(cluster Cluster, c *client.Client, host string, pType PingType, config
 		err = waitConfirmation(c, hash, time.Duration(config.WaitConfirmationTimeout)*time.Second, time.Duration(config.TxTimeout)*time.Second, time.Duration(config.StatusCheckInterval)*time.Second)
 		timer.TimerStop()
 
-		if err.Error() == TransactionLoss.Error() {
+		if err == TransactionLoss {
+			log.Println("tx: return TransactionLoss")
 			timer.Add()
 		} else if err == nil {
 			timer.Add()
 			confirmedCount++
 		} else {
+			log.Println("tx: return Err", err)
 			resultErrs = append(resultErrs, err.Error())
 			continue
 		}
