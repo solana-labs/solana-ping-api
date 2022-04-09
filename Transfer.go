@@ -80,6 +80,7 @@ func waitConfirmation(c *client.Client, txHash string, timeout time.Duration, re
 		if err != nil {
 			log.Println("waitConfirmation Error:", err)
 			if now.Sub(elapse).Seconds() < timeout.Seconds() {
+				log.Println("tx: Error", err, "GetSignatureStatus continue")
 				continue
 			}
 		}
@@ -91,7 +92,7 @@ func waitConfirmation(c *client.Client, txHash string, timeout time.Duration, re
 		}
 		if now.Sub(elapse).Seconds() > timeout.Seconds() {
 			log.Println("tx: TxLoss")
-			return errors.New("Transaction Loss")
+			return TransactionLoss
 		}
 
 		if queryTime <= 0 {
