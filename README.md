@@ -42,6 +42,11 @@ In config.yaml ServerSetup:
     - go build 
 - mkdir ~/.config/ping-api
 - put config.yaml in ~/.config/ping-api/config.yaml
+### Using GCP Database
+- Install & Setup google cloud CLI
+- download [Cloud SQL Auth proxy](https://cloud.google.com/sql/docs/postgres/sql-proxy)
+- chmod +x cloud_sql_proxy
+- run cloud_sql_proxy
 
 ## setup recommendation
 - mkdir ~/ping-api-server

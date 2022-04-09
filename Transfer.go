@@ -66,17 +66,22 @@ func Transfer(c *client.Client, sender types.Account, feePayer types.Account, re
 	return txHash, nil
 }
 
-func waitConfirmation(c *client.Client, txHash string, timeout time.Duration, queryTime time.Duration) error {
+func waitConfirmation(c *client.Client, txHash string, timeout time.Duration, requestTimeout time.Duration, queryTime time.Duration) error {
 	if timeout <= 0 {
 		timeout = waitConfirmationTimeoutDefault
 		log.Println("timeout is not set! Use default timeout", timeout, " sec")
 	}
-	ctx, _ := context.WithTimeout(context.TODO(), timeout)
+
+	ctx, _ := context.WithTimeout(context.TODO(), requestTimeout)
+	elapse := time.Now()
 	for {
 		resp, err := c.GetSignatureStatus(ctx, txHash)
+		now := time.Now()
 		if err != nil {
 			log.Println("waitConfirmation Error:", err)
-			return err
+			if now.Sub(elapse).Seconds() < timeout.Seconds() {
+				continue
+			}
 		}
 		if resp != nil {
 			if *resp.ConfirmationStatus == rpc.CommitmentConfirmed {
@@ -84,6 +89,11 @@ func waitConfirmation(c *client.Client, txHash string, timeout time.Duration, qu
 				return nil
 			}
 		}
+		if now.Sub(elapse).Seconds() > timeout.Seconds() {
+			log.Println("tx: TxLoss")
+			return errors.New("Transaction Loss")
+		}
+
 		if queryTime <= 0 {
 			queryTime = statusCheckTimeDefault
 		}

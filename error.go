@@ -16,6 +16,7 @@ var (
 	NoPingResultFound  = errors.New("no Ping Result")
 	NoPingResultRecord = errors.New("no Ping Result Record")
 	NoPingResultShort  = errors.New("PingResultError has no shortname")
+	TransactionLoss    = errors.New("TransactionLoss")
 )
 var (
 	BlockhashNotFoundText         = `rpc response error: {"code":-32002,"message":"Transaction simulation failed: Blockhash not found","data":{"accounts":null,"err":"BlockhashNotFound","logs":[],"unitsConsumed":0}}`
