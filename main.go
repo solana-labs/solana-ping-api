@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -140,7 +139,6 @@ func getLatest(c *gin.Context) {
 }
 func last6hours(c *gin.Context) {
 	cluster := c.Param("cluster")
-	fmt.Println("cluster:", cluster)
 	var ret []DataPoint1MinResultJSON
 	switch cluster {
 	case "mainnet-beta":

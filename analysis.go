@@ -136,7 +136,7 @@ func statisticCompute(groups []Group1Min) *GroupsAllStatistic {
 				for _, e := range res.Error {
 					stat.GlobalErrorStatistic[string(e)] = stat.GlobalErrorStatistic[string(e)] + 1
 					if PingResultError(e).IsInErrorList(stat.ErrorExceptionList) {
-						log.Println("ErrorExceptionList:", e)
+						//log.Println("ErrorExceptionList:", e)
 						errorException = true
 					} else {
 						gStat.Errors = append(gStat.Errors, string(e))

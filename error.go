@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"log"
 	"strings"
 )
 
@@ -65,7 +64,7 @@ func (p PingResultError) IsInErrorList(inErrs []PingResultError) bool {
 				return true
 			}
 		default:
-			log.Println("--->Not in the List: ", p)
+			//log.Println("--->Not in the List: ", p)
 			return false
 		}
 	}

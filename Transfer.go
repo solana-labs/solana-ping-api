@@ -25,7 +25,7 @@ func Transfer(c *client.Client, sender types.Account, feePayer types.Account, re
 	// to fetch recent blockhash
 	res, err := c.GetRecentBlockhash(context.Background())
 	if err != nil {
-		log.Println("get recent block hash error, err:", err)
+		//log.Println("get recent block hash error, err:", err)
 		return "", err
 	}
 	// create a message
@@ -59,10 +59,10 @@ func Transfer(c *client.Client, sender types.Account, feePayer types.Account, re
 	txHash, err = c.SendTransaction(ctx, tx)
 
 	if err != nil {
-		log.Printf("Error: Failed to send tx, err: %v", err)
+		//	log.Printf("Error: Failed to send tx, err: %v", err)
 		return "", err
 	}
-	log.Println("tx:", txHash, " is sent")
+	//log.Println("tx:", txHash, " is sent")
 	return txHash, nil
 }
 
@@ -78,20 +78,20 @@ func waitConfirmation(c *client.Client, txHash string, timeout time.Duration, re
 		resp, err := c.GetSignatureStatus(ctx, txHash)
 		now := time.Now()
 		if err != nil {
-			log.Println("waitConfirmation Error:", err)
+			//	log.Println("waitConfirmation Error:", err)
 			if now.Sub(elapse).Seconds() < timeout.Seconds() {
-				log.Println("tx: Error", err, "GetSignatureStatus continue")
+				//		log.Println("tx: Error", err, "GetSignatureStatus continue")
 				continue
 			}
 		}
 		if resp != nil {
 			if *resp.ConfirmationStatus == rpc.CommitmentConfirmed {
-				log.Println("tx:", txHash, "is confirmed")
+				//log.Println("tx:", txHash, "is confirmed")
 				return nil
 			}
 		}
 		if now.Sub(elapse).Seconds() > timeout.Seconds() {
-			log.Println("tx: TxLoss")
+			//log.Println("tx: TxLoss")
 			return TransactionLoss
 		}
 

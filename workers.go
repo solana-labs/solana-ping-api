@@ -2,6 +2,8 @@ package main
 
 import (
 	"log"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/portto/solana-go-sdk/client"
@@ -125,6 +127,7 @@ var lastReporTime int64
 func reportWorker(cluster Cluster) {
 	log.Println(">> Slack Report Worker for ", cluster, " start!")
 	defer log.Println(">> Slack Report Worker for ", cluster, " end!")
+	slackTrigger := NewSlackTriggerEvaluation()
 	for {
 		now := time.Now().UTC().Unix()
 		if lastReporTime == 0 { // server restart
@@ -149,16 +152,96 @@ func reportWorker(cluster Cluster) {
 			log.Println("SlackSend Error:", err)
 		}
 		if config.ServerSetup.SlackAlertService {
-			loss := globalStat.Loss * 100
-			if loss > float64(config.SlackReport.SlackAlert.LossThredhold) {
-				payload := SlackPayload{}
-				payload.AlertPayload(cluster, &globalStat, groupsStat.GlobalErrorStatistic)
-				err := SlackSend(config.SlackReport.SlackAlert.WebHook, &payload)
-				if err != nil {
-					log.Println("SlackSend Error:", err)
-				}
+			slackTrigger.Update(globalStat.Loss)
+			log.Println("**slackTrigger.Update:", slackTrigger)
+			if slackTrigger.ShouldSend() {
+				slackSend(cluster, &globalStat, groupsStat.GlobalErrorStatistic, slackTrigger.TrendAsc)
 			}
+
 		}
 		time.Sleep(time.Duration(config.SlackReport.ReportTime) * time.Second)
+	}
+}
+
+type SlackTriggerEvaluation struct {
+	LastLoss         float64
+	CurrentLoss      float64
+	ThreadHoldIndex  int
+	ThreadHoldLevels []float64
+	TrendAsc         bool
+}
+
+func NewSlackTriggerEvaluation() SlackTriggerEvaluation {
+	s := SlackTriggerEvaluation{}
+	s.CurrentLoss = 0
+	s.LastLoss = 0
+	s.ThreadHoldLevels = []float64{float64(config.SlackReport.SlackAlert.LossThredhold), float64(50), float64(75), float64(100)}
+	level, err := strconv.Atoi(os.Getenv("Slack_Alert_Level"))
+	log.Println("Slack_Alert_Level:", level)
+	if err == nil && level >= 0 && level <= (len(s.ThreadHoldLevels)-1) {
+		s.ThreadHoldIndex = level
+	}
+	return s
+}
+
+func (s *SlackTriggerEvaluation) Update(currentLoss float64) {
+	s.LastLoss = s.CurrentLoss
+	s.CurrentLoss = currentLoss * 100
+	if s.CurrentLoss > s.LastLoss {
+		s.TrendAsc = true
+	} else {
+		s.TrendAsc = false
+	}
+
+}
+
+// Doing rule here
+func (s *SlackTriggerEvaluation) ShouldSend() bool {
+	log.Println("**** ShouldSend: ", s)
+	// less than initial threadhold, set Index to Initial level
+	if s.CurrentLoss < s.ThreadHoldLevels[0] {
+		s.ThreadHoldIndex = 0
+		os.Setenv("Slack_Alert_Level", strconv.Itoa(s.ThreadHoldIndex))
+		log.Println("ThreadHoldLevels Down To :", s.ThreadHoldIndex, " ShouldSend", false)
+		return false
+	}
+	// big movement: asc
+	if s.CurrentLoss > s.ThreadHoldLevels[s.ThreadHoldIndex] {
+		if (s.ThreadHoldIndex + 1) < len(s.ThreadHoldLevels) {
+			s.ThreadHoldIndex = s.ThreadHoldIndex + 1
+			os.Setenv("Slack_Alert_Level", strconv.Itoa(s.ThreadHoldIndex))
+			log.Println("ThreadHoldLevels Up To :", s.ThreadHoldIndex, " ShouldSend", true)
+		}
+		return true
+	}
+	// big movement: desc
+	if s.ThreadHoldIndex >= 2 {
+		if s.CurrentLoss < s.ThreadHoldLevels[s.ThreadHoldIndex-2] {
+			if s.ThreadHoldIndex-2 > 0 { // Big decrease
+				s.ThreadHoldIndex = s.ThreadHoldIndex - 1
+				os.Setenv("Slack_Alert_Level", strconv.Itoa(s.ThreadHoldIndex))
+				log.Println("ThreadHoldLevels Down To :", s.ThreadHoldIndex, " ShouldSend", true)
+				return true
+			} else { // go back to normal level
+				s.ThreadHoldIndex = 0
+				log.Println("ThreadHoldLevels Down To :", s.ThreadHoldIndex, " ShouldSend", false)
+				return false
+			}
+		}
+	}
+	return true
+}
+
+var lastThreadhold float64 = 0
+
+func slackSend(cluster Cluster, globalStat *GlobalStatistic, globalErrorStatistic map[string]int, lossAsc bool) {
+	loss := globalStat.Loss * 100
+	if loss > float64(config.SlackReport.SlackAlert.LossThredhold) {
+		payload := SlackPayload{}
+		payload.AlertPayload(cluster, globalStat, globalErrorStatistic, lossAsc)
+		err := SlackSend(config.SlackReport.SlackAlert.WebHook, &payload)
+		if err != nil {
+			log.Println("SlackSend Error:", err)
+		}
 	}
 }

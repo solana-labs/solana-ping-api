@@ -102,7 +102,7 @@ func (s *SlackPayload) ReportPayload(c Cluster, data *GroupsAllStatistic, global
 	s.Blocks = append(s.Blocks, body)
 }
 
-func (s *SlackPayload) AlertPayload(c Cluster, gStat *GlobalStatistic, errorStistic map[string]int) {
+func (s *SlackPayload) AlertPayload(c Cluster, gStat *GlobalStatistic, errorStistic map[string]int, lossAsc bool) {
 	var text, timeStatis string
 	if gStat.TimeStatistic.Stddev <= 0 {
 		timeStatis = fmt.Sprintf(" %d/%3.0f/%d/%s ", gStat.TimeStatistic.Min, gStat.TimeStatistic.Mean, gStat.TimeStatistic.Max, "NaN")
@@ -115,9 +115,13 @@ func (s *SlackPayload) AlertPayload(c Cluster, gStat *GlobalStatistic, errorStis
 			errsorStatis = fmt.Sprintf("%s%s(%d)", errsorStatis, k, v)
 		}
 	}
+	direction := "asc"
+	if !lossAsc {
+		direction = "desc"
+	}
 
-	text = fmt.Sprintf("{ hostname: %s, submitted: %3.0f, confirmed:%3.0f, loss: %3.1f%s, confirmation: min/mean/max/stddev = %s, error: %s}",
-		config.HostName, gStat.Submitted, gStat.Confirmed, gStat.Loss*100, "%", timeStatis, errsorStatis)
+	text = fmt.Sprintf("{ hostname: %s, submitted: %3.0f, confirmed:%3.0f, loss: %3.1f%s, direction:%s , confirmation: min/mean/max/stddev = %s, error: %s}",
+		config.HostName, gStat.Submitted, gStat.Confirmed, gStat.Loss*100, "%", direction, timeStatis, errsorStatis)
 
 	header := Block{
 		BlockType: "section",

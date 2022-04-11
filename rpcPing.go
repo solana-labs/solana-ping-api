@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"math"
 	"time"
 
@@ -48,17 +47,17 @@ func Ping(cluster Cluster, c *client.Client, host string, pType PingType, config
 		timer.TimerStop()
 
 		if err == TransactionLoss {
-			log.Println("tx: return TransactionLoss")
+			//log.Println("tx: return TransactionLoss")
 			timer.Add()
 		} else if err == nil {
 			timer.Add()
 			confirmedCount++
 		} else {
-			log.Println("tx: return Err", err)
+			//log.Println("tx: return Err", err)
 			resultErrs = append(resultErrs, err.Error())
 			continue
 		}
-		log.Println("confirmedCount=", confirmedCount)
+		//log.Println("confirmedCount=", confirmedCount)
 	}
 	result.TimeStamp = time.Now().UTC().Unix()
 	result.Submitted = config.BatchCount
