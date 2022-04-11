@@ -142,6 +142,7 @@ func reportWorker(cluster Cluster) {
 		groups := grouping1Min(data, lastReporTime, now)
 		groupsStat := statisticCompute(groups)
 		globalStat := groupsStat.GetGroupsAllStatistic(false) // get raw data
+		//PrintStatistic(groupsStat)
 		lastReporTime = now
 		payload := SlackPayload{}
 		payload.ReportPayload(cluster, groupsStat, globalStat)
@@ -153,7 +154,7 @@ func reportWorker(cluster Cluster) {
 			slackTrigger.Update(globalStat.Loss)
 			log.Println("**slackTrigger.Update:", slackTrigger)
 			if slackTrigger.ShouldSend() {
-				slackSend(cluster, &globalStat, groupsStat.GlobalErrorStatistic, slackTrigger.ThreadHoldLevels[slackTrigger.ThreadHoldIndex])
+				slackSend(cluster, &globalStat, groupsStat.GlobalErrorStatistic, slackTrigger.ThresHoldLevels[slackTrigger.ThresHoldIndex])
 			}
 
 		}

@@ -11,12 +11,12 @@ import (
 )
 
 type SlackTriggerEvaluation struct {
-	LastLoss         float64
-	CurrentLoss      float64
-	ThreadHoldIndex  int
-	ThreadHoldLevels []float64
-	TrendAsc         bool
-	FilePath         string
+	LastLoss        float64
+	CurrentLoss     float64
+	ThresHoldIndex  int
+	ThresHoldLevels []float64
+	TrendAsc        bool
+	FilePath        string
 }
 
 func NewSlackTriggerEvaluation() SlackTriggerEvaluation {
@@ -24,9 +24,9 @@ func NewSlackTriggerEvaluation() SlackTriggerEvaluation {
 	s.FilePath = config.SlackReport.SlackAlert.LevelFilePath
 	s.CurrentLoss = 0
 	s.LastLoss = 0
-	s.ThreadHoldLevels = []float64{float64(config.SlackReport.SlackAlert.LossThredhold), float64(50), float64(75), float64(100)}
+	s.ThresHoldLevels = []float64{float64(config.SlackReport.SlackAlert.LossThreshold), float64(50), float64(75), float64(100)}
 	s.FilePath = config.SlackReport.SlackAlert.LevelFilePath
-	s.ThreadHoldIndex = s.ReadFromFile()
+	s.ThresHoldIndex = s.ReadFromFile()
 
 	return s
 }
@@ -42,14 +42,14 @@ func (s *SlackTriggerEvaluation) Update(currentLoss float64) {
 }
 
 func (s *SlackTriggerEvaluation) UpperLevel(loss float64) int {
-	if loss <= s.ThreadHoldLevels[0] {
+	if loss <= s.ThresHoldLevels[0] {
 		return 0
 	}
-	if loss >= s.ThreadHoldLevels[len(s.ThreadHoldLevels)-1] {
-		return len(s.ThreadHoldLevels) - 1
+	if loss >= s.ThresHoldLevels[len(s.ThresHoldLevels)-1] {
+		return len(s.ThresHoldLevels) - 1
 	}
 	// > level 0
-	for i, v := range s.ThreadHoldLevels {
+	for i, v := range s.ThresHoldLevels {
 		if loss < v {
 			return i
 		}
@@ -83,31 +83,31 @@ func (s *SlackTriggerEvaluation) ReadFromFile() int {
 // Doing rule here
 func (s *SlackTriggerEvaluation) ShouldSend() bool {
 	// less than initial threadhold, set Index to Initial level
-	if s.CurrentLoss < s.ThreadHoldLevels[0] {
-		s.ThreadHoldIndex = 0
+	if s.CurrentLoss < s.ThresHoldLevels[0] {
+		s.ThresHoldIndex = 0
 		s.WriteLevelToFile(0)
-		log.Println("ThreadHoldLevels Down To :", s.ThreadHoldIndex, " ShouldSend", false)
+		log.Println("ThreadHoldLevels Down To :", s.ThresHoldIndex, " ShouldSend", false)
 		return false
 	}
 	// NextLevel UP
-	if s.CurrentLoss > s.ThreadHoldLevels[s.ThreadHoldIndex] {
-		s.ThreadHoldIndex = s.UpperLevel(s.CurrentLoss)
-		s.WriteLevelToFile(s.ThreadHoldIndex)
-		log.Println("ThreadHoldLevels Up To :", s.ThreadHoldIndex, " ShouldSend", true)
+	if s.CurrentLoss > s.ThresHoldLevels[s.ThresHoldIndex] {
+		s.ThresHoldIndex = s.UpperLevel(s.CurrentLoss)
+		s.WriteLevelToFile(s.ThresHoldIndex)
+		log.Println("ThreadHoldLevels Up To :", s.ThresHoldIndex, " ShouldSend", true)
 		return true
 	}
 	// NextLevel Down
-	if s.ThreadHoldIndex >= 2 {
-		if s.CurrentLoss < s.ThreadHoldLevels[s.ThreadHoldIndex-2] {
-			if s.ThreadHoldIndex-2 > 0 { // Big decrease
-				s.ThreadHoldIndex = s.ThreadHoldIndex - 1
-				s.WriteLevelToFile(s.ThreadHoldIndex)
-				log.Println("ThreadHoldLevels Down To :", s.ThreadHoldIndex, " ShouldSend", true)
+	if s.ThresHoldIndex >= 2 {
+		if s.CurrentLoss < s.ThresHoldLevels[s.ThresHoldIndex-2] {
+			if s.ThresHoldIndex-2 > 0 { // Big decrease
+				s.ThresHoldIndex = s.ThresHoldIndex - 1
+				s.WriteLevelToFile(s.ThresHoldIndex)
+				log.Println("ThreadHoldLevels Down To :", s.ThresHoldIndex, " ShouldSend", true)
 				return true
 			} else { // go back to normal level
-				s.ThreadHoldIndex = 0
+				s.ThresHoldIndex = 0
 				s.WriteLevelToFile(0)
-				log.Println("ThreadHoldLevels Down To :", s.ThreadHoldIndex, " ShouldSend", false)
+				log.Println("ThreadHoldLevels Down To :", s.ThresHoldIndex, " ShouldSend", false)
 				return false
 			}
 		}
@@ -117,7 +117,7 @@ func (s *SlackTriggerEvaluation) ShouldSend() bool {
 
 func slackSend(cluster Cluster, globalStat *GlobalStatistic, globalErrorStatistic map[string]int, threadhold float64) {
 	loss := globalStat.Loss * 100
-	if loss > float64(config.SlackReport.SlackAlert.LossThredhold) {
+	if loss > float64(config.SlackReport.SlackAlert.LossThreshold) {
 		payload := SlackPayload{}
 		payload.AlertPayload(cluster, globalStat, globalErrorStatistic, threadhold)
 		err := SlackSend(config.SlackReport.SlackAlert.WebHook, &payload)

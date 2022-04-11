@@ -44,7 +44,7 @@ SlackReport:                                                      # Send a repor
  ReportTime: 600  
  SlackAlert:                                                     # Send alert when loss of ping reach a value
   WebHook: 
-  LossThredhold: 20                                                   # data window
+  LossThreshold: 20                                                   # data window
   LevelFilePath:
  Clusters:                                                        # clusters to monitor
   - MainnetBeta

@@ -102,7 +102,7 @@ func (s *SlackPayload) ReportPayload(c Cluster, data *GroupsAllStatistic, global
 	s.Blocks = append(s.Blocks, body)
 }
 
-func (s *SlackPayload) AlertPayload(c Cluster, gStat *GlobalStatistic, errorStistic map[string]int, threadholdAdj float64) {
+func (s *SlackPayload) AlertPayload(c Cluster, gStat *GlobalStatistic, errorStistic map[string]int, thresholdAdj float64) {
 	var text, timeStatis string
 	if gStat.TimeStatistic.Stddev <= 0 {
 		timeStatis = fmt.Sprintf(" %d/%3.0f/%d/%s ", gStat.TimeStatistic.Min, gStat.TimeStatistic.Mean, gStat.TimeStatistic.Max, "NaN")
@@ -116,8 +116,8 @@ func (s *SlackPayload) AlertPayload(c Cluster, gStat *GlobalStatistic, errorStis
 		}
 	}
 
-	text = fmt.Sprintf("{ hostname: %s, submitted: %3.0f, confirmed:%3.0f, loss: %3.1f%s, confirmation: min/mean/max/stddev = %s, next_thredhold:%3.0f, error: %s}",
-		config.HostName, gStat.Submitted, gStat.Confirmed, gStat.Loss*100, "%", timeStatis, threadholdAdj, errsorStatis)
+	text = fmt.Sprintf("{ hostname: %s, submitted: %3.0f, confirmed:%3.0f, loss: %3.1f%s, confirmation: min/mean/max/stddev = %s, next_threshold:%3.0f, error: %s}",
+		config.HostName, gStat.Submitted, gStat.Confirmed, gStat.Loss*100, "%", timeStatis, thresholdAdj, errsorStatis)
 
 	header := Block{
 		BlockType: "section",
@@ -160,7 +160,7 @@ func reportErrorBlock(data *GroupsAllStatistic) string {
 			errorText = fmt.Sprintf("%s\n(count: %d) %s\n", errorText, v, k)
 		}
 	}
-	if len(exceededText) > 0 || len(errorText) > 0 {
+	if len(data.GlobalErrorStatistic) > 0 {
 		return fmt.Sprintf("Error List:\n%s%s%s", exceededText, blackHashText, errorText)
 	}
 	return ""

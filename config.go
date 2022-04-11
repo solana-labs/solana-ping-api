@@ -65,7 +65,7 @@ type SlackReport struct {
 }
 type SlackAlert struct {
 	WebHook       string
-	LossThredhold int
+	LossThreshold int
 	LevelFilePath string
 }
 type ServerSetup struct {
@@ -203,7 +203,7 @@ func loadConfig() Config {
 	}
 	c.SlackReport.SlackAlert = SlackAlert{
 		WebHook:       v.GetString("SlackReport.SlackAlert.WebHook"),
-		LossThredhold: v.GetInt("SlackReport.SlackAlert.LossThredhold"),
+		LossThreshold: v.GetInt("SlackReport.SlackAlert.LossThredhold"),
 	}
 	levelpath := v.GetString("SlackReport.SlackAlert.LevelFilePath")
 	if levelpath != "" {

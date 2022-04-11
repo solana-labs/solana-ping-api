@@ -94,13 +94,6 @@ func GetStatisticExpections() []PingResultError {
 	return list
 }
 
-// setup display exception list
-func GetDisplayExpections() []PingResultError {
-	list := []PingResultError{}
-	list = append(list, BlockhashNotFound)
-	return list
-}
-
 // grouping1Min: group []PingResult into 1 min group.
 func grouping1Min(pr []PingResult, startTime int64, endTime int64) []Group1Min {
 	window := int64(60)
