@@ -25,8 +25,8 @@ func NewSlackTriggerEvaluation() SlackTriggerEvaluation {
 	s.CurrentLoss = 0
 	s.LastLoss = 0
 	s.ThreadHoldLevels = []float64{float64(config.SlackReport.SlackAlert.LossThredhold), float64(50), float64(75), float64(100)}
-	s.ThreadHoldIndex = 0
 	s.FilePath = config.SlackReport.SlackAlert.LevelFilePath
+	s.ThreadHoldIndex = s.ReadFromFile()
 
 	return s
 }

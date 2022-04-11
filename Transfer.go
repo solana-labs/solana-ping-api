@@ -83,7 +83,7 @@ func waitConfirmation(c *client.Client, txHash string, timeout time.Duration, re
 				//		log.Println("tx: Error", err, "GetSignatureStatus continue")
 				continue
 			} else {
-				return TransactionLoss
+				return TransactionLoss // TODO: should return error but for now sending transaction loss
 			}
 		}
 		if resp != nil {
