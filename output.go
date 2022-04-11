@@ -116,8 +116,8 @@ func (s *SlackPayload) AlertPayload(c Cluster, gStat *GlobalStatistic, errorStis
 		}
 	}
 
-	text = fmt.Sprintf("{ hostname: %s, submitted: %3.0f, confirmed:%3.0f, loss: %3.1f%s, confirmation: min/mean/max/stddev = %s, next_threshold:%3.0f, error: %s}",
-		config.HostName, gStat.Submitted, gStat.Confirmed, gStat.Loss*100, "%", timeStatis, thresholdAdj, errsorStatis)
+	text = fmt.Sprintf("{ hostname: %s, submitted: %3.0f, confirmed:%3.0f, loss: %3.1f%s, confirmation: min/mean/max/stddev = %s, next_threshold:%3.0f%s, error: %s}",
+		config.HostName, gStat.Submitted, gStat.Confirmed, gStat.Loss*100, "%", timeStatis, thresholdAdj, "%", errsorStatis)
 
 	header := Block{
 		BlockType: "section",
