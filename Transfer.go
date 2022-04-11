@@ -59,7 +59,7 @@ func Transfer(c *client.Client, sender types.Account, feePayer types.Account, re
 	txHash, err = c.SendTransaction(ctx, tx)
 
 	if err != nil {
-		//	log.Printf("Error: Failed to send tx, err: %v", err)
+		log.Printf("Error: Failed to send tx, err: %v", err)
 		return "", err
 	}
 	//log.Println("tx:", txHash, " is sent")
@@ -82,10 +82,12 @@ func waitConfirmation(c *client.Client, txHash string, timeout time.Duration, re
 			if now.Sub(elapse).Seconds() < timeout.Seconds() {
 				//		log.Println("tx: Error", err, "GetSignatureStatus continue")
 				continue
+			} else {
+				return TransactionLoss
 			}
 		}
 		if resp != nil {
-			if *resp.ConfirmationStatus == rpc.CommitmentConfirmed {
+			if *resp.ConfirmationStatus == rpc.CommitmentConfirmed || *resp.ConfirmationStatus == rpc.CommitmentFinalized {
 				//log.Println("tx:", txHash, "is confirmed")
 				return nil
 			}

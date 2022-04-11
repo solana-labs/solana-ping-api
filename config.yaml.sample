@@ -45,7 +45,7 @@ SlackReport:                                                      # Send a repor
  SlackAlert:                                                     # Send alert when loss of ping reach a value
   WebHook: 
   LossThredhold: 20                                                   # data window
-  LossThredhold: 20                                              # thredhold of loss in percentage
+  LevelFilePath:
  Clusters:                                                        # clusters to monitor
   - MainnetBeta
 #  - Testnet

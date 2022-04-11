@@ -66,6 +66,7 @@ type SlackReport struct {
 type SlackAlert struct {
 	WebHook       string
 	LossThredhold int
+	LevelFilePath string
 }
 type ServerSetup struct {
 	Mode               ConnectionMode
@@ -203,6 +204,12 @@ func loadConfig() Config {
 	c.SlackReport.SlackAlert = SlackAlert{
 		WebHook:       v.GetString("SlackReport.SlackAlert.WebHook"),
 		LossThredhold: v.GetInt("SlackReport.SlackAlert.LossThredhold"),
+	}
+	levelpath := v.GetString("SlackReport.SlackAlert.LevelFilePath")
+	if levelpath != "" {
+		c.SlackReport.SlackAlert.LevelFilePath = levelpath
+	} else {
+		c.SlackReport.SlackAlert.LevelFilePath = "/home/sol/ping-api-server/level.env"
 	}
 
 	gcloudCredential := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")
