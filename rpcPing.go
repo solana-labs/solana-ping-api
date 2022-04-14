@@ -38,7 +38,9 @@ func Ping(cluster Cluster, c *client.Client, host string, pType PingType, config
 		hash, err := Transfer(c, configAcct, configAcct, config.Receiver, time.Duration(config.TxTimeout)*time.Second)
 		if err != nil {
 			timer.TimerStop()
-			timer.Add()
+			if !PingResultError(err.Error()).IsInErrorList(ReportErrorExceptionList) {
+				timer.Add()
+			}
 			resultErrs = append(resultErrs, err.Error())
 			continue
 		}
@@ -46,7 +48,9 @@ func Ping(cluster Cluster, c *client.Client, host string, pType PingType, config
 		timer.TimerStop()
 		if err != nil {
 			resultErrs = append(resultErrs, err.Error())
-			timer.Add()
+			if !PingResultError(err.Error()).IsInErrorList(ReportErrorExceptionList) {
+				timer.Add()
+			}
 			continue
 		}
 		timer.Add()
