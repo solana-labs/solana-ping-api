@@ -149,7 +149,7 @@ func statisticCompute(groups []Group1Min) *GroupsAllStatistic {
 				if errorCount <= 0 {
 					filterGroupStat.TimeMeasure.AddTime(singlePing.TakeTime)
 				} else if (errorCount > 0) && !errorException { // general error is considered as a timeout
-					t := time.Duration(config.SolanaPing.MaxPerPingTime) * time.Second
+					t := time.Duration(config.SolanaPing.TxTimeout) * time.Second
 					filterGroupStat.TimeMeasure.AddTime(t.Milliseconds())
 				} // if StatisticErrorExceptionList , do not count as a satistic
 			}
