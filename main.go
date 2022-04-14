@@ -56,6 +56,15 @@ func init() {
 	log.Println("SlackAlertService:", config.ServerSetup.SlackAlertService)
 	log.Println("--- Config End --- ")
 
+	errList := StatisticErrExpectionInit()
+	log.Println("StatisticErrExpectionInit:", errList)
+	errList = AlertErrExpectionInit()
+	log.Println("SlackErrExpectionInit:", errList)
+	errList = ReportErrExpectionInit()
+	log.Println("ReportErrExpectionInit:", errList)
+	errList = PingTakeTimeErrExpectionInit()
+	log.Println("ReportErrExpectionInit:", errList)
+
 	if config.UseGCloudDB {
 		gormDB, err := gorm.Open(postgres.New(postgres.Config{
 			DriverName: "cloudsqlpostgres",
@@ -205,6 +214,7 @@ func IsClusterActive(c Cluster) bool {
 	}
 	return false
 }
+
 func test(c *gin.Context) {
 	now := time.Now().UTC().Unix()
 	//now := int64(1648733636)
@@ -212,11 +222,10 @@ func test(c *gin.Context) {
 	records := getAfter(MainnetBeta, DataPoint1Min, beginOfPast10min)
 	groups := grouping1Min(records, beginOfPast10min, now)
 	groupsStat := statisticCompute(groups)
-	PrintStatistic(groupsStat)
+	printStatistic(groupsStat)
 	ret := []DataPoint1MinResultJSON{}
 	for _, g := range groupsStat.PingStatisticList {
 		ret = append(ret, PingResultToJson(&g))
 	}
-
 	c.IndentedJSON(http.StatusOK, ret)
 }

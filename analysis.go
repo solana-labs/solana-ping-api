@@ -3,12 +3,16 @@ package main
 import (
 	"fmt"
 	"log"
+	"time"
 )
 
+// collect ping result and divided them into a group by each min
 type Group1Min struct {
 	Result    []PingResult
 	TimeStamp int64
 }
+
+// statistic of ping result take-time
 type TimeStatistic struct {
 	Min    int64
 	Mean   float64
@@ -17,6 +21,7 @@ type TimeStatistic struct {
 	Sum    int64
 }
 
+// statistic of ping result
 type PingSatistic struct {
 	Submitted   float64
 	Confirmed   float64
@@ -27,6 +32,8 @@ type PingSatistic struct {
 	Errors    []string
 	TimeStamp int64
 }
+
+// statistic without a group
 type GlobalStatistic struct {
 	Submitted float64
 	Confirmed float64
@@ -34,11 +41,12 @@ type GlobalStatistic struct {
 	Count     int
 	TimeStatistic
 }
+
+// All statistic Data
 type GroupsAllStatistic struct {
 	PingStatisticList    []PingSatistic
 	RawPingStaticList    []PingSatistic
 	GlobalErrorStatistic map[string]int
-	ErrorExceptionList   []PingResultError
 	GlobalStatistic
 }
 
@@ -53,10 +61,9 @@ func (g *GroupsAllStatistic) GetGroupsAllStatistic(raw bool) GlobalStatistic {
 			sumOfConfirmed += pg.Confirmed
 			sumOfCount += pg.Count
 			sumTimeMeasure.Times = append(sumTimeMeasure.Times, pg.TimeMeasure.Times...)
-
 		}
 
-	} else {
+	} else { // raw data (without exception)
 		for _, pg := range g.RawPingStaticList {
 			sumOfSubmitted += pg.Submitted
 			sumOfConfirmed += pg.Confirmed
@@ -86,14 +93,6 @@ func (g *GroupsAllStatistic) GetGroupsAllStatistic(raw bool) GlobalStatistic {
 	return groupStat
 }
 
-// setup statistic exception list
-func GetStatisticExpections() []PingResultError {
-	list := []PingResultError{}
-	//list = append(list, RPCServerDeadlineExceeded)
-	list = append(list, BlockhashNotFound)
-	return list
-}
-
 // grouping1Min: group []PingResult into 1 min group.
 func grouping1Min(pr []PingResult, startTime int64, endTime int64) []Group1Min {
 	window := int64(60)
@@ -116,79 +115,77 @@ func statisticCompute(groups []Group1Min) *GroupsAllStatistic {
 	stat := GroupsAllStatistic{}
 	stat.PingStatisticList = []PingSatistic{}
 	stat.RawPingStaticList = []PingSatistic{}
-	stat.ErrorExceptionList = GetStatisticExpections()
 	stat.GlobalErrorStatistic = make(map[string]int)
 
 	for _, group := range groups {
-		gStat := PingSatistic{}
-		rawGStat := PingSatistic{}
-		for _, res := range group.Result {
+		filterGroupStat := PingSatistic{}
+		rawGroupStat := PingSatistic{}
+		for _, singlePing := range group.Result {
 			errorException := false
-			errorCount := len(res.Error)
+			errorCount := len(singlePing.Error)
 			if errorCount > 0 {
-				for _, e := range res.Error {
+				for _, e := range singlePing.Error {
 					stat.GlobalErrorStatistic[string(e)] = stat.GlobalErrorStatistic[string(e)] + 1
-					if PingResultError(e).IsInErrorList(stat.ErrorExceptionList) {
-						//log.Println("ErrorExceptionList:", e)
+					if PingResultError(e).IsInErrorList(StatisticErrorExceptionList) {
 						errorException = true
 					} else {
-						gStat.Errors = append(gStat.Errors, string(e))
+						filterGroupStat.Errors = append(filterGroupStat.Errors, string(e))
 					}
-					rawGStat.Errors = append(rawGStat.Errors, string(e))
+					rawGroupStat.Errors = append(rawGroupStat.Errors, string(e))
 				}
 			}
 			// Raw Data Statistic
-			rawGStat.TimeStamp = group.TimeStamp
-			rawGStat.Submitted += float64(res.Submitted)
-			rawGStat.Confirmed += float64(res.Confirmed)
-			rawGStat.Count += 1
-			if errorCount <= 0 {
-				rawGStat.TimeMeasure.AddTime(res.TakeTime)
-			}
+			rawGroupStat.TimeStamp = group.TimeStamp
+			rawGroupStat.Submitted += float64(singlePing.Submitted)
+			rawGroupStat.Confirmed += float64(singlePing.Confirmed)
+			rawGroupStat.Count += 1
+			rawGroupStat.TimeMeasure.AddTime(singlePing.TakeTime)
 			// Data Statistic (Filtered by error filter)
-			gStat.TimeStamp = group.TimeStamp // Need a ts to present the group
+			filterGroupStat.TimeStamp = group.TimeStamp // Need a ts to present the group
 			if !errorException {
-				gStat.Submitted += float64(res.Submitted)
-				gStat.Confirmed += float64(res.Confirmed)
-				gStat.Count += 1
+				filterGroupStat.Submitted += float64(singlePing.Submitted)
+				filterGroupStat.Confirmed += float64(singlePing.Confirmed)
+				filterGroupStat.Count += 1
 				if errorCount <= 0 {
-					gStat.TimeMeasure.AddTime(res.TakeTime)
-				}
+					filterGroupStat.TimeMeasure.AddTime(singlePing.TakeTime)
+				} else if (errorCount > 0) && !errorException { // general error is considered as a timeout
+					t := time.Duration(config.SolanaPing.MaxPerPingTime) * time.Second
+					filterGroupStat.TimeMeasure.AddTime(t.Milliseconds())
+				} // if StatisticErrorExceptionList , do not count as a satistic
 			}
-
 		}
 		// raw data
-		if rawGStat.Submitted == 0 { // no data
-			rawGStat.Loss = 1
+		if rawGroupStat.Submitted == 0 { // no data
+			rawGroupStat.Loss = 1
 		} else {
-			rawGStat.Loss = (rawGStat.Submitted - rawGStat.Confirmed) / rawGStat.Submitted
+			rawGroupStat.Loss = (rawGroupStat.Submitted - rawGroupStat.Confirmed) / rawGroupStat.Submitted
 		}
-		tMax, tMean, tMin, tStddev, tSum := rawGStat.TimeMeasure.Statistic()
-		rawGStat.TimeStatistic = TimeStatistic{
+		tMax, tMean, tMin, tStddev, tSum := rawGroupStat.TimeMeasure.Statistic()
+		rawGroupStat.TimeStatistic = TimeStatistic{
 			Min:    tMin,
 			Mean:   tMean,
 			Max:    tMax,
 			Stddev: tStddev,
 			Sum:    tSum,
 		}
-		stat.RawPingStaticList = append(stat.RawPingStaticList, rawGStat)
+		stat.RawPingStaticList = append(stat.RawPingStaticList, rawGroupStat)
 
 		// data with filter
-		if gStat.Submitted == 0 { // no data
-			gStat.Loss = 1
+		if filterGroupStat.Submitted == 0 { // no data
+			filterGroupStat.Loss = 1
 		} else {
-			gStat.Loss = (gStat.Submitted - gStat.Confirmed) / gStat.Submitted
+			filterGroupStat.Loss = (filterGroupStat.Submitted - filterGroupStat.Confirmed) / filterGroupStat.Submitted
 		}
 
-		tMax, tMean, tMin, tStddev, tSum = gStat.TimeMeasure.Statistic()
-		gStat.TimeStatistic = TimeStatistic{
+		tMax, tMean, tMin, tStddev, tSum = filterGroupStat.TimeMeasure.Statistic()
+		filterGroupStat.TimeStatistic = TimeStatistic{
 			Min:    tMin,
 			Mean:   tMean,
 			Max:    tMax,
 			Stddev: tStddev,
 			Sum:    tSum,
 		}
-		stat.PingStatisticList = append(stat.PingStatisticList, gStat)
+		stat.PingStatisticList = append(stat.PingStatisticList, filterGroupStat)
 	}
 	return &stat
 }
@@ -199,9 +196,8 @@ func printPingResultGroup(pr []PingResult, from int64, to int64) {
 	}
 }
 
-func PrintStatistic(stat *GroupsAllStatistic) {
+func printStatistic(stat *GroupsAllStatistic) {
 	for i, g := range stat.PingStatisticList {
-
 		statisticTime := fmt.Sprintf("min/mean/max/stddev ms = %d/%3.0f/%d/%3.0f",
 			g.TimeStatistic.Min, g.TimeStatistic.Mean, g.TimeStatistic.Max, g.TimeStatistic.Stddev)
 
@@ -217,12 +213,5 @@ func PrintStatistic(stat *GroupsAllStatistic) {
 		}
 		log.Println(fmt.Sprintf("RAW %d->{ hostname: %s, submitted: %3.0f,confirmed:%3.0f, loss: %3.3f%s, count:%d %s}",
 			i, config.HostName, g.Submitted, g.Confirmed, g.Loss, "%", g.Count, statisticTime))
-	}
-
-	for i, e := range stat.GlobalErrorStatistic {
-		log.Println(fmt.Sprintf("{count:%d : %s\n}", e, i))
-	}
-	for _, e := range stat.ErrorExceptionList {
-		log.Println(fmt.Sprintf("ErrorExceptionList: %s", e))
 	}
 }

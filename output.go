@@ -152,9 +152,9 @@ func reportErrorBlock(data *GroupsAllStatistic) string {
 		return ""
 	}
 	for k, v := range data.GlobalErrorStatistic {
-		if strings.Contains(k, string(RPCServerDeadlineExceededKey)) {
+		if strings.Contains(k, string(KeyRPCServerDeadlineExceeded)) {
 			exceededText = fmt.Sprintf("*(count:%d) RPC Server context deadline exceed\n", v)
-		} else if strings.Contains(k, string(BlockhashNotFoundKey)) {
+		} else if strings.Contains(k, string(KeyBlockhashNotFound)) {
 			blackHashText = fmt.Sprintf("*(count:%d) BlockhashNotFound\n", v)
 		} else {
 			errorText = fmt.Sprintf("%s\n(count: %d) %s\n", errorText, v, k)

@@ -15,7 +15,6 @@ type TakeTime struct {
 }
 
 func Ping(cluster Cluster, c *client.Client, host string, pType PingType, config PingConfig) (PingResult, error) {
-
 	var configAcct types.Account
 	resultErrs := []string{}
 	timer := TakeTime{}
@@ -39,25 +38,19 @@ func Ping(cluster Cluster, c *client.Client, host string, pType PingType, config
 		hash, err := Transfer(c, configAcct, configAcct, config.Receiver, time.Duration(config.TxTimeout)*time.Second)
 		if err != nil {
 			timer.TimerStop()
-			// timer.Add()
+			timer.Add()
 			resultErrs = append(resultErrs, err.Error())
 			continue
 		}
 		err = waitConfirmation(c, hash, time.Duration(config.WaitConfirmationTimeout)*time.Second, time.Duration(config.TxTimeout)*time.Second, time.Duration(config.StatusCheckInterval)*time.Second)
 		timer.TimerStop()
-
-		if err == TransactionLoss {
-			//log.Println("tx: return TransactionLoss")
-			timer.Add()
-		} else if err == nil {
-			timer.Add()
-			confirmedCount++
-		} else {
-			//log.Println("tx: return Err", err)
+		if err != nil {
 			resultErrs = append(resultErrs, err.Error())
+			timer.Add()
 			continue
 		}
-		//log.Println("confirmedCount=", confirmedCount)
+		timer.Add()
+		confirmedCount++
 	}
 	result.TimeStamp = time.Now().UTC().Unix()
 	result.Submitted = config.BatchCount
