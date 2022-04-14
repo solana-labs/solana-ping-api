@@ -59,7 +59,7 @@ func Transfer(c *client.Client, sender types.Account, feePayer types.Account, re
 	txHash, err = c.SendTransaction(ctx, tx)
 
 	if err != nil {
-		log.Printf("Error: Failed to send tx, err: %v", err)
+		// log.Printf("Error: Failed to send tx, err: %v", err)
 		return "", err
 	}
 	return txHash, nil

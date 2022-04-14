@@ -26,8 +26,13 @@ var (
 	ServiceUnavilable503Text      = `rpc: call error, err: get status code: 503, body: <html><body><h1>503 Service Unavailable</h1>
 	No server is available to handle this request.
 	</body></html>`
-	NumSlotsBehindText = `{count:5 : rpc response error: {"code":-32005,"message":"Node is behind by 153 slots","data":{"numSlotsBehind":153}}`
-	RPCEOFText         = `rpc: call error, err: failed to do request, err: Post "https://api.internal.mainnet-beta.solana.com": EOF, body: `
+	NumSlotsBehindText    = `{count:5 : rpc response error: {"code":-32005,"message":"Node is behind by 153 slots","data":{"numSlotsBehind":153}}`
+	RPCEOFText            = `rpc: call error, err: failed to do request, err: Post "https://api.internal.mainnet-beta.solana.com": EOF, body: `
+	GatewayTimeout504Text = `rpc: call error, err: get status code: 504, body: <html><body><h1>504 Gateway Time-out</h1>
+	The server didn't respond in time.
+	</body></html>
+	
+	`
 )
 
 // ping response error type
@@ -50,6 +55,8 @@ var (
 	ErrRPCEOF                      = PingResultError(RPCEOFText)
 	KeyRPCEOF                      = "EOF"
 	ShortKeyRPCEOF                 = "rpc error EOF"
+	ErrGatewayTimeout504           = PingResultError(GatewayTimeout504Text)
+	KeyGatewayTimeout504           = "status code: 504"
 )
 
 // Setup Statistic / Alert / Report Error Exception List
@@ -98,6 +105,12 @@ func (e PingResultError) IsErrRPCEOF() bool {
 	}
 	return false
 }
+func (e PingResultError) IsErrGatewayTimeout504() bool {
+	if strings.Contains(string(e), KeyGatewayTimeout504) {
+		return true
+	}
+	return false
+}
 
 func (p PingResultError) IsInErrorList(inErrs []PingResultError) bool {
 	for _, e := range inErrs {
@@ -120,6 +133,10 @@ func (p PingResultError) IsInErrorList(inErrs []PingResultError) bool {
 			}
 		case ErrRPCEOF:
 			if strings.Contains(string(p), KeyRPCEOF) {
+				return true
+			}
+		case ErrGatewayTimeout504:
+			if strings.Contains(string(p), KeyGatewayTimeout504) {
 				return true
 			}
 		default:
@@ -149,6 +166,5 @@ func ReportErrExpectionInit() []PingResultError {
 
 func PingTakeTimeErrExpectionInit() []PingResultError {
 	PingTakeTimeErrExpectionList := []PingResultError{}
-	PingTakeTimeErrExpectionList = append(PingTakeTimeErrExpectionList, ErrBlockhashNotFound)
 	return PingTakeTimeErrExpectionList
 }
