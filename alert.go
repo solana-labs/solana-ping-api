@@ -74,7 +74,7 @@ func (s *AlertTriggerEvaluation) ReadFromFile() int {
 
 // Doing rule here
 func (s *AlertTriggerEvaluation) ShouldSend() bool {
-	if s.ThresholdIndex == 0 && s.CurrentLoss < s.ThresholdLevels[0] {
+	if s.CurrentLoss < s.ThresholdLevels[0] {
 		s.ThresholdIndex = 0
 		s.WriteLevelToFile(0)
 		log.Println("Loss < 20 :", s.CurrentLoss, "Index:", s.ThresholdIndex)
@@ -89,7 +89,7 @@ func (s *AlertTriggerEvaluation) ShouldSend() bool {
 		return true
 	}
 	// adjust threshold down, index = 0 does not need to down level
-	if s.ThresholdIndex > 0 && s.CurrentLoss < s.ThresholdLevels[s.ThresholdIndex-1] {
+	if s.CurrentLoss < s.ThresholdLevels[s.ThresholdIndex-1] {
 		s.ThresholdIndex = s.UpLevel(s.CurrentLoss)
 		s.ThresholdAsc = false
 		s.WriteLevelToFile(s.ThresholdIndex)
