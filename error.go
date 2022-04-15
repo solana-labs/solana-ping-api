@@ -21,9 +21,10 @@ var (
 
 // response errors
 var (
-	BlockhashNotFoundText         = `rpc response error: {"code":-32002,"message":"Transaction simulation failed: Blockhash not found","data":{"accounts":null,"err":"BlockhashNotFound","logs":[],"unitsConsumed":0}}`
-	RPCServerDeadlineExceededText = `rpc: call error, err: failed to do request, err: Post "https://api.internal.mainnet-beta.solana.com": context deadline exceeded`
-	ServiceUnavilable503Text      = `rpc: call error, err: get status code: 503, body: <html><body><h1>503 Service Unavailable</h1>
+	BlockhashNotFoundText                  = `rpc response error: {"code":-32002,"message":"Transaction simulation failed: Blockhash not found","data":{"accounts":null,"err":"BlockhashNotFound","logs":[],"unitsConsumed":0}}`
+	TransactionHasAlreadyBeenProcessedText = `rpc response error: {"code":-32002,"message":"Transaction simulation failed: This transaction has already been processed","data":{"accounts":null,"err":"AlreadyProcessed","logs":[],"unitsConsumed":0}}`
+	RPCServerDeadlineExceededText          = `rpc: call error, err: failed to do request, err: Post "https://api.internal.mainnet-beta.solana.com": context deadline exceeded`
+	ServiceUnavilable503Text               = `rpc: call error, err: get status code: 503, body: <html><body><h1>503 Service Unavailable</h1>
 	No server is available to handle this request.
 	</body></html>`
 	NumSlotsBehindText    = `{count:5 : rpc response error: {"code":-32005,"message":"Node is behind by 153 slots","data":{"numSlotsBehind":153}}`
@@ -40,23 +41,26 @@ type PingResultError string
 
 // create ping response errors , identify keys and short-descriptions of responses
 var (
-	ErrBlockhashNotFound           = PingResultError(BlockhashNotFoundText)
-	KeyBlockhashNotFound           = "BlockhashNotFound"
-	ShortKeyBlockhashNotFound      = "BlockhashNotFound"
-	ErrRPCServerDeadlineExceeded   = PingResultError(RPCServerDeadlineExceededText)
-	KeyRPCServerDeadlineExceeded   = "context deadline exceeded"
-	ShortRPCServerDeadlineExceeded = "post to api server context dealine exceeded"
-	ErrServiceUnavilable503        = PingResultError(ServiceUnavilable503Text)
-	KeyServiceUnavilable503        = "status code: 503"
-	ShortServiceUnavilable503      = "code: 503, no server"
-	ErrNumSlotsBehind              = PingResultError(NumSlotsBehindText)
-	KeyNumSlotsBehind              = "numSlotsBehind"
-	ShortNumSlotsBehind            = "numSlotsBehind"
-	ErrRPCEOF                      = PingResultError(RPCEOFText)
-	KeyRPCEOF                      = "EOF"
-	ShortKeyRPCEOF                 = "rpc error EOF"
-	ErrGatewayTimeout504           = PingResultError(GatewayTimeout504Text)
-	KeyGatewayTimeout504           = "status code: 504"
+	ErrBlockhashNotFound                    = PingResultError(BlockhashNotFoundText)
+	KeyBlockhashNotFound                    = "BlockhashNotFound"
+	ShortKeyBlockhashNotFound               = "BlockhashNotFound"
+	ErrTransactionHasAlreadyBeenProcessed   = PingResultError(TransactionHasAlreadyBeenProcessedText)
+	KeyTransactionHasAlreadyBeenProcessed   = "transaction has already been processed"
+	ShortTransactionHasAlreadyBeenProcessed = "transaction has already been processed"
+	ErrRPCServerDeadlineExceeded            = PingResultError(RPCServerDeadlineExceededText)
+	KeyRPCServerDeadlineExceeded            = "context deadline exceeded"
+	ShortRPCServerDeadlineExceeded          = "post to api server context dealine exceeded"
+	ErrServiceUnavilable503                 = PingResultError(ServiceUnavilable503Text)
+	KeyServiceUnavilable503                 = "status code: 503"
+	ShortServiceUnavilable503               = "code: 503, no server"
+	ErrNumSlotsBehind                       = PingResultError(NumSlotsBehindText)
+	KeyNumSlotsBehind                       = "numSlotsBehind"
+	ShortNumSlotsBehind                     = "numSlotsBehind"
+	ErrRPCEOF                               = PingResultError(RPCEOFText)
+	KeyRPCEOF                               = "EOF"
+	ShortKeyRPCEOF                          = "rpc error EOF"
+	ErrGatewayTimeout504                    = PingResultError(GatewayTimeout504Text)
+	KeyGatewayTimeout504                    = "status code: 504"
 )
 
 // Setup Statistic / Alert / Report Error Exception List
@@ -73,6 +77,12 @@ var (
 
 func (e PingResultError) IsBlockhashNotFound() bool {
 	if strings.Contains(string(e), KeyBlockhashNotFound) {
+		return true
+	}
+	return false
+}
+func (e PingResultError) IsTransactionHasAlreadyBeenProcessed() bool {
+	if strings.Contains(string(e), KeyTransactionHasAlreadyBeenProcessed) {
 		return true
 	}
 	return false
@@ -119,6 +129,10 @@ func (p PingResultError) IsInErrorList(inErrs []PingResultError) bool {
 			if strings.Contains(string(p), KeyBlockhashNotFound) {
 				return true
 			}
+		case ErrTransactionHasAlreadyBeenProcessed:
+			if strings.Contains(string(p), KeyTransactionHasAlreadyBeenProcessed) {
+				return true
+			}
 		case ErrRPCServerDeadlineExceeded:
 			if strings.Contains(string(p), KeyRPCServerDeadlineExceeded) {
 				return true
@@ -149,6 +163,7 @@ func (p PingResultError) IsInErrorList(inErrs []PingResultError) bool {
 func StatisticErrExpectionInit() []PingResultError {
 	StatisticErrorExceptionList := []PingResultError{}
 	StatisticErrorExceptionList = append(StatisticErrorExceptionList, ErrBlockhashNotFound)
+	StatisticErrorExceptionList = append(StatisticErrorExceptionList, ErrTransactionHasAlreadyBeenProcessed)
 	return StatisticErrorExceptionList
 }
 
@@ -156,11 +171,13 @@ func AlertErrExpectionInit() []PingResultError {
 	AlertErrorExceptionList := []PingResultError{}
 	AlertErrorExceptionList = append(AlertErrorExceptionList, ErrRPCServerDeadlineExceeded)
 	AlertErrorExceptionList = append(AlertErrorExceptionList, ErrBlockhashNotFound)
+	AlertErrorExceptionList = append(AlertErrorExceptionList, ErrTransactionHasAlreadyBeenProcessed)
 	return AlertErrorExceptionList
 }
 
 func ReportErrExpectionInit() []PingResultError {
 	ReportErrorExceptionList := []PingResultError{}
+	ReportErrorExceptionList = append(ReportErrorExceptionList, ErrTransactionHasAlreadyBeenProcessed)
 	return ReportErrorExceptionList
 }
 
