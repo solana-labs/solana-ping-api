@@ -6,7 +6,7 @@ import (
 	"strconv"
 )
 
-type AlertTriggerEvaluation struct {
+type AlertTrigger struct {
 	LastLoss        float64
 	CurrentLoss     float64
 	ThresholdIndex  int
@@ -15,25 +15,25 @@ type AlertTriggerEvaluation struct {
 	FilePath        string
 }
 
-func NewAlertTriggerEvaluation() AlertTriggerEvaluation {
-	s := AlertTriggerEvaluation{}
+func NewAlertTrigger() AlertTrigger {
+	s := AlertTrigger{}
 	s.FilePath = config.SlackReport.SlackAlert.LevelFilePath
 	s.CurrentLoss = 0
 	s.LastLoss = 0
 	s.ThresholdLevels = []float64{float64(config.SlackReport.SlackAlert.LossThreshold), float64(50), float64(75), float64(100)}
 	s.FilePath = config.SlackReport.SlackAlert.LevelFilePath
-	s.ThresholdIndex = s.ReadFromFile()
+	s.ThresholdIndex = s.ReadIndexFromFile()
 
 	return s
 }
 
-func (s *AlertTriggerEvaluation) Update(currentLoss float64) {
+func (s *AlertTrigger) Update(currentLoss float64) {
 	s.LastLoss = s.CurrentLoss
 	s.CurrentLoss = currentLoss * 100
 }
 
 // get a threshold index which is 1 level higher than loss value
-func (s *AlertTriggerEvaluation) UpLevel(loss float64) int {
+func (s *AlertTrigger) UpThresholdIndex(loss float64) int {
 	if loss < s.ThresholdLevels[0] {
 		return 0
 	}
@@ -49,14 +49,14 @@ func (s *AlertTriggerEvaluation) UpLevel(loss float64) int {
 	return 0
 }
 
-func (s *AlertTriggerEvaluation) WriteLevelToFile(level int) {
+func (s *AlertTrigger) WritIndexToFile(level int) {
 	if s.FilePath != "" {
 		os.WriteFile(s.FilePath, []byte(strconv.Itoa(level)), 0777)
 		log.Println("WriteLevelToFile : ", strconv.Itoa(level), " to ", s.FilePath)
 	}
 }
 
-func (s *AlertTriggerEvaluation) ReadFromFile() int {
+func (s *AlertTrigger) ReadIndexFromFile() int {
 	if s.FilePath != "" {
 		v, err := os.ReadFile(s.FilePath)
 		if err != nil {
@@ -73,26 +73,26 @@ func (s *AlertTriggerEvaluation) ReadFromFile() int {
 }
 
 // Doing rule here
-func (s *AlertTriggerEvaluation) ShouldSend() bool {
+func (s *AlertTrigger) ShouldAlertSend() bool {
 	if s.CurrentLoss < s.ThresholdLevels[0] {
 		s.ThresholdIndex = 0
-		s.WriteLevelToFile(0)
+		s.WritIndexToFile(0)
 		log.Println("Loss < 20 :", s.CurrentLoss, "Index:", s.ThresholdIndex)
 		return false
 	}
 	// adjust threshold up, include index = 0
 	if s.CurrentLoss > s.ThresholdLevels[s.ThresholdIndex] {
-		s.ThresholdIndex = s.UpLevel(s.CurrentLoss)
+		s.ThresholdIndex = s.UpThresholdIndex(s.CurrentLoss)
 		s.ThresholdAsc = true
-		s.WriteLevelToFile(s.ThresholdIndex)
+		s.WritIndexToFile(s.ThresholdIndex)
 		log.Println("ThresholdLevel Up To :", s.ThresholdIndex, " Loss:", s.CurrentLoss, " ShouldSend", true)
 		return true
 	}
 	// adjust threshold down, index = 0 does not need to down level
 	if s.CurrentLoss < s.ThresholdLevels[s.ThresholdIndex-1] {
-		s.ThresholdIndex = s.UpLevel(s.CurrentLoss)
+		s.ThresholdIndex = s.UpThresholdIndex(s.CurrentLoss)
 		s.ThresholdAsc = false
-		s.WriteLevelToFile(s.ThresholdIndex)
+		s.WritIndexToFile(s.ThresholdIndex)
 		log.Println("ThresholdLevel Down To :", s.ThresholdIndex, " Loss:", s.CurrentLoss, " ShouldSend", true)
 		return true
 	}

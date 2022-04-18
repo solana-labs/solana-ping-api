@@ -125,7 +125,7 @@ var lastReporTime int64
 func reportWorker(cluster Cluster) {
 	log.Println(">> Slack Report Worker for ", cluster, " start!")
 	defer log.Println(">> Slack Report Worker for ", cluster, " end!")
-	slackTrigger := NewAlertTriggerEvaluation()
+	slackTrigger := NewAlertTrigger()
 	for {
 		now := time.Now().UTC().Unix()
 		if lastReporTime == 0 { // server restart
@@ -153,7 +153,7 @@ func reportWorker(cluster Cluster) {
 
 		if config.ServerSetup.SlackAlertService {
 			slackTrigger.Update(globalStat.Loss)
-			if slackTrigger.ShouldSend() {
+			if slackTrigger.ShouldAlertSend() {
 				AlertSend(cluster, &globalStat, groupsStat.GlobalErrorStatistic, slackTrigger.ThresholdLevels[slackTrigger.ThresholdIndex])
 			}
 
