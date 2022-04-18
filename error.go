@@ -71,7 +71,7 @@ var (
 	AlertErrorExceptionList []PingResultError
 	// Error not show in the report Error List
 	ReportErrorExceptionList []PingResultError
-	// error that does not add in Take Time, Thus account as 0 , but other error count as WaitConfirmationTimeout
+	// error that does not add in Take Time, Thus its take time is considered as a 0 , but other error count as WaitConfirmationTimeout
 	PingTakeTimeErrExpectionList []PingResultError
 )
 

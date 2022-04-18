@@ -111,7 +111,8 @@ func (s *SlackPayload) AlertPayload(c Cluster, gStat *GlobalStatistic, errorStis
 	}
 	errsorStatis := ""
 	for k, v := range errorStistic {
-		if !PingResultError(k).IsBlockhashNotFound() && !PingResultError(k).IsRPCServerDeadlineExceeded() {
+
+		if !PingResultError(k).IsInErrorList(AlertErrorExceptionList) {
 			errsorStatis = fmt.Sprintf("%s%s(%d)", errsorStatis, k, v)
 		}
 	}
