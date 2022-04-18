@@ -4,7 +4,8 @@
 - High frequently send transactions and record results
 - provide http API service 
 - generate a report and submit to slack periodically
-- actively check confirmation losses and send an warning to slack
+- actively check confirmation losses and send an alert to slack
+- Spam Filter of slack alert
 
 ## Server Setup
 ### PingService
@@ -24,13 +25,13 @@ send summary of ping result to a slack channel periodically.
 Use `SlackAlertService: true` to turn on. Default is On.
 If confirmation loss is greater than a thredhold, send an alert to a channel
 
-### Example:Run only API Query Server
++ Example:Run only API Query Server
 In config.yaml ServerSetup: 
 ```
  PingService: true           
  RetensionService: false        
- SlackReportService: true
- SlackAlertService: true    
+ SlackReportService: false
+ SlackAlertService: false  
 ```
 
 ## Installation
@@ -42,6 +43,7 @@ In config.yaml ServerSetup:
     - go build 
 - mkdir ~/.config/ping-api
 - put config.yaml in ~/.config/ping-api/config.yaml
+
 ### Using GCP Database
 - Install & Setup google cloud CLI
 - download [Cloud SQL Auth proxy](https://cloud.google.com/sql/docs/postgres/sql-proxy)
@@ -79,3 +81,17 @@ WantedBy=multi-user.target
 - use cp-to-real-config.sh to copy config.yaml to ~/.config/ping-api/config.yaml
 - start service by sudo sysmtemctl start solana-ping-api.service
 - you can check log by ```sudo tail -f /var/log/syslog | grep ping-api```
+
+## Alert Spam Filter
+
+Alert Spam Filter could be changed frequently. The updte to date (4/18/2022) setting  is as below.
+```
+    Threshold increases when
+    Loss > 20 % -> new threshold = 50% -> send alert
+    Loss > 50 % -> new threshold = 75% -> send alert
+    Loss > 75 % -> new threshold = 100% -> send alert
+    Threshold decreases when
+    Loss > 75 % to < 75%  -> new threshold = 75% -> send alert
+    Loss > 50 % to < 50%  -> new threshold = 50% -> send alert
+    Loss > 20 % to < 20%  -> new threshold = 20% -> NOT send alert
+```
