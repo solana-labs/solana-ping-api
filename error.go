@@ -161,14 +161,14 @@ func (p PingResultError) IsInErrorList(inErrs []PingResultError) bool {
 }
 
 func StatisticErrExpectionInit() []PingResultError {
-	StatisticErrorExceptionList := []PingResultError{}
+	StatisticErrorExceptionList = []PingResultError{}
 	StatisticErrorExceptionList = append(StatisticErrorExceptionList, ErrBlockhashNotFound)
 	StatisticErrorExceptionList = append(StatisticErrorExceptionList, ErrTransactionHasAlreadyBeenProcessed)
 	return StatisticErrorExceptionList
 }
 
 func AlertErrExpectionInit() []PingResultError {
-	AlertErrorExceptionList := []PingResultError{}
+	AlertErrorExceptionList = []PingResultError{}
 	AlertErrorExceptionList = append(AlertErrorExceptionList, ErrRPCServerDeadlineExceeded)
 	AlertErrorExceptionList = append(AlertErrorExceptionList, ErrBlockhashNotFound)
 	AlertErrorExceptionList = append(AlertErrorExceptionList, ErrTransactionHasAlreadyBeenProcessed)
@@ -176,12 +176,12 @@ func AlertErrExpectionInit() []PingResultError {
 }
 
 func ReportErrExpectionInit() []PingResultError {
-	ReportErrorExceptionList := []PingResultError{}
+	ReportErrorExceptionList = []PingResultError{}
 	ReportErrorExceptionList = append(ReportErrorExceptionList, ErrTransactionHasAlreadyBeenProcessed)
 	return ReportErrorExceptionList
 }
 
 func PingTakeTimeErrExpectionInit() []PingResultError {
-	PingTakeTimeErrExpectionList := []PingResultError{}
+	PingTakeTimeErrExpectionList = []PingResultError{}
 	return PingTakeTimeErrExpectionList
 }

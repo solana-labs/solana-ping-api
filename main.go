@@ -59,11 +59,11 @@ func init() {
 	errList := StatisticErrExpectionInit()
 	log.Println("StatisticErrExpectionInit:", errList)
 	errList = AlertErrExpectionInit()
-	log.Println("SlackErrExpectionInit:", errList)
+	log.Println("AlertErrExpectionInit:", errList)
 	errList = ReportErrExpectionInit()
 	log.Println("ReportErrExpectionInit:", errList)
 	errList = PingTakeTimeErrExpectionInit()
-	log.Println("ReportErrExpectionInit:", errList)
+	log.Println("PingTakeTimeErrExpectionInit:", errList)
 
 	if config.UseGCloudDB {
 		gormDB, err := gorm.Open(postgres.New(postgres.Config{
