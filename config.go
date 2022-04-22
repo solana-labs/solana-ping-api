@@ -203,7 +203,7 @@ func loadConfig() Config {
 	}
 	c.SlackReport.SlackAlert = SlackAlert{
 		WebHook:       v.GetString("SlackReport.SlackAlert.WebHook"),
-		LossThreshold: v.GetInt("SlackReport.SlackAlert.LossThredhold"),
+		LossThreshold: v.GetInt("SlackReport.SlackAlert.LossThreshold"),
 	}
 	levelpath := v.GetString("SlackReport.SlackAlert.LevelFilePath")
 	if levelpath != "" {
