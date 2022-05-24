@@ -4,12 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"time"
 
 	"github.com/portto/solana-go-sdk/client"
 	"github.com/portto/solana-go-sdk/common"
+	"github.com/portto/solana-go-sdk/program/cmptbdgprog"
+	"github.com/portto/solana-go-sdk/program/memoprog"
 	"github.com/portto/solana-go-sdk/program/sysprog"
 	"github.com/portto/solana-go-sdk/rpc"
 	"github.com/portto/solana-go-sdk/types"
@@ -63,6 +66,48 @@ func Transfer(c *client.Client, sender types.Account, feePayer types.Account, re
 		return "", err
 	}
 	return txHash, nil
+}
+
+type SendPingTxParam struct {
+	Client              *client.Client
+	Ctx                 context.Context
+	FeePayer            types.Account
+	RequestComputeUnits uint32
+	ComputeUnitPrice    uint32
+}
+
+func SendPingTx(param SendPingTxParam) (string, error) {
+	latestBlockhashResponse, err := param.Client.GetLatestBlockhash(param.Ctx)
+	if err != nil {
+		return "", fmt.Errorf("failed to get latest blockhash, err: %v", err)
+	}
+
+	tx, err := types.NewTransaction(types.NewTransactionParam{
+		Signers: []types.Account{param.FeePayer},
+		Message: types.NewMessage(types.NewMessageParam{
+			FeePayer:        param.FeePayer.PublicKey,
+			RecentBlockhash: latestBlockhashResponse.Blockhash,
+			Instructions: []types.Instruction{
+				cmptbdgprog.RequestUnits(cmptbdgprog.RequestUnitsParam{
+					Units:         param.RequestComputeUnits,
+					AdditionalFee: (param.RequestComputeUnits * param.ComputeUnitPrice) / 1_000_000,
+				}),
+				memoprog.BuildMemo(memoprog.BuildMemoParam{
+					Memo: []byte("ping"),
+				}),
+			},
+		}),
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to new a tx, err: %v", err)
+	}
+
+	txhash, err := param.Client.SendTransaction(param.Ctx, tx)
+	if err != nil {
+		return "", fmt.Errorf("failed to send a tx, err: %v", err)
+	}
+
+	return txhash, nil
 }
 
 func waitConfirmation(c *client.Client, txHash string, timeout time.Duration, requestTimeout time.Duration, queryTime time.Duration) error {

@@ -35,6 +35,7 @@ type SolanaConfigInfo struct {
 	ConfigTestnet SolanaConfig
 	ConfigDevnet  SolanaConfig
 }
+
 type PingConfig struct {
 	Receiver                string
 	NumWorkers              int
@@ -45,7 +46,10 @@ type PingConfig struct {
 	StatusCheckInterval     int64
 	MinPerPingTime          int64
 	MaxPerPingTime          int64
+	RequestUnits            uint32
+	ComputeUnitPrice        uint32
 }
+
 type EndPoint struct {
 	Mainnet string
 	Testnet string
@@ -185,6 +189,8 @@ func loadConfig() Config {
 			StatusCheckInterval:     v.GetInt64("SolanaPing.PingConfig.StatusCheckInterval"),
 			MinPerPingTime:          v.GetInt64("SolanaPing.PingConfig.MinPerPingTime"),
 			MaxPerPingTime:          v.GetInt64("SolanaPing.PingConfig.MaxPerPingTime"),
+			RequestUnits:            v.GetUint32("SolanaPing.PingConfig.RequestUnits"),
+			ComputeUnitPrice:        v.GetUint32("SolanaPing.PingConfig.ComputeUnitPrice"),
 		},
 	}
 	c.SolanaPing.Clusters = []Cluster{}
