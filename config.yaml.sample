@@ -36,6 +36,8 @@ SolanaPing:
   WaitConfirmationTimeout: 35                                 # timeout in sec for check confirm status 
   StatusCheckTime: 1                                          # wait sec for each status confirm-check 
   MinPerPingTime: 10                                          # If Ping operation is less than  MinPerPingTime, it will wait to make per Ping time = MinPerPingTime
+  RequestUnits: 200000
+  ComputeUnitPrice: 1000
 Retension:
  KeepHours: 120                                               # Keep how many hours record in database. This affects query speed
  UpdateIntervalSec: 10800                                     # Interval to perform remove old data , if less than 300 sec , it set to 300 sec
