@@ -68,7 +68,7 @@ func createRPCClient(cluster Cluster) (*client.Client, error) {
 		}
 	default:
 		log.Fatal("Invalid Cluster")
-		return nil, InvalidCluster
+		return nil, ErrInvalidCluster
 	}
 	return c, nil
 }
@@ -88,7 +88,7 @@ func pingDataWorker(cluster Cluster) {
 			}
 		}
 		result, err := Ping(cluster, c, config.HostName, DataPoint1Min, config.SolanaPing.PingConfig)
-		if err != nil {
+		if !err.NoError() {
 			log.Println("pingReportWorker Error:", err)
 			continue
 		}

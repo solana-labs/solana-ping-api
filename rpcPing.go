@@ -15,7 +15,7 @@ type TakeTime struct {
 	End   int64
 }
 
-func Ping(cluster Cluster, c *client.Client, host string, pType PingType, config PingConfig) (PingResult, error) {
+func Ping(cluster Cluster, c *client.Client, host string, pType PingType, config PingConfig) (PingResult, PingResultError) {
 	var configAcct types.Account
 	resultErrs := []string{}
 	timer := TakeTime{}
@@ -24,11 +24,11 @@ func Ping(cluster Cluster, c *client.Client, host string, pType PingType, config
 		Hostname: host,
 		PingType: string(pType),
 	}
-
 	configAcct, err := getConfigKeyPair(cluster)
 	if err != nil {
+		resultErrs = append(resultErrs, err.Error())
 		result.Error = resultErrs
-		return result, err
+		return result, PingResultError(err.Error())
 	}
 	confirmedCount := 0
 	for i := 0; i < config.BatchCount; i++ {
@@ -40,37 +40,39 @@ func Ping(cluster Cluster, c *client.Client, host string, pType PingType, config
 		if cluster == Testnet {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.TxTimeout)*time.Second)
 			defer cancel()
-			hash, err = SendPingTx(SendPingTxParam{
+			txhash, pingErr := SendPingTx(SendPingTxParam{
 				Client:              c,
 				Ctx:                 ctx,
 				FeePayer:            configAcct,
 				RequestComputeUnits: config.RequestUnits,
 				ComputeUnitPrice:    config.ComputeUnitPrice,
 			})
-			if err != nil {
+			if !pingErr.NoError() {
 				timer.TimerStop()
-				if !PingResultError(err.Error()).IsInErrorList(PingTakeTimeErrExpectionList) {
+				if !pingErr.IsInErrorList(PingTakeTimeErrExpectionList) {
 					timer.Add()
 				}
 				resultErrs = append(resultErrs, err.Error())
+				hash = txhash // avoid shadow
 				continue
 			}
 		} else {
-			hash, err = Transfer(c, configAcct, configAcct, config.Receiver, time.Duration(config.TxTimeout)*time.Second)
-			if err != nil {
+			txhash, pingErr := Transfer(c, configAcct, configAcct, config.Receiver, time.Duration(config.TxTimeout)*time.Second)
+			if !pingErr.NoError() {
 				timer.TimerStop()
-				if !PingResultError(err.Error()).IsInErrorList(PingTakeTimeErrExpectionList) {
+				if !pingErr.IsInErrorList(PingTakeTimeErrExpectionList) {
 					timer.Add()
 				}
 				resultErrs = append(resultErrs, err.Error())
+				hash = txhash // avoid shadow
 				continue
 			}
 		}
-		err = waitConfirmation(c, hash, time.Duration(config.WaitConfirmationTimeout)*time.Second, time.Duration(config.TxTimeout)*time.Second, time.Duration(config.StatusCheckInterval)*time.Second)
+		pingErr := waitConfirmation(c, hash, time.Duration(config.WaitConfirmationTimeout)*time.Second, time.Duration(config.TxTimeout)*time.Second, time.Duration(config.StatusCheckInterval)*time.Second)
 		timer.TimerStop()
-		if err != nil {
-			resultErrs = append(resultErrs, err.Error())
-			if !PingResultError(err.Error()).IsInErrorList(PingTakeTimeErrExpectionList) {
+		if !pingErr.NoError() {
+			resultErrs = append(resultErrs, string(pingErr))
+			if !pingErr.IsInErrorList(PingTakeTimeErrExpectionList) {
 				timer.Add()
 			}
 			continue
@@ -89,7 +91,7 @@ func Ping(cluster Cluster, c *client.Client, host string, pType PingType, config
 	result.Stddev = int64(stdDev)
 	result.TakeTime = total
 	result.Error = resultErrs
-	return result, nil
+	return result, EmptyPingResultError
 }
 
 func (t *TakeTime) TimerStart() {

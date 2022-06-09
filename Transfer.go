@@ -24,12 +24,11 @@ var (
 	statusCheckTimeDefault         = 1 * time.Second
 )
 
-func Transfer(c *client.Client, sender types.Account, feePayer types.Account, receiverPubkey string, txTimeout time.Duration) (txHash string, err error) {
+func Transfer(c *client.Client, sender types.Account, feePayer types.Account, receiverPubkey string, txTimeout time.Duration) (txHash string, pingErr PingResultError) {
 	// to fetch recent blockhash
 	res, err := c.GetRecentBlockhash(context.Background())
 	if err != nil {
-		//log.Println("get recent block hash error, err:", err)
-		return "", err
+		return "", PingResultError(err.Error())
 	}
 	// create a message
 	message := types.NewMessage(types.NewMessageParam{
@@ -52,7 +51,7 @@ func Transfer(c *client.Client, sender types.Account, feePayer types.Account, re
 
 	if err != nil {
 		log.Printf("Error: Failed to create a new transaction, err: %v", err)
-		return "", err
+		return "", PingResultError(err.Error())
 	}
 	// send tx
 	if txTimeout <= 0 {
@@ -63,9 +62,9 @@ func Transfer(c *client.Client, sender types.Account, feePayer types.Account, re
 
 	if err != nil {
 		// log.Printf("Error: Failed to send tx, err: %v", err)
-		return "", err
+		return "", PingResultError(err.Error())
 	}
-	return txHash, nil
+	return txHash, EmptyPingResultError
 }
 
 type SendPingTxParam struct {
@@ -76,10 +75,10 @@ type SendPingTxParam struct {
 	ComputeUnitPrice    uint32
 }
 
-func SendPingTx(param SendPingTxParam) (string, error) {
+func SendPingTx(param SendPingTxParam) (string, PingResultError) {
 	latestBlockhashResponse, err := param.Client.GetLatestBlockhash(param.Ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to get latest blockhash, err: %v", err)
+		return "", PingResultError(fmt.Sprintf("failed to get latest blockhash, err: %v", err))
 	}
 
 	tx, err := types.NewTransaction(types.NewTransactionParam{
@@ -99,18 +98,25 @@ func SendPingTx(param SendPingTxParam) (string, error) {
 		}),
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to new a tx, err: %v", err)
+		return "", PingResultError(fmt.Sprintf("failed to new a tx, err: %v", err))
 	}
 
 	txhash, err := param.Client.SendTransaction(param.Ctx, tx)
 	if err != nil {
-		return "", fmt.Errorf("failed to send a tx, err: %v", err)
+		return "", PingResultError(fmt.Sprintf("failed to send a tx, err: %v", err))
 	}
 
-	return txhash, nil
+	return txhash, PingResultError("")
 }
 
-func waitConfirmation(c *client.Client, txHash string, timeout time.Duration, requestTimeout time.Duration, queryTime time.Duration) error {
+/*
+	timeout: timeout for checking  a block with the assigned htxHash status
+	requestTimeout: timeout for GetSignatureStatus
+	checkInterval: interval to check for status
+
+*/
+
+func waitConfirmation(c *client.Client, txHash string, timeout time.Duration, requestTimeout time.Duration, checkInterval time.Duration) PingResultError {
 	if timeout <= 0 {
 		timeout = waitConfirmationTimeoutDefault
 		log.Println("timeout is not set! Use default timeout", timeout, " sec")
@@ -125,22 +131,22 @@ func waitConfirmation(c *client.Client, txHash string, timeout time.Duration, re
 			if now.Sub(elapse).Seconds() < timeout.Seconds() {
 				continue
 			} else {
-				return err
+				return PingResultError(err.Error())
 			}
 		}
 		if resp != nil {
 			if *resp.ConfirmationStatus == rpc.CommitmentConfirmed || *resp.ConfirmationStatus == rpc.CommitmentFinalized {
-				return nil
+				return EmptyPingResultError
 			}
 		}
 		if now.Sub(elapse).Seconds() > timeout.Seconds() {
-			return err
+			return PingResultError(ErrWaitForConfirmedTimeout.Error())
 		}
 
-		if queryTime <= 0 {
-			queryTime = statusCheckTimeDefault
+		if checkInterval <= 0 {
+			checkInterval = statusCheckTimeDefault
 		}
-		time.Sleep(queryTime)
+		time.Sleep(checkInterval)
 	}
 }
 
