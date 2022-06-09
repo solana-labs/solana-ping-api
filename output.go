@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"strings"
 	"time"
 )
 
@@ -152,9 +151,10 @@ func reportErrorBlock(data *GroupsAllStatistic) string {
 		return ""
 	}
 	for k, v := range data.GlobalErrorStatistic {
-		if strings.Contains(k, string(KeyRPCServerDeadlineExceeded)) {
+
+		if RPCServerDeadlineExceeded.IsIdentical(PingResultError(k)) {
 			exceededText = fmt.Sprintf("*(count:%d) RPC Server context deadline exceed\n", v)
-		} else if strings.Contains(k, string(KeyBlockhashNotFound)) {
+		} else if BlockhashNotFound.IsIdentical(PingResultError(k)) {
 			blackHashText = fmt.Sprintf("*(count:%d) BlockhashNotFound\n", v)
 		} else {
 			errorText = fmt.Sprintf("%s\n(count: %d) %s\n", errorText, v, k)

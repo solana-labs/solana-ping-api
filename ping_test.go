@@ -1,6 +1,7 @@
 package main
 
 import (
+	"testing"
 	"time"
 )
 
@@ -20,6 +21,23 @@ var sch1 = PingResult{
 }
 
 var hook = "https://hooks.slack.com/services/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"
+
+func TestIsIdentical(t *testing.T) {
+	su503 := PingResultError(ServiceUnavilable503Text)
+	blackhash := PingResultError(BlockhashNotFoundText)
+	if !ServiceUnavilable503.IsIdentical(su503) {
+		t.Fatal("ServiceUnavilable503 should be true")
+	}
+	if BlockhashNotFound.IsIdentical(su503) {
+		t.Fatal("BlockhashNotFound should be false")
+	}
+	if !blackhash.IsInErrorList(StatisticErrorExceptionList) {
+		t.Fatal("blackhash should be in the list")
+	}
+	if su503.IsInErrorList(StatisticErrorExceptionList) {
+		t.Fatal("503 should not be in the list")
+	}
+}
 
 // func TestParse(t *testing.T) {
 // 	pings := []PingResult{sch1}
