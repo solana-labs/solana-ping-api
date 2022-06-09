@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"testing"
 	"time"
 )
@@ -36,6 +37,11 @@ func TestIsIdentical(t *testing.T) {
 	}
 	if su503.IsInErrorList(StatisticErrorExceptionList) {
 		t.Fatal("503 should not be in the list")
+	}
+	if !(su503.Short() == ServiceUnavilable503.Short) {
+		t.Fatal("503 short is not correct")
+	} else {
+		fmt.Println(su503.Short())
 	}
 }
 

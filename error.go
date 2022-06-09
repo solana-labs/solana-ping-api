@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 )
 
 // ping response error type
@@ -30,14 +31,15 @@ var (
 
 // Setup Statistic / Alert / Report Error Exception List
 var (
+	KnownErrIdentifierList []ErrIdentifier
 	// Error which does not use in Statistic computation
-	StatisticErrorExceptionList []ErrorIdentifier
+	StatisticErrorExceptionList []ErrIdentifier
 	// Error does not show in slack alert
-	AlertErrorExceptionList []ErrorIdentifier
+	AlertErrorExceptionList []ErrIdentifier
 	// Error does not show in the report Error List
-	ReportErrorExceptionList []ErrorIdentifier
+	ReportErrorExceptionList []ErrIdentifier
 	// error that does not be added into TakeTime
-	PingTakeTimeErrExpectionList []ErrorIdentifier
+	PingTakeTimeErrExpectionList []ErrIdentifier
 )
 
 func (e PingResultError) IsBlockhashNotFound() bool {
@@ -70,7 +72,7 @@ func (e PingResultError) IsErrGatewayTimeout504() bool {
 	return GatewayTimeout504.IsIdentical(e)
 }
 
-func (p PingResultError) IsInErrorList(inErrs []ErrorIdentifier) bool {
+func (p PingResultError) IsInErrorList(inErrs []ErrIdentifier) bool {
 	for _, idf := range inErrs {
 		if idf.IsIdentical(p) {
 			return true
@@ -78,29 +80,51 @@ func (p PingResultError) IsInErrorList(inErrs []ErrorIdentifier) bool {
 	}
 	return false
 }
+func (p PingResultError) Short() string {
+	for _, idf := range KnownErrIdentifierList {
+		if idf.IsIdentical(p) {
+			return idf.Short
+		}
+	}
+	return string(p)
+}
 
-func StatisticErrExpectionInit() []ErrorIdentifier {
-	StatisticErrorExceptionList = []ErrorIdentifier{}
+func KnownErrIdentifierInit() []ErrIdentifier {
+	KnownErrIdentifierList = []ErrIdentifier{}
+	KnownErrIdentifierList = append(KnownErrIdentifierList, BlockhashNotFound)
+	KnownErrIdentifierList = append(KnownErrIdentifierList, TransactionHasAlreadyBeenProcessed)
+	KnownErrIdentifierList = append(KnownErrIdentifierList, RPCServerDeadlineExceeded)
+	KnownErrIdentifierList = append(KnownErrIdentifierList, ServiceUnavilable503)
+	KnownErrIdentifierList = append(KnownErrIdentifierList, TooManyRequest429)
+	KnownErrIdentifierList = append(KnownErrIdentifierList, NumSlotsBehind)
+	KnownErrIdentifierList = append(KnownErrIdentifierList, RPCEOF)
+	KnownErrIdentifierList = append(KnownErrIdentifierList, GatewayTimeout504)
+	fmt.Println(KnownErrIdentifierList)
+	return KnownErrIdentifierList
+}
+
+func StatisticErrExpectionInit() []ErrIdentifier {
+	StatisticErrorExceptionList = []ErrIdentifier{}
 	StatisticErrorExceptionList = append(StatisticErrorExceptionList, BlockhashNotFound)
 	StatisticErrorExceptionList = append(StatisticErrorExceptionList, TransactionHasAlreadyBeenProcessed)
 	return StatisticErrorExceptionList
 }
 
-func AlertErrExpectionInit() []ErrorIdentifier {
-	AlertErrorExceptionList = []ErrorIdentifier{}
+func AlertErrExpectionInit() []ErrIdentifier {
+	AlertErrorExceptionList = []ErrIdentifier{}
 	AlertErrorExceptionList = append(AlertErrorExceptionList, RPCServerDeadlineExceeded)
 	AlertErrorExceptionList = append(AlertErrorExceptionList, BlockhashNotFound)
 	AlertErrorExceptionList = append(AlertErrorExceptionList, TransactionHasAlreadyBeenProcessed)
 	return AlertErrorExceptionList
 }
 
-func ReportErrExpectionInit() []ErrorIdentifier {
-	ReportErrorExceptionList = []ErrorIdentifier{}
+func ReportErrExpectionInit() []ErrIdentifier {
+	ReportErrorExceptionList = []ErrIdentifier{}
 	ReportErrorExceptionList = append(ReportErrorExceptionList, TransactionHasAlreadyBeenProcessed)
 	return ReportErrorExceptionList
 }
 
-func PingTakeTimeErrExpectionInit() []ErrorIdentifier {
-	PingTakeTimeErrExpectionList = []ErrorIdentifier{}
+func PingTakeTimeErrExpectionInit() []ErrIdentifier {
+	PingTakeTimeErrExpectionList = []ErrIdentifier{}
 	return PingTakeTimeErrExpectionList
 }

@@ -2,7 +2,22 @@ package main
 
 import "strings"
 
-type ErrorIdentifier struct {
+/*
+	Add an Known Error
+	1. Add its error text from response
+		ie.BlockhashNotFoundText
+	2. create and ErrIdentifier
+		ie.
+		BlockhashNotFound = ErrIdentifier{
+			Text:  PingResultError(BlockhashNotFoundText),
+			Key:   []string{"BlockhashNotFound"},
+			Short: "BlockhashNotFound"}
+	3.  Add to KnownErrIdentifierInit in error.go
+		KnownErrIdentifierList =
+			append(KnownErrIdentifierList, BlockhashNotFound)
+*/
+
+type ErrIdentifier struct {
 	Text  PingResultError
 	Key   []string
 	Short string
@@ -27,41 +42,41 @@ var (
 )
 
 var (
-	BlockhashNotFound = ErrorIdentifier{
+	BlockhashNotFound = ErrIdentifier{
 		Text:  PingResultError(BlockhashNotFoundText),
 		Key:   []string{"BlockhashNotFound"},
 		Short: "BlockhashNotFound"}
-	TransactionHasAlreadyBeenProcessed = ErrorIdentifier{
+	TransactionHasAlreadyBeenProcessed = ErrIdentifier{
 		Text:  PingResultError(TransactionHasAlreadyBeenProcessedText),
 		Key:   []string{"AlreadyProcessed"},
 		Short: "transaction has already been processed"}
-	RPCServerDeadlineExceeded = ErrorIdentifier{
+	RPCServerDeadlineExceeded = ErrIdentifier{
 		Text:  PingResultError(RPCServerDeadlineExceededText),
 		Key:   []string{"context deadline exceeded"},
 		Short: "post to rpc server response timeout"}
-	ServiceUnavilable503 = ErrorIdentifier{
+	ServiceUnavilable503 = ErrIdentifier{
 		Text:  PingResultError(ServiceUnavilable503Text),
 		Key:   []string{"code: 503"},
 		Short: "503-service-unavailable"}
-	TooManyRequest429 = ErrorIdentifier{
+	TooManyRequest429 = ErrIdentifier{
 		Text:  PingResultError(TooManyRequest429Text),
 		Key:   []string{"code: 429"},
 		Short: "429-too-many-requests"}
-	NumSlotsBehind = ErrorIdentifier{
+	NumSlotsBehind = ErrIdentifier{
 		Text:  PingResultError(NumSlotsBehindText),
 		Key:   []string{"numSlotsBehind"},
 		Short: "numSlotsBehind"}
-	RPCEOF = ErrorIdentifier{
+	RPCEOF = ErrIdentifier{
 		Text:  PingResultError(RPCEOFText),
 		Key:   []string{"EOF"},
 		Short: "rpc error EOF"}
-	GatewayTimeout504 = ErrorIdentifier{
+	GatewayTimeout504 = ErrIdentifier{
 		Text:  PingResultError(GatewayTimeout504Text),
 		Key:   []string{"code: 504"},
 		Short: "504-gateway-timeout"}
 )
 
-func (e ErrorIdentifier) IsIdentical(p PingResultError) bool {
+func (e ErrIdentifier) IsIdentical(p PingResultError) bool {
 	for _, k := range e.Key {
 		if strings.Contains(string(p), k) {
 			return true

@@ -53,8 +53,9 @@ func init() {
 	log.Println("SlackReportService:", config.ServerSetup.SlackReportService)
 	log.Println("SlackAlertService:", config.ServerSetup.SlackAlertService)
 	log.Println("--- Config End --- ")
-
-	errList := StatisticErrExpectionInit()
+	errList := KnownErrIdentifierInit()
+	log.Println("KnownErrIdentifierInit:", errList)
+	errList = StatisticErrExpectionInit()
 	log.Println("StatisticErrExpectionInit:", errList)
 	errList = AlertErrExpectionInit()
 	log.Println("AlertErrExpectionInit:", errList)
