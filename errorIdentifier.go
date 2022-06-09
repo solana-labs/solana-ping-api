@@ -39,6 +39,8 @@ var (
 	The server didn't respond in time.
 	</body></html>
 	`
+	NoSuchHostText          = `rpc: call error, err: failed to do request, err: Post "https://api.internal.mainnet-beta.solana.comx": dial tcp: lookup api.internal.mainnet-beta.solana.comx: no such host, body:`
+	TxHasAlreadyProcessText = `rpc response error: {"code":-32002,"message":"Transaction simulation failed: This transaction has already been processed","data":{"accounts":null,"err":"AlreadyProcessed","logs":[],"unitsConsumed":0}}`
 )
 
 var (
@@ -74,6 +76,14 @@ var (
 		Text:  PingResultError(GatewayTimeout504Text),
 		Key:   []string{"code: 504"},
 		Short: "504-gateway-timeout"}
+	NoSuchHost = ErrIdentifier{
+		Text:  PingResultError(NoSuchHostText),
+		Key:   []string{"no such host"},
+		Short: "no-such-host"}
+	TxHasAlreadyProcess = ErrIdentifier{
+		Text:  PingResultError(TxHasAlreadyProcessText),
+		Key:   []string{"transaction has already been processed"},
+		Short: "tx-has-been-processed"}
 )
 
 func (e ErrIdentifier) IsIdentical(p PingResultError) bool {

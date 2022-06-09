@@ -2,7 +2,6 @@ package main
 
 import (
 	"errors"
-	"fmt"
 )
 
 // ping response error type
@@ -99,7 +98,8 @@ func KnownErrIdentifierInit() []ErrIdentifier {
 	KnownErrIdentifierList = append(KnownErrIdentifierList, NumSlotsBehind)
 	KnownErrIdentifierList = append(KnownErrIdentifierList, RPCEOF)
 	KnownErrIdentifierList = append(KnownErrIdentifierList, GatewayTimeout504)
-	fmt.Println(KnownErrIdentifierList)
+	KnownErrIdentifierList = append(KnownErrIdentifierList, NoSuchHost)
+	KnownErrIdentifierList = append(KnownErrIdentifierList, TxHasAlreadyProcess)
 	return KnownErrIdentifierList
 }
 
