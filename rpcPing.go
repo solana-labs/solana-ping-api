@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"log"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/portto/solana-go-sdk/client"
@@ -15,20 +17,13 @@ type TakeTime struct {
 	End   int64
 }
 
-func Ping(cluster Cluster, c *client.Client, host string, pType PingType, config PingConfig) (PingResult, PingResultError) {
-	var configAcct types.Account
+func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterConfig) (PingResult, PingResultError) {
 	resultErrs := []string{}
 	timer := TakeTime{}
 	result := PingResult{
-		Cluster:  string(cluster),
-		Hostname: host,
+		Cluster:  string(config.Cluster),
+		Hostname: config.HostName,
 		PingType: string(pType),
-	}
-	configAcct, err := getConfigKeyPair(cluster)
-	if err != nil {
-		resultErrs = append(resultErrs, err.Error())
-		result.Error = resultErrs
-		return result, PingResultError(err.Error())
 	}
 	confirmedCount := 0
 	for i := 0; i < config.BatchCount; i++ {
@@ -37,13 +32,13 @@ func Ping(cluster Cluster, c *client.Client, host string, pType PingType, config
 		}
 		timer.TimerStart()
 		var hash string
-		if cluster == Testnet {
+		if config.Cluster == Testnet {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.TxTimeout)*time.Second)
 			defer cancel()
 			txhash, pingErr := SendPingTx(SendPingTxParam{
 				Client:              c,
 				Ctx:                 ctx,
-				FeePayer:            configAcct,
+				FeePayer:            acct,
 				RequestComputeUnits: config.RequestUnits,
 				ComputeUnitPrice:    config.ComputeUnitPrice,
 			})
@@ -52,33 +47,39 @@ func Ping(cluster Cluster, c *client.Client, host string, pType PingType, config
 				if !pingErr.IsInErrorList(PingTakeTimeErrExpectionList) {
 					timer.Add()
 				}
-				resultErrs = append(resultErrs, err.Error())
+				resultErrs = append(resultErrs, string(pingErr))
 				hash = txhash // avoid shadow
 				continue
 			}
 		} else {
-			txhash, pingErr := Transfer(c, configAcct, configAcct, config.Receiver, time.Duration(config.TxTimeout)*time.Second)
+			txhash, pingErr := Transfer(c, acct, acct, config.Receiver, time.Duration(config.TxTimeout)*time.Second)
 			if !pingErr.NoError() {
 				timer.TimerStop()
 				if !pingErr.IsInErrorList(PingTakeTimeErrExpectionList) {
 					timer.Add()
 				}
-				resultErrs = append(resultErrs, err.Error())
+				resultErrs = append(resultErrs, string(pingErr))
 				hash = txhash // avoid shadow
+				log.Println("Transfer:", hash, "  pingErr:", pingErr)
 				continue
 			}
 		}
-		pingErr := waitConfirmation(c, hash, time.Duration(config.WaitConfirmationTimeout)*time.Second, time.Duration(config.TxTimeout)*time.Second, time.Duration(config.StatusCheckInterval)*time.Second)
+		pingErr := waitConfirmation(c, hash,
+			time.Duration(config.WaitConfirmationTimeout)*time.Second,
+			time.Duration(config.TxTimeout)*time.Second,
+			time.Duration(config.StatusCheckInterval)*time.Second)
 		timer.TimerStop()
 		if !pingErr.NoError() {
 			resultErrs = append(resultErrs, string(pingErr))
 			if !pingErr.IsInErrorList(PingTakeTimeErrExpectionList) {
 				timer.Add()
 			}
+			log.Println("waitConfirmation", hash, " pingErr", pingErr)
 			continue
 		}
 		timer.Add()
 		confirmedCount++
+		log.Println("waitConfirmation confirmed:", hash)
 	}
 	result.TimeStamp = time.Now().UTC().Unix()
 	result.Submitted = config.BatchCount
@@ -91,7 +92,11 @@ func Ping(cluster Cluster, c *client.Client, host string, pType PingType, config
 	result.Stddev = int64(stdDev)
 	result.TakeTime = total
 	result.Error = resultErrs
-	return result, EmptyPingResultError
+	stringErrors := []string(result.Error)
+	if 0 == len(stringErrors) {
+		return result, EmptyPingResultError
+	}
+	return result, PingResultError(strings.Join(stringErrors[:], ","))
 }
 
 func (t *TakeTime) TimerStart() {

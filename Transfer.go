@@ -2,10 +2,7 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"time"
 
@@ -61,7 +58,7 @@ func Transfer(c *client.Client, sender types.Account, feePayer types.Account, re
 	txHash, err = c.SendTransaction(ctx, tx)
 
 	if err != nil {
-		// log.Printf("Error: Failed to send tx, err: %v", err)
+		log.Printf("Error: Failed to send tx, err: %v", err)
 		return "", PingResultError(err.Error())
 	}
 	return txHash, EmptyPingResultError
@@ -148,35 +145,4 @@ func waitConfirmation(c *client.Client, txHash string, timeout time.Duration, re
 		}
 		time.Sleep(checkInterval)
 	}
-}
-
-func getConfigKeyPair(cluster Cluster) (types.Account, error) {
-	var c SolanaConfig
-	switch cluster {
-	case MainnetBeta:
-		c = config.SolanaConfigInfo.ConfigMain
-	case Testnet:
-		c = config.SolanaConfigInfo.ConfigTestnet
-	case Devnet:
-		c = config.SolanaConfigInfo.ConfigDevnet
-	default:
-		log.Println("StatusNotFound Error:", cluster)
-		return types.Account{}, errors.New("Invalid Cluster")
-	}
-	body, err := ioutil.ReadFile(c.KeypairPath)
-	if err != nil {
-
-	}
-	key := []byte{}
-	err = json.Unmarshal(body, &key)
-	if err != nil {
-		return types.Account{}, err
-	}
-
-	acct, err := types.AccountFromBytes(key)
-	if err != nil {
-		return types.Account{}, err
-	}
-	return acct, nil
-
 }

@@ -1,8 +1,10 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -23,6 +25,8 @@ var dbMtx *sync.Mutex
 
 const useGCloudDB = true
 
+type ClustersToRun string
+
 //Cluster enum
 const (
 	MainnetBeta Cluster = "MainnetBeta"
@@ -30,29 +34,48 @@ const (
 	Devnet              = "Devnet"
 )
 
+var userInputClusterMode string
+var mainnetFailover RPCFailover
+var testnetFailover RPCFailover
+var devnetFailover RPCFailover
+
+const (
+	RunMainnetBeta ClustersToRun = "MainnetBeta"
+	RunTestnet                   = "Testnet"
+	RunDevnet                    = "Devnet"
+	RunAllClusters               = "All"
+)
+
 func init() {
-	log.Println("--- Config Start --- ")
 	config = loadConfig()
-	log.Println("ServerSetup Config:", config.ServerSetup)
-	log.Println("Database UseGCloudDB:", config.UseGCloudDB, " GCloudCredentialPath", config.GCloudCredentialPath, " DBConn:", config.DBConn,
-		" Logfile:", config.Logfile, " Tracefile:", config.Tracefile)
-	log.Println("SolanaConfig/Dir:", config.SolanaConfigInfo.Dir,
-		" SolanaConfig/Mainnet", config.SolanaConfigInfo.MainnetPath,
-		" SolanaConfig/Testnet", config.SolanaConfigInfo.TestnetPath,
-		" SolanaConfig/Devnet", config.SolanaConfigInfo.DevnetPath)
-	log.Println("SolanaConfigFile/Mainnet:", config.SolanaConfigInfo.ConfigMain)
-	log.Println("SolanaConfigFile/Testnet:", config.SolanaConfigInfo.ConfigTestnet)
-	log.Println("SolanaConfigFile/Devnet:", config.SolanaConfigInfo.ConfigDevnet)
-	log.Println("SolanaPing:", config.SolanaPing)
-	log.Println("SlackReport:", config.SlackReport)
-	log.Println("SlackAlert:", config.SlackReport.SlackAlert)
-	log.Println("Retension:", config.Retension)
-	log.Println("====  Services Setup ===")
-	log.Println("PingService:", config.ServerSetup.PingService)
-	log.Println("RetensionService:", config.ServerSetup.RetensionService)
-	log.Println("SlackReportService:", config.ServerSetup.SlackReportService)
-	log.Println("SlackAlertService:", config.ServerSetup.SlackAlertService)
-	log.Println("--- Config End --- ")
+	log.Println(" *** Config Start *** ")
+	log.Println("--- //// Server Config --- ")
+	log.Println(config.Server)
+	log.Println("--- //// Database Config --- ")
+	log.Println(config.Database)
+	log.Println("--- //// Retension --- ")
+	log.Println(config.Retension)
+	log.Println("--- //// ClusterCLIConfig--- ")
+	log.Println("ClusterCLIConfig Mainnet", config.ClusterCLIConfig.ConfigMain)
+	log.Println("ClusterCLIConfig Testnet", config.ClusterCLIConfig.ConfigTestnet)
+	log.Println("ClusterCLIConfig Devnet", config.ClusterCLIConfig.ConfigDevnet)
+	log.Println("--- Mainnet Ping  --- ")
+	log.Println("Mainnet.ClusterPing.Enabled", config.Mainnet.ClusterPing.Enabled)
+	log.Println("Mainnet.ClusterPing.AlternativeEnpoint", config.Mainnet.ClusterPing.AlternativeEnpoint)
+	log.Println("Mainnet.ClusterPing.PingConfig", config.Mainnet.ClusterPing.PingConfig)
+	log.Println("Mainnet.ClusterPing.SlackReport", config.Mainnet.ClusterPing.SlackReport)
+	log.Println("--- Testnet Ping  --- ")
+	log.Println("Testnet.ClusterPing.Enabled", config.Testnet.ClusterPing.Enabled)
+	log.Println("Testnet.ClusterPing.AlternativeEnpoint", config.Testnet.ClusterPing.AlternativeEnpoint)
+	log.Println("Testnet.ClusterPing.PingConfig", config.Testnet.ClusterPing.PingConfig)
+	log.Println("Testnet.ClusterPing.SlackReport", config.Testnet.ClusterPing.SlackReport)
+	log.Println("--- Devnet Ping  --- ")
+	log.Println("Devnet.ClusterPing.Enabled", config.Devnet.ClusterPing.Enabled)
+	log.Println("Devnet.ClusterPing.AlternativeEnpoint", config.Devnet.ClusterPing.AlternativeEnpoint)
+	log.Println("Devnet.ClusterPing.PingConfig", config.Devnet.ClusterPing.PingConfig)
+	log.Println("Devnet.ClusterPing.SlackReport", config.Devnet.ClusterPing.SlackReport)
+	log.Println(" *** Config End *** ")
+
 	errList := ResponseErrIdentifierInit()
 	log.Println("KnownErrIdentifierInit:", errList)
 	errList = StatisticErrExpectionInit()
@@ -64,7 +87,7 @@ func init() {
 	errList = PingTakeTimeErrExpectionInit()
 	log.Println("PingTakeTimeErrExpectionInit:", errList)
 
-	if config.UseGCloudDB {
+	if config.Database.UseGoogleCloud {
 		gormDB, err := gorm.Open(postgres.New(postgres.Config{
 			DriverName: "cloudsqlpostgres",
 			DSN:        config.DBConn,
@@ -80,6 +103,11 @@ func init() {
 		}
 		database = gormDB
 	}
+	/// ---- Start RPC Failover ---
+	log.Println("Failover Setting ---")
+	mainnetFailover = NewRPCFailover(config.Mainnet.AlternativeEnpoint)
+	testnetFailover = NewRPCFailover(config.Testnet.AlternativeEnpoint)
+	devnetFailover = NewRPCFailover(config.Devnet.AlternativeEnpoint)
 
 	dbMtx = &sync.Mutex{}
 	log.Println("database connected")
@@ -87,39 +115,33 @@ func init() {
 }
 
 func main() {
-	// f, err := os.Create(config.Tracefile)
-	// if err != nil {
-	// 	log.Fatalf("failed to create trace output file: %v", err)
-	// }
-	// defer func() {
-	// 	if err := f.Close(); err != nil {
-	// 		log.Fatalf("failed to close trace file: %v", err)
-	// 	}
-	// }()
+	flag.Parse()
+	clustersToRun := flag.Arg(0)
+	if !(strings.Compare(clustersToRun, string(RunMainnetBeta)) == 0 ||
+		strings.Compare(clustersToRun, string(RunTestnet)) == 0 ||
+		strings.Compare(clustersToRun, string(RunDevnet)) == 0) {
+		clustersToRun = RunAllClusters
+	}
 
-	// if err := trace.Start(f); err != nil {
-	// 	log.Fatalf("failed to start trace: %v", err)
-	// }
-	// defer trace.Stop()
-	go launchWorkers()
+	log.Println("Ping Service will run clusters:", clustersToRun)
+	go launchWorkers(ClustersToRun(clustersToRun))
 
 	router := gin.Default()
 	router.GET("/:cluster/latest", getLatest)
 	router.GET("/:cluster/last6hours", timeout.New(timeout.WithTimeout(10*time.Second), timeout.WithHandler(last6hours)))
 	router.GET("/health", health)
-	router.GET("/test", test)
 
-	if config.ServerSetup.Mode == HTTPS {
-		router.RunTLS(config.ServerSetup.SSLIP, config.ServerSetup.CrtPath, config.ServerSetup.KeyPath)
-		log.Println("HTTPS server is up!", " IP:", config.ServerSetup.SSLIP)
+	if config.Server.Mode == HTTPS {
+		router.RunTLS(config.Server.SSLIP, config.Server.CrtPath, config.Server.KeyPath)
+		log.Println("HTTPS server is up!", " IP:", config.Server.SSLIP)
 	} else if config.Mode == HTTP {
-		log.Println("HTTP server is up!", " IP:", config.ServerSetup.IP)
-		router.Run(config.ServerSetup.IP)
+		log.Println("HTTP server is up!", " IP:", config.Server.IP)
+		router.Run(config.Server.IP)
 	} else if config.Mode == BOTH {
-		go router.RunTLS(config.ServerSetup.SSLIP, config.ServerSetup.CrtPath, config.ServerSetup.KeyPath)
-		log.Println("HTTPS server is up!", " IP:", config.ServerSetup.SSLIP)
-		log.Println("HTTP server is up!", " IP:", config.ServerSetup.IP)
-		router.Run(config.ServerSetup.IP)
+		go router.RunTLS(config.Server.SSLIP, config.Server.CrtPath, config.Server.KeyPath)
+		log.Println("HTTPS server is up!", " IP:", config.Server.SSLIP)
+		log.Println("HTTP server is up!", " IP:", config.Server.IP)
+		router.Run(config.Server.IP)
 	} else {
 		log.Panic("Invalid ServerSetup Mode")
 	}
@@ -165,9 +187,6 @@ func last6hours(c *gin.Context) {
 
 //GetLatestResult return the latest DataPoint1Min PingResult from the cluster and convert it into PingResultJSON
 func GetLatestResult(c Cluster) DataPoint1MinResultJSON {
-	if !IsClusterActive(c) && config.ServerSetup.PingService {
-		return DataPoint1MinResultJSON{}
-	}
 	records := getLastN(c, DataPoint1Min, 1)
 	if len(records) > 0 {
 		return To1MinWindowJson(&records[0])
@@ -178,9 +197,6 @@ func GetLatestResult(c Cluster) DataPoint1MinResultJSON {
 
 //GetLatestResult return the latest 6hr DataPoint1Min PingResult from the cluster and convert it into PingResultJSON
 func GetLast6hours(c Cluster) []DataPoint1MinResultJSON {
-	if !IsClusterActive(c) && config.ServerSetup.PingService {
-		return []DataPoint1MinResultJSON{}
-	}
 	lastRecord := getLastN(c, DataPoint1Min, 1)
 	now := time.Now().UTC().Unix()
 	if len(lastRecord) > 0 {
@@ -197,34 +213,22 @@ func GetLast6hours(c Cluster) []DataPoint1MinResultJSON {
 	if len(groups) != 6*60 {
 		log.Println("WARN! groups is not 360!", " beginOfPast60Hours:", beginOfPast60Hours, "now")
 	}
-	groupsStat := statisticCompute(groups)
+
+	groupsStat := statisticCompute(GetClusterConfig(c), groups)
 	ret := []DataPoint1MinResultJSON{}
 	for _, g := range groupsStat.PingStatisticList {
 		ret = append(ret, PingResultToJson(&g))
 	}
 	return ret
 }
-
-func IsClusterActive(c Cluster) bool {
-	for _, existedCluster := range config.SolanaPing.Clusters {
-		if c == existedCluster { // cluster existed
-			return true
-		}
+func GetClusterConfig(c Cluster) ClusterConfig {
+	switch c {
+	case MainnetBeta:
+		return config.Mainnet
+	case Testnet:
+		return config.Testnet
+	case Devnet:
+		return config.Devnet
 	}
-	return false
-}
-
-func test(c *gin.Context) {
-	now := time.Now().UTC().Unix()
-	//now := int64(1648733636)
-	beginOfPast10min := now - 10*60
-	records := getAfter(MainnetBeta, DataPoint1Min, beginOfPast10min)
-	groups := grouping1Min(records, beginOfPast10min, now)
-	groupsStat := statisticCompute(groups)
-	printStatistic(groupsStat)
-	ret := []DataPoint1MinResultJSON{}
-	for _, g := range groupsStat.PingStatisticList {
-		ret = append(ret, PingResultToJson(&g))
-	}
-	c.IndentedJSON(http.StatusOK, ret)
+	return ClusterConfig{}
 }

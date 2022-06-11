@@ -22,6 +22,8 @@ var (
 	ErrNoPingResultShort       = errors.New("PingResultError has no shortname")
 	ErrTransactionLoss         = errors.New("TransactionLoss")
 	ErrWaitForConfirmedTimeout = errors.New("Wait for a confirmed block timeout")
+	ErrGetKeyPair              = errors.New("No valid KeyPair")
+	ErrKeyPairFile             = errors.New("Read KeyPair File Error")
 )
 
 // Setup Statistic / Alert / Report Error Exception List
@@ -65,6 +67,9 @@ func (e PingResultError) IsErrRPCEOF() bool {
 }
 func (e PingResultError) IsErrGatewayTimeout504() bool {
 	return GatewayTimeout504.IsIdentical(e)
+}
+func (e PingResultError) IsNoSuchHost() bool {
+	return NoSuchHost.IsIdentical(e)
 }
 
 func (p PingResultError) IsInErrorList(inErrs []ErrRespIdentifier) bool {
