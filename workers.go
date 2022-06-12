@@ -19,9 +19,11 @@ const (
 )
 
 func launchWorkers(c ClustersToRun) {
+	// Run API API Service
+	// Run Ping Service
 	runCluster := func(clusterConf ClusterConfig) {
-		if !clusterConf.PingEnabled {
-			log.Println("==> go pingDataWorker", clusterConf.Cluster, " PingEnabled ", clusterConf.PingEnabled)
+		if !clusterConf.PingServiceEnabled {
+			log.Println("==> go pingDataWorker", clusterConf.Cluster, " PingServiceEnabled ", clusterConf.PingServiceEnabled)
 			return
 		}
 		for i := 0; i < clusterConf.PingConfig.NumWorkers; i++ {
@@ -48,6 +50,7 @@ func launchWorkers(c ClustersToRun) {
 	default:
 		panic(ErrInvalidCluster)
 	}
+	// Run Retension Service
 	if config.Retension.Enabled {
 		time.Sleep(2 * time.Second)
 		go RetensionServiceWorker()
@@ -86,7 +89,6 @@ func pingDataWorker(cConf ClusterConfig) {
 	default:
 		panic(ErrInvalidCluster)
 	}
-	log.Println("------cConf KeyPair Account", acct.PublicKey, "\n", acct.PrivateKey)
 	for {
 		c = failover.GoNext(c, cConf)
 		result, err := Ping(c, DataPoint1Min, acct, cConf)

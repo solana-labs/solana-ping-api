@@ -8,10 +8,14 @@
 - Spam Filter of slack alert
 
 ## Server Setup
+### API Service
+API service for getting the results of ping service. 
+Use `APIServer: Enabled: true` to turn on in in config-{cluster}.yaml. The default is true for mainnet but false for other clusters.
+
 ### PingService
 This is similar to  "solana ping" tool in solana tool but can do concurrent rpc query.
 It send transactions to rpc endpoint and wait for transactions is confirmed. 
-Use `PingEnabled: true` to turn on in config-{cluster}.yaml. The default is On. 
+Use `PingServiceEnabled: true` to turn on in config-{cluster}.yaml. The default is On. 
 
 ### RetensionService
 Use `Retension: Enabled: true` in config.yaml to turn on. Default is Off.

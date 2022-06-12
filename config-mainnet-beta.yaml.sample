@@ -1,4 +1,11 @@
-PingEnabled: true
+APIServer:
+ Enabled: true
+ Mode: http
+ IP: "0.0.0.0:8080"
+ SSLIP: "0.0.0.0:8433"
+ KeyPath: "/home/somepath/key.pem"
+ CrtPath: "/home/somepath/crt.pem"
+PingServiceEnabled: true
 AlternativeEnpoint:
   - Endpoint: https://localhost:8999
     MaxRetry: 3

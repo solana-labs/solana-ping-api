@@ -44,7 +44,8 @@ type SlackAlert struct {
 	LossThreshold int
 	LevelFilePath string
 }
-type Server struct {
+type APIServer struct {
+	Enabled bool
 	Mode    ConnectionMode
 	IP      string
 	SSLIP   string
@@ -87,7 +88,8 @@ type RPCEndpoint struct {
 }
 
 type ClusterPing struct {
-	PingEnabled        bool
+	APIServer
+	PingServiceEnabled bool
 	AlternativeEnpoint []RPCEndpoint
 	PingConfig
 	SlackReport
@@ -100,7 +102,6 @@ type ClusterConfig struct {
 }
 
 type Config struct {
-	Server
 	Database
 	Mainnet ClusterConfig
 	Testnet ClusterConfig
@@ -124,17 +125,6 @@ func loadConfig() Config {
 	// setup config.yaml
 	v.SetConfigName("config")
 	v.ReadInConfig()
-	// setup config.yaml (Server)
-	c.Server.Mode = ConnectionMode(v.GetString("Server.Mode"))
-	if c.Server.Mode != HTTP &&
-		c.Server.Mode != HTTPS && c.Server.Mode != BOTH {
-		c.Server.Mode = HTTP
-		log.Println("server mode not support! use default mode")
-	}
-	c.Server.IP = v.GetString("Server.IP")
-	c.Server.SSLIP = v.GetString("Server.SSLIP")
-	c.Server.KeyPath = v.GetString("Server.KeyPath")
-	c.Server.CrtPath = v.GetString("Server.CrtPath")
 	// setup config.yaml (Database)
 	c.Database.UseGoogleCloud = v.GetBool("Database.UseGoogleCloud")
 	c.Database.GCloudCredentialPath = v.GetString("Database.GCloudCredentialPath")
@@ -191,12 +181,22 @@ func loadConfig() Config {
 		HostName:    hostname,
 		ClusterPing: ReadClusterPingConfig(v),
 	}
+	if c.Mainnet.APIServer.Mode != HTTP &&
+		c.Mainnet.APIServer.Mode != HTTPS && c.Mainnet.APIServer.Mode != BOTH {
+		c.Mainnet.APIServer.Mode = HTTP
+		log.Println("Mainnet API server mode not support! use default mode")
+	}
 	v.SetConfigName(configTestnetFile)
 	v.ReadInConfig()
 	c.Testnet = ClusterConfig{
 		Cluster:     Testnet,
 		HostName:    hostname,
 		ClusterPing: ReadClusterPingConfig(v),
+	}
+	if c.Testnet.APIServer.Mode != HTTP &&
+		c.Testnet.APIServer.Mode != HTTPS && c.Testnet.APIServer.Mode != BOTH {
+		c.Testnet.APIServer.Mode = HTTP
+		log.Println("Mainnet API server mode not support! use default mode")
 	}
 	v.SetConfigName(configDevnetFile)
 	v.ReadInConfig()
@@ -205,7 +205,11 @@ func loadConfig() Config {
 		HostName:    hostname,
 		ClusterPing: ReadClusterPingConfig(v),
 	}
-
+	if c.Devnet.APIServer.Mode != HTTP &&
+		c.Devnet.APIServer.Mode != HTTPS && c.Devnet.APIServer.Mode != BOTH {
+		c.Devnet.APIServer.Mode = HTTP
+		log.Println("Devnet API server mode not support! use default mode")
+	}
 	return c
 }
 

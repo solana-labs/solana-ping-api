@@ -61,7 +61,6 @@ func (f *RPCFailover) GoNext(cur *client.Client, config ClusterConfig) *client.C
 	defer failoverMutex.Unlock()
 	var next *client.Client
 	retries := f.GetEndpoint().Retry
-	log.Println("GoNext", retries, " maxRetry", f.GetEndpoint().MaxRetry)
 	if retries < f.GetEndpoint().MaxRetry { // Go Next
 		if cur != nil {
 			return cur
@@ -70,8 +69,8 @@ func (f *RPCFailover) GoNext(cur *client.Client, config ClusterConfig) *client.C
 		}
 	}
 	idx := f.GetNextIndex()
-	log.Println("GoNext", idx, " next endpoint:", f.GetEndpoint().Endpoint)
 	next = client.NewClient(f.Endpoints[idx].Endpoint)
+	log.Println("GoNext!!! New Endpoint:", f.GetEndpoint())
 	return next
 }
 
@@ -82,18 +81,15 @@ func (f *RPCFailover) GetEndpoint() *FailoverEndpoint {
 func (f *FailoverEndpoint) RetryResult(err PingResultError) {
 	failoverMutex.Lock()
 	defer failoverMutex.Unlock()
-	log.Println("RetryResult err:", err)
 	if !err.NoError() {
 		if err.IsTooManyRequest429() ||
 			err.IsServiceUnavilable() ||
 			err.IsErrGatewayTimeout504() ||
 			err.IsNoSuchHost() {
 			f.Retry += 1
-			log.Println("f.Retry += 1", f.Retry)
 		}
 	} else {
 		f.Retry = 0
-		log.Println("f.Retry reset", f.Retry)
 	}
 }
 

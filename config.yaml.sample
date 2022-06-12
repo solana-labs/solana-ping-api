@@ -1,17 +1,3 @@
-Server:
- Mode: http
- IP: "0.0.0.0:8080"
- SSLIP: "0.0.0.0:8433"
- KeyPath: "/home/somepath/key.pem"
- CrtPath: "/home/somepath/crt.pem"
-Database:
- UseGoogleCloud: false
- GCloudCredentialPath:  "/somepath/dev.json"
- DBConn: "user= password= host=localhost port=5432 dbname=" #use for both googlecloud or local database
-Retension:
- Enabled: false         #Retension service
- KeepHours: 48                                              
- UpdateIntervalSec: 3600
 ClusterConfigFile:
  Mainnet: config-mainnet-beta
  Testnet: config-testnet
@@ -21,3 +7,11 @@ SolanaCliFile: # solana-cli config file
  MainnetPath: config-mainnet-beta.yml
  TestnetPath: config-testnet.yml
  DevnetPath: config-devnet.yml
+Database:
+ UseGoogleCloud: false
+ GCloudCredentialPath:  "/somepath/dev.json"
+ DBConn: "user= password= host=localhost port=5432 dbname=" #use for both googlecloud or local database
+Retension:
+ Enabled: false         #Retension service
+ KeepHours: 48                                              
+ UpdateIntervalSec: 3600
