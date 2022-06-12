@@ -45,7 +45,6 @@ func Transfer(c *client.Client, sender types.Account, feePayer types.Account, re
 		Message: message,
 		Signers: []types.Account{feePayer, sender},
 	})
-
 	if err != nil {
 		log.Printf("Error: Failed to create a new transaction, err: %v", err)
 		return "", PingResultError(err.Error())

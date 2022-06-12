@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"math"
 	"strings"
 	"time"
@@ -42,26 +41,27 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 				RequestComputeUnits: config.RequestUnits,
 				ComputeUnitPrice:    config.ComputeUnitPrice,
 			})
+			hash = txhash // avoid shadow
 			if !pingErr.NoError() {
 				timer.TimerStop()
 				if !pingErr.IsInErrorList(PingTakeTimeErrExpectionList) {
 					timer.Add()
 				}
 				resultErrs = append(resultErrs, string(pingErr))
-				hash = txhash // avoid shadow
 				continue
 			}
 		} else {
 			txhash, pingErr := Transfer(c, acct, acct, config.Receiver, time.Duration(config.TxTimeout)*time.Second)
+			hash = txhash // avoid shadow
+			// log.Println("Send Tx ", txhash, " error:", pingErr)
 			if !pingErr.NoError() {
 				timer.TimerStop()
 				if !pingErr.IsInErrorList(PingTakeTimeErrExpectionList) {
 					timer.Add()
 				}
 				resultErrs = append(resultErrs, string(pingErr))
-				hash = txhash // avoid shadow
-				log.Println("Transfer:", hash, "  pingErr:", pingErr)
 				continue
+
 			}
 		}
 		pingErr := waitConfirmation(c, hash,
@@ -74,12 +74,12 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 			if !pingErr.IsInErrorList(PingTakeTimeErrExpectionList) {
 				timer.Add()
 			}
-			log.Println("waitConfirmation", hash, " pingErr", pingErr)
 			continue
 		}
 		timer.Add()
 		confirmedCount++
-		log.Println("waitConfirmation confirmed:", hash)
+		// log.Println(hash, "is confirmed/finalized")
+
 	}
 	result.TimeStamp = time.Now().UTC().Unix()
 	result.Submitted = config.BatchCount
