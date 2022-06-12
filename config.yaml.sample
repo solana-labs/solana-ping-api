@@ -1,54 +1,23 @@
-ServerSetup:
- Mode: http                                                        #http/https/both. http default
+Server:
+ Mode: http
  IP: "0.0.0.0:8080"
- SSLIP: "0.0.0.0:8443"
- KeyPath: "PathToCertificates/server.key"
- CrtPath: "PathToCertificates/server.crt"
- PingService: true
- RetensionService: false
- SlackReportService: true
- SlackAlertService: true                            
-UseGCloudDB: false                                                # If use google cloud database, set up UseGCloudDB: true and                                                        
-GCloudCredentialPath:  "/home/xxxx/gcloud/credential/dev.json"    #give GCloudCredentialPath $GOOGLE_APPLICATION_CREDENTIALS value
-DBConn: "user= password= host= port=5432 dbname=pingresult"
-Logfile:
-Tracefile: /home/sol/ping-api-server/log/trace.log
-SolanaConfig:
- Dir: "/home/sol/.config/solana/cli/"
- MainnetPath: "config-mainnet-beta.yml"
- TestnetPath: "config-testnet.yml"
- DevnetPath: "config-devnet.yml"
-SolanaPing:
- AlternativeEnpoint:                                        #if AlternativeEnpoint is set, server will use alternative endpoint
-  Mainnet:
-  Testnet:
-  Devnet:
- Clusters:                                                         # Clusters to perform Report and DataPoint1Min, user # to disable Clusters
-  - MainnetBeta
-  - Testnet
-  - Devnet
- PingConfig:                                             # Ping for Explorer Setup 
-  Receiver: "9qT3WeLV5o3t3GVgCk9A3mpTRjSb9qBvnfrAsVKLhmU5"    # Ping for Slack Report Setup
-  NumWorkers: 5                                               # number of workers will run. This is a concurrent process number
-  BatchCount: 1                                               # number of transaction will test in a single ping operation
-  BatchInverval: 1                                            # wait sec for each batch transaction
-  TxTimeout: 10                                               # timeout in sec for each transaction send
-  WaitConfirmationTimeout: 35                                 # timeout in sec for check confirm status 
-  StatusCheckTime: 1                                          # wait sec for each status confirm-check 
-  MinPerPingTime: 10                                          # If Ping operation is less than  MinPerPingTime, it will wait to make per Ping time = MinPerPingTime
-  RequestUnits: 200000
-  ComputeUnitPrice: 1000
+ SSLIP: "0.0.0.0:8433"
+ KeyPath: "/home/somepath/key.pem"
+ CrtPath: "/home/somepath/crt.pem"
+Database:
+ UseGoogleCloud: false
+ GCloudCredentialPath:  "/somepath/dev.json"
+ DBConn: "user= password= host=localhost port=5432 dbname=" #use for both googlecloud or local database
 Retension:
- KeepHours: 120                                               # Keep how many hours record in database. This affects query speed
- UpdateIntervalSec: 10800                                     # Interval to perform remove old data , if less than 300 sec , it set to 300 sec
-SlackReport:                                                      # Send a report tp slack
- WebHook: 
- ReportTime: 600  
- SlackAlert:                                                     # Send alert when loss of ping reach a value
-  WebHook: 
-  LossThreshold: 20                                                   # data window
-  LevelFilePath:
- Clusters:                                                        # clusters to monitor
-  - MainnetBeta
-#  - Testnet
-#  - Devnet
+ Enabled: false         #Retension service
+ KeepHours: 48                                              
+ UpdateIntervalSec: 3600
+ClusterConfigFile:
+ Mainnet: config-mainnet-beta
+ Testnet: config-testnet
+ Devnet: config-devnet
+SolanaCliFile: # solana-cli config file
+ Dir: /home/sol/.config/solana/cli/
+ MainnetPath: config-mainnet-beta.yml
+ TestnetPath: config-testnet.yml
+ DevnetPath: config-devnet.yml
