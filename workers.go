@@ -28,7 +28,7 @@ func launchWorkers(c ClustersToRun) {
 		}
 		for i := 0; i < clusterConf.PingConfig.NumWorkers; i++ {
 			log.Println("==> go pingDataWorker", clusterConf.Cluster, " n:", clusterConf.PingConfig.NumWorkers, "i:", i)
-			go pingDataWorker(clusterConf)
+			go pingDataWorker(clusterConf, i)
 			time.Sleep(2 * time.Second)
 		}
 		if clusterConf.SlackReport.Enabled {
@@ -57,9 +57,9 @@ func launchWorkers(c ClustersToRun) {
 	}
 }
 
-func pingDataWorker(cConf ClusterConfig) {
-	log.Println(">> Solana DataPoint1MinWorker for ", cConf.Cluster, " start!")
-	defer log.Println(">> Solana DataPoint1MinWorker for ", cConf.Cluster, " end!")
+func pingDataWorker(cConf ClusterConfig, workerNum int) {
+	log.Println(">> Solana DataPoint1MinWorker for ", cConf.Cluster, " worker:", workerNum, " start!")
+	defer log.Println(">> Solana DataPoint1MinWorker for ", cConf.Cluster, " worker:", workerNum, " end!")
 	var failover RPCFailover
 	var c *client.Client
 	var acct types.Account
@@ -90,7 +90,7 @@ func pingDataWorker(cConf ClusterConfig) {
 		panic(ErrInvalidCluster)
 	}
 	for {
-		c = failover.GoNext(c, cConf)
+		c = failover.GoNext(c, cConf, workerNum)
 		result, err := Ping(c, DataPoint1Min, acct, cConf)
 		addRecord(result)
 		failover.GetEndpoint().RetryResult(err)

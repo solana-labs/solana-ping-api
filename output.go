@@ -128,6 +128,21 @@ func (s *SlackPayload) AlertPayload(conf ClusterConfig, gStat *GlobalStatistic, 
 	s.Blocks = append(s.Blocks, header)
 }
 
+func (s *SlackPayload) FailoverAlertPayload(conf ClusterConfig, endpoint FailoverEndpoint, workerNum int) {
+	text := fmt.Sprintf("{ hostname: %s, cluster:%s, worker:%d, msg:%s}",
+		conf.HostName, conf.Cluster, workerNum,
+		fmt.Sprintf("failover to %s", endpoint.Endpoint))
+
+	header := Block{
+		BlockType: "section",
+		BlockText: SlackText{
+			SType: "mrkdwn",
+			SText: text,
+		},
+	}
+	s.Blocks = append(s.Blocks, header)
+}
+
 func reportRecordBlock(data *GroupsAllStatistic) string {
 	text := ""
 	timeStatis := ""

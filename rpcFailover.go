@@ -56,7 +56,7 @@ func (f *RPCFailover) GetNext() string {
 	return f.Endpoints[f.curIndex].Endpoint
 }
 
-func (f *RPCFailover) GoNext(cur *client.Client, config ClusterConfig) *client.Client {
+func (f *RPCFailover) GoNext(cur *client.Client, config ClusterConfig, workerNum int) *client.Client {
 	failoverMutex.Lock()
 	defer failoverMutex.Unlock()
 	var next *client.Client
@@ -71,6 +71,11 @@ func (f *RPCFailover) GoNext(cur *client.Client, config ClusterConfig) *client.C
 	idx := f.GetNextIndex()
 	next = client.NewClient(f.Endpoints[idx].Endpoint)
 	log.Println("GoNext!!! New Endpoint:", f.GetEndpoint())
+	if config.AlternativeEnpoint.SlackAlert.Enabled {
+		var slack SlackPayload
+		slack.FailoverAlertPayload(config, *f.GetEndpoint(), workerNum)
+		SlackSend(config.AlternativeEnpoint.SlackAlert.WebHook, &slack)
+	}
 	return next
 }
 

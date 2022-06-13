@@ -86,11 +86,15 @@ type RPCEndpoint struct {
 	Piority  int
 	MaxRetry int
 }
+type AlternativeEnpoint struct {
+	HostList []RPCEndpoint
+	SlackAlert
+}
 
 type ClusterPing struct {
 	APIServer
 	PingServiceEnabled bool
-	AlternativeEnpoint []RPCEndpoint
+	AlternativeEnpoint
 	PingConfig
 	SlackReport
 }

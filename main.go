@@ -8,6 +8,7 @@ import (
 	"time"
 
 	_ "github.com/GoogleCloudPlatform/cloudsql-proxy/proxy/dialers/postgres"
+	"github.com/portto/solana-go-sdk/rpc"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -57,19 +58,19 @@ func init() {
 	log.Println("--- Mainnet Ping  --- ")
 	log.Println("Mainnet.ClusterPing.APIServer", config.Mainnet.ClusterPing.APIServer)
 	log.Println("Mainnet.ClusterPing.PingServiceEnabled", config.Mainnet.ClusterPing.PingServiceEnabled)
-	log.Println("Mainnet.ClusterPing.AlternativeEnpoint", config.Mainnet.ClusterPing.AlternativeEnpoint)
+	log.Println("Mainnet.ClusterPing.AlternativeEnpoint.HostList", config.Mainnet.ClusterPing.AlternativeEnpoint.HostList)
 	log.Println("Mainnet.ClusterPing.PingConfig", config.Mainnet.ClusterPing.PingConfig)
 	log.Println("Mainnet.ClusterPing.SlackReport", config.Mainnet.ClusterPing.SlackReport)
 	log.Println("--- Testnet Ping  --- ")
 	log.Println("Mainnet.ClusterPing.APIServer", config.Testnet.ClusterPing.APIServer)
 	log.Println("Mainnet.ClusterPing.PingServiceEnabled", config.Mainnet.ClusterPing.PingServiceEnabled)
-	log.Println("Testnet.ClusterPing.AlternativeEnpoint", config.Testnet.ClusterPing.AlternativeEnpoint)
+	log.Println("Testnet.ClusterPing.AlternativeEnpoint.HostList", config.Testnet.ClusterPing.AlternativeEnpoint.HostList)
 	log.Println("Testnet.ClusterPing.PingConfig", config.Testnet.ClusterPing.PingConfig)
 	log.Println("Testnet.ClusterPing.SlackReport", config.Testnet.ClusterPing.SlackReport)
 	log.Println("--- Devnet Ping  --- ")
 	log.Println("Devnet.ClusterPing.APIServer", config.Devnet.ClusterPing.APIServer)
 	log.Println("Devnet.ClusterPing.Enabled", config.Devnet.ClusterPing.PingServiceEnabled)
-	log.Println("Devnet.ClusterPing.AlternativeEnpoint", config.Devnet.ClusterPing.AlternativeEnpoint)
+	log.Println("Devnet.ClusterPing.AlternativeEnpoint.HostList", config.Devnet.ClusterPing.AlternativeEnpoint.HostList)
 	log.Println("Devnet.ClusterPing.PingConfig", config.Devnet.ClusterPing.PingConfig)
 	log.Println("Devnet.ClusterPing.SlackReport", config.Devnet.ClusterPing.SlackReport)
 	log.Println(" *** Config End *** ")
@@ -100,9 +101,30 @@ func init() {
 	log.Println("database connected")
 	/// ---- Start RPC Failover ---
 	log.Println("RPC Endpoint Failover Setting ---")
-	mainnetFailover = NewRPCFailover(config.Mainnet.AlternativeEnpoint)
-	testnetFailover = NewRPCFailover(config.Testnet.AlternativeEnpoint)
-	devnetFailover = NewRPCFailover(config.Devnet.AlternativeEnpoint)
+	if len(config.Mainnet.AlternativeEnpoint.HostList) <= 0 {
+		mainnetFailover = NewRPCFailover([]RPCEndpoint{{
+			Endpoint: rpc.MainnetRPCEndpoint,
+			Piority:  1,
+			MaxRetry: 30}})
+	} else {
+		mainnetFailover = NewRPCFailover(config.Mainnet.AlternativeEnpoint.HostList)
+	}
+	if len(config.Testnet.AlternativeEnpoint.HostList) <= 0 {
+		testnetFailover = NewRPCFailover([]RPCEndpoint{{
+			Endpoint: rpc.MainnetRPCEndpoint,
+			Piority:  1,
+			MaxRetry: 30}})
+	} else {
+		testnetFailover = NewRPCFailover(config.Testnet.AlternativeEnpoint.HostList)
+	}
+	if len(config.Mainnet.AlternativeEnpoint.HostList) <= 0 {
+		devnetFailover = NewRPCFailover([]RPCEndpoint{{
+			Endpoint: rpc.MainnetRPCEndpoint,
+			Piority:  1,
+			MaxRetry: 30}})
+	} else {
+		devnetFailover = NewRPCFailover(config.Devnet.AlternativeEnpoint.HostList)
+	}
 }
 
 func main() {
