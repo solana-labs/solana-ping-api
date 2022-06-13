@@ -1,35 +1,41 @@
 APIServer:
- Enabled: false
+ Enabled: true
  Mode: http
  IP: "0.0.0.0:8080"
  SSLIP: "0.0.0.0:8433"
- KeyPath: "/home/somepath/key.pem"
- CrtPath: "/home/somepath/crt.pem"
+ KeyPath: "/yourpath/privkey.pem"
+ CrtPath: "/yourpath/crt.pem"
 PingServiceEnabled: true
 AlternativeEnpoint:
-  - Endpoint: https://localhost:8999
-    MaxRetry: 3
-  - Endpoint: https://api.devnet.com.solana
+ HostList:
+  - Endpoint: http://127.0.0.1:8999
+    MaxRetry: 10
+  - Endpoint: http://localhost:8999
     Piority: 2
-    MaxRetry: 3
+    MaxRetry: 5
+  - Endpoint: http://api.devnet.solana.com
+    Piority: 3
+    MaxRetry: 5
+ SlackAlert: # failover alert
+  Enabled: true
+  Webhook:
 PingConfig:
  Receiver: 9qT3WeLV5o3t3GVgCk9A3mpTRjSb9qBvnfrAsVKLhmU5 # change your receive account here
- NumWorkers: 1                 #change number of concurent run here
+ NumWorkers: 3                 #change number of concurent run here
  BatchCount: 1
  BatchInverval: 1
- TxTimeout: 75                 # timeout time
- WaitConfirmationTimeout: 60
+ TxTimeout: 45                 # timeout time
+ WaitConfirmationTimeout: 75
  StatusCheckInterval: 1
  MinPerPingTime: 10
- RequestUnits: 3000          # change RequestUnits 
+ RequestUnits: 200000        # change RequestUnits 
  ComputeUnitPrice: 1000      # change ComputeUnitPrice
- TxLogOn: false              # to print out transcation
 SlackReport:
  Enabled:  false
- WebHook: 
+ WebHook:
  ReportInterval: 600
  SlackAlert: 
   Enabled:  true                        
-  WebHook: 
+  WebHook:
   LossThreshold: 20
-  LevelFilePath: /somepath/level-devnet.env
+  LevelFilePath: /yourpath/level-mainnet.env
