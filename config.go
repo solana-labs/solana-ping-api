@@ -115,7 +115,12 @@ func loadConfig() Config {
 	// jww.SetStdoutThreshold(jww.LevelTrace)
 	c := Config{}
 	v := viper.New()
-	v.AddConfigPath("./")
+	userHome, err := os.UserHomeDir()
+	if err != nil {
+		panic("loadConfig error:" + err.Error())
+	}
+
+	v.AddConfigPath(userHome + "/.config/ping-api")
 	v.SetConfigType("yaml")
 	v.AutomaticEnv()
 	hostname, err := os.Hostname()
@@ -133,6 +138,7 @@ func loadConfig() Config {
 	if len(gcloudCredential) == 0 && len(c.Database.GCloudCredentialPath) != 0 {
 		os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", c.Database.GCloudCredentialPath)
 	}
+	log.Println("GOOGLE_APPLICATION_CREDENTIALS=", os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"))
 	// setup config.yaml (Retension)
 	c.Retension = Retension{
 		Enabled:           v.GetBool("Retension.Enabled"),
