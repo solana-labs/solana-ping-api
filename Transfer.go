@@ -73,7 +73,7 @@ type SendPingTxParam struct {
 	Ctx                 context.Context
 	FeePayer            types.Account
 	RequestComputeUnits uint32
-	ComputeUnitPrice    uint32
+	ComputeUnitPrice    uint64 // micro lamports
 }
 
 func SendPingTx(param SendPingTxParam) (string, error) {
@@ -88,9 +88,11 @@ func SendPingTx(param SendPingTxParam) (string, error) {
 			FeePayer:        param.FeePayer.PublicKey,
 			RecentBlockhash: latestBlockhashResponse.Blockhash,
 			Instructions: []types.Instruction{
-				cmptbdgprog.RequestUnits(cmptbdgprog.RequestUnitsParam{
-					Units:         param.RequestComputeUnits,
-					AdditionalFee: (param.RequestComputeUnits * param.ComputeUnitPrice) / 1_000_000,
+				cmptbdgprog.SetComputeUnitLimit(cmptbdgprog.SetComputeUnitLimitParam{
+					Units: param.RequestComputeUnits,
+				}),
+				cmptbdgprog.SetComputeUnitPrice(cmptbdgprog.SetComputeUnitPriceParam{
+					MicroLamports: param.ComputeUnitPrice,
 				}),
 				memoprog.BuildMemo(memoprog.BuildMemoParam{
 					Memo: []byte("ping"),

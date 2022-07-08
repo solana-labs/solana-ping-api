@@ -47,7 +47,7 @@ type PingConfig struct {
 	MinPerPingTime          int64
 	MaxPerPingTime          int64
 	RequestUnits            uint32
-	ComputeUnitPrice        uint32
+	ComputeUnitPrice        uint64
 }
 
 type EndPoint struct {
@@ -190,7 +190,7 @@ func loadConfig() Config {
 			MinPerPingTime:          v.GetInt64("SolanaPing.PingConfig.MinPerPingTime"),
 			MaxPerPingTime:          v.GetInt64("SolanaPing.PingConfig.MaxPerPingTime"),
 			RequestUnits:            v.GetUint32("SolanaPing.PingConfig.RequestUnits"),
-			ComputeUnitPrice:        v.GetUint32("SolanaPing.PingConfig.ComputeUnitPrice"),
+			ComputeUnitPrice:        v.GetUint64("SolanaPing.PingConfig.ComputeUnitPrice"),
 		},
 	}
 	c.SolanaPing.Clusters = []Cluster{}

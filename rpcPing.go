@@ -37,16 +37,8 @@ func Ping(cluster Cluster, c *client.Client, host string, pType PingType, config
 		}
 		timer.TimerStart()
 		var hash string
-		if cluster == Testnet {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.TxTimeout)*time.Second)
-			defer cancel()
-			hash, err = SendPingTx(SendPingTxParam{
-				Client:              c,
-				Ctx:                 ctx,
-				FeePayer:            configAcct,
-				RequestComputeUnits: config.RequestUnits,
-				ComputeUnitPrice:    config.ComputeUnitPrice,
-			})
+		if cluster == MainnetBeta {
+			hash, err = Transfer(c, configAcct, configAcct, config.Receiver, time.Duration(config.TxTimeout)*time.Second)
 			if err != nil {
 				timer.TimerStop()
 				if !PingResultError(err.Error()).IsInErrorList(PingTakeTimeErrExpectionList) {
@@ -56,7 +48,15 @@ func Ping(cluster Cluster, c *client.Client, host string, pType PingType, config
 				continue
 			}
 		} else {
-			hash, err = Transfer(c, configAcct, configAcct, config.Receiver, time.Duration(config.TxTimeout)*time.Second)
+			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.TxTimeout)*time.Second)
+			defer cancel()
+			hash, err = SendPingTx(SendPingTxParam{
+				Client:              c,
+				Ctx:                 ctx,
+				FeePayer:            configAcct,
+				RequestComputeUnits: config.RequestUnits,
+				ComputeUnitPrice:    config.ComputeUnitPrice,
+			})
 			if err != nil {
 				timer.TimerStop()
 				if !PingResultError(err.Error()).IsInErrorList(PingTakeTimeErrExpectionList) {
