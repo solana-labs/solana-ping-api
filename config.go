@@ -29,7 +29,7 @@ type PingConfig struct {
 	StatusCheckInterval     int64
 	MinPerPingTime          int64
 	RequestUnits            uint32
-	ComputeUnitPrice        uint32
+	ComputeUnitPrice        uint64
 }
 
 type SlackReport struct {

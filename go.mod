@@ -8,7 +8,7 @@ require (
 	github.com/gin-gonic/gin v1.7.7
 	github.com/lib/pq v1.10.4
 	github.com/parnurzeal/gorequest v0.2.16
-	github.com/portto/solana-go-sdk v1.16.1
+	github.com/portto/solana-go-sdk v1.18.0
 	github.com/spf13/viper v1.10.1
 	gorm.io/driver/postgres v1.3.1
 	gorm.io/gorm v1.23.3
