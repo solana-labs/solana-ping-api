@@ -8,32 +8,41 @@
 - Spam Filter of slack alert
 
 ## Server Setup
+### API Service
+API service for getting the results of ping service. 
+Use `APIServer: Enabled: true` to turn on in in config-{cluster}.yaml. The default is true for mainnet but false for other clusters.
+
 ### PingService
 This is similar to  "solana ping" tool in solana tool but can do concurrent rpc query.
 It send transactions to rpc endpoint and wait for transactions is confirmed. 
-Use `PingService: true` to turn on. The default is On. 
+Use `PingServiceEnabled: true` to turn on in config-{cluster}.yaml. The default is On. 
 
 ### RetensionService
-Use `RetensionService: true` to turn on. Default is Off.
+Use `Retension: Enabled: true` in config.yaml to turn on. Default is Off.
 Clean database data periodically.
 
 ### SlackReportService
-Use `SlackReportService: true` to turn on. Default is On.
+Use `SlackReport: Enabled:true` in config-{cluster}.yaml to turn on. Default is On.
 send summary of ping result to a slack channel periodically.
 
 ### SlackAlertService
-Use `SlackAlertService: true` to turn on. Default is On.
+Use `SlackReport: SlackAlert: Enabled: true`  in config-{cluster}.yaml to turn on. Default is On.
 If confirmation loss is greater than a thredhold, send an alert to a channel
 
 + Example:Run only API Query Server
 In config.yaml ServerSetup: 
-```
- PingService: true           
- RetensionService: false        
- SlackReportService: false
- SlackAlertService: false  
-```
 
+```
+(config.yaml)
+Retension:
+ Enabled: false
+(config-{cluster}.yaml)
+PingEnabled: true     
+SlackReport:
+ Enabled: true
+ SlackAlert: 
+  Enabled: true                        
+```
 ## Installation
 - download executable file 
 - or build from source

@@ -23,7 +23,11 @@ vendor/
 
 # go.sum , do not commit config.yaml to avoid accidental info leak 
 go.sum
-config.yaml 
+config.yaml
+config-mainnet-beta.yaml
+config-testnet.yaml
+config-devnet.yaml
+*.env
 # Go workspace file
 go.work.*
 

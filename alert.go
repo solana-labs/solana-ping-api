@@ -15,15 +15,14 @@ type AlertTrigger struct {
 	FilePath        string
 }
 
-func NewAlertTrigger() AlertTrigger {
+func NewAlertTrigger(conf ClusterConfig) AlertTrigger {
 	s := AlertTrigger{}
-	s.FilePath = config.SlackReport.SlackAlert.LevelFilePath
+	s.FilePath = conf.SlackReport.SlackAlert.LevelFilePath
 	s.CurrentLoss = 0
 	s.LastLoss = 0
-	s.ThresholdLevels = []float64{float64(config.SlackReport.SlackAlert.LossThreshold), float64(50), float64(75), float64(100)}
-	s.FilePath = config.SlackReport.SlackAlert.LevelFilePath
+	s.ThresholdLevels = []float64{float64(conf.SlackReport.SlackAlert.LossThreshold), float64(50), float64(75), float64(100)}
+	s.FilePath = conf.SlackReport.SlackAlert.LevelFilePath
 	s.ThresholdIndex = s.ReadIndexFromFile()
-
 	return s
 }
 
@@ -100,10 +99,10 @@ func (s *AlertTrigger) ShouldAlertSend() bool {
 	return false
 }
 
-func AlertSend(cluster Cluster, globalStat *GlobalStatistic, globalErrorStatistic map[string]int, threadhold float64) {
+func AlertSend(conf ClusterConfig, globalStat *GlobalStatistic, globalErrorStatistic map[string]int, threadhold float64) {
 	payload := SlackPayload{}
-	payload.AlertPayload(cluster, globalStat, globalErrorStatistic, threadhold)
-	err := SlackSend(config.SlackReport.SlackAlert.WebHook, &payload)
+	payload.AlertPayload(conf, globalStat, globalErrorStatistic, threadhold)
+	err := SlackSend(conf.SlackReport.SlackAlert.WebHook, &payload)
 	if err != nil {
 		log.Println("SlackSend Error:", err)
 	}

@@ -1,11 +1,13 @@
 package main
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"log"
 	"time"
 
 	"github.com/portto/solana-go-sdk/client"
-	"github.com/portto/solana-go-sdk/rpc"
+	"github.com/portto/solana-go-sdk/types"
 )
 
 type PingType string
@@ -16,92 +18,88 @@ const (
 	DataPoint1Min PingType = "datapoint1min"
 )
 
-func launchWorkers() {
-	if config.ServerSetup.PingService {
-		for _, c := range config.SolanaPing.Clusters {
-
-			for i := 0; i < config.PingConfig.NumWorkers; i++ {
-				go pingDataWorker(c)
-				time.Sleep(10 * time.Second)
-			}
-
+func launchWorkers(c ClustersToRun) {
+	// Run API API Service
+	// Run Ping Service
+	runCluster := func(clusterConf ClusterConfig) {
+		if !clusterConf.PingServiceEnabled {
+			log.Println("==> go pingDataWorker", clusterConf.Cluster, " PingServiceEnabled ", clusterConf.PingServiceEnabled)
+			return
+		}
+		for i := 0; i < clusterConf.PingConfig.NumWorkers; i++ {
+			log.Println("==> go pingDataWorker", clusterConf.Cluster, " n:", clusterConf.PingConfig.NumWorkers, "i:", i)
+			go pingDataWorker(clusterConf, i)
+			time.Sleep(2 * time.Second)
+		}
+		if clusterConf.SlackReport.Enabled {
+			go reportWorker(clusterConf)
 		}
 	}
-
-	if config.ServerSetup.RetensionService {
+	// Single Cluster or all Cluster
+	switch c {
+	case RunMainnetBeta:
+		runCluster(config.Mainnet)
+	case RunTestnet:
+		runCluster(config.Testnet)
+	case RunDevnet:
+		runCluster(config.Devnet)
+	case RunAllClusters:
+		runCluster(config.Mainnet)
+		runCluster(config.Testnet)
+		runCluster(config.Devnet)
+	default:
+		panic(ErrInvalidCluster)
+	}
+	// Run Retension Service
+	if config.Retension.Enabled {
 		time.Sleep(2 * time.Second)
 		go RetensionServiceWorker()
 	}
-
-	if config.ServerSetup.SlackReportService {
-		for _, c := range config.SlackReport.Clusters {
-			go reportWorker(c)
-		}
-	}
-
 }
 
-func createRPCClient(cluster Cluster) (*client.Client, error) {
+func pingDataWorker(cConf ClusterConfig, workerNum int) {
+	log.Println(">> Solana DataPoint1MinWorker for ", cConf.Cluster, " worker:", workerNum, " start!")
+	defer log.Println(">> Solana DataPoint1MinWorker for ", cConf.Cluster, " worker:", workerNum, " end!")
+	var failover RPCFailover
 	var c *client.Client
-	switch cluster {
+	var acct types.Account
+
+	switch cConf.Cluster {
 	case MainnetBeta:
-		if len(config.SolanaPing.AlternativeEnpoint.Mainnet) > 0 {
-			c = client.NewClient(config.SolanaPing.AlternativeEnpoint.Mainnet)
-			log.Println(c, " use alternative endpoint:", config.SolanaPing.AlternativeEnpoint.Mainnet)
-		} else {
-			c = client.NewClient(rpc.MainnetRPCEndpoint)
+		failover = mainnetFailover
+		clusterAcct, err := getConfigKeyPair(config.ClusterCLIConfig.ConfigMain)
+		if err != nil {
+			log.Panic("getConfigKeyPair Error")
 		}
-
+		acct = clusterAcct
 	case Testnet:
-		if len(config.SolanaPing.AlternativeEnpoint.Testnet) > 0 {
-			c = client.NewClient(config.SolanaPing.AlternativeEnpoint.Testnet)
-			log.Println(c, " use alternative endpoint:", config.SolanaPing.AlternativeEnpoint.Testnet)
-		} else {
-			c = client.NewClient(rpc.TestnetRPCEndpoint)
+		failover = testnetFailover
+		clusterAcct, err := getConfigKeyPair(config.ClusterCLIConfig.ConfigTestnet)
+		if err != nil {
+			log.Panic("Testnet getConfigKeyPair Error")
 		}
+		acct = clusterAcct
 	case Devnet:
-		if len(config.SolanaPing.AlternativeEnpoint.Devnet) > 0 {
-			c = client.NewClient(config.SolanaPing.AlternativeEnpoint.Devnet)
-			log.Println(c, " use alternative endpoint:", config.SolanaPing.AlternativeEnpoint.Devnet)
-		} else {
-			c = client.NewClient(rpc.DevnetRPCEndpoint)
+		failover = devnetFailover
+		clusterAcct, err := getConfigKeyPair(config.ClusterCLIConfig.ConfigDevnet)
+		if err != nil {
+			log.Panic("Devnet getConfigKeyPair Error")
 		}
+		acct = clusterAcct
 	default:
-		log.Fatal("Invalid Cluster")
-		return nil, InvalidCluster
-	}
-	return c, nil
-}
-
-func pingDataWorker(cluster Cluster) {
-	log.Println(">> Solana DataPoint1MinWorker for ", cluster, " start!")
-	defer log.Println(">> Solana DataPoint1MinWorker for ", cluster, " end!")
-	c, err := createRPCClient(cluster)
-	if err != nil {
-		return
+		panic(ErrInvalidCluster)
 	}
 	for {
-		if c == nil {
-			c, err = createRPCClient(cluster)
-			if err != nil {
-				return
-			}
-		}
-		result, err := Ping(cluster, c, config.HostName, DataPoint1Min, config.SolanaPing.PingConfig)
-		if err != nil {
-			log.Println("pingReportWorker Error:", err)
-			continue
-		}
+		c = failover.GoNext(c, cConf, workerNum)
+		result, err := Ping(c, DataPoint1Min, acct, cConf)
 		addRecord(result)
-		waitTime := config.SolanaPing.PingConfig.MinPerPingTime - (result.TakeTime / 1000)
+		failover.GetEndpoint().RetryResult(err)
+		waitTime := cConf.ClusterPing.PingConfig.MinPerPingTime - (result.TakeTime / 1000)
 		if waitTime > 0 {
-			//log.Println("---wait for ---", waitTime, " sec")
 			time.Sleep(time.Duration(waitTime) * time.Second)
 		}
 	}
 }
-
-var lastReporUnixTime int64
 
 func RetensionServiceWorker() {
 	log.Println(">> Retension Service Worker start!")
@@ -120,44 +118,63 @@ func RetensionServiceWorker() {
 	}
 }
 
-var lastReporTime int64
+func getConfigKeyPair(c SolanaCLIConfig) (types.Account, error) {
+	body, err := ioutil.ReadFile(c.KeypairPath)
+	if err != nil {
+		return types.Account{}, ErrKeyPairFile
+	}
+	key := []byte{}
+	err = json.Unmarshal(body, &key)
+	if err != nil {
+		return types.Account{}, err
+	}
 
-func reportWorker(cluster Cluster) {
-	log.Println(">> Slack Report Worker for ", cluster, " start!")
-	defer log.Println(">> Slack Report Worker for ", cluster, " end!")
-	slackTrigger := NewAlertTrigger()
+	acct, err := types.AccountFromBytes(key)
+	if err != nil {
+		return types.Account{}, err
+	}
+	return acct, nil
+
+}
+
+var lastReporTime int64
+var lastReporUnixTime int64
+
+func reportWorker(cConf ClusterConfig) {
+	log.Println(">> Slack Report Worker for ", cConf.Cluster, " start!")
+	defer log.Println(">> Slack Report Worker for ", cConf.Cluster, " end!")
+	slackTrigger := NewAlertTrigger(cConf)
 	for {
 		now := time.Now().UTC().Unix()
 		if lastReporTime == 0 { // server restart
-			lastReporTime = now - int64(config.SlackReport.ReportTime)
+			lastReporTime = now - int64(cConf.SlackReport.ReportInterval)
 			log.Println("reconstruct lastReport time=", lastReporTime, "time now=", time.Now().UTC().Unix())
 		}
-		data := getAfter(cluster, DataPoint1Min, lastReporTime)
+		data := getAfter(cConf.Cluster, DataPoint1Min, lastReporTime)
 		if len(data) <= 0 { // No Data
-			log.Println(cluster, " getAfter return empty")
+			log.Println(cConf.Cluster, " getAfter return empty")
 			time.Sleep(30 * time.Second)
 			continue
 		}
 
 		groups := grouping1Min(data, lastReporTime, now)
-		groupsStat := statisticCompute(groups)
+		groupsStat := statisticCompute(cConf, groups)
 		globalStat := groupsStat.GetGroupsAllStatistic(false) // get raw data
-		//PrintStatistic(groupsStat)
 		lastReporTime = now
 		payload := SlackPayload{}
-		payload.ReportPayload(cluster, groupsStat, globalStat)
-		err := SlackSend(config.SlackReport.WebHook, &payload)
+		payload.ReportPayload(cConf.Cluster, groupsStat, globalStat)
+		err := SlackSend(cConf.SlackReport.WebHook, &payload)
 		if err != nil {
 			log.Println("SlackSend Error:", err)
 		}
 
-		if config.ServerSetup.SlackAlertService {
+		if cConf.SlackReport.SlackAlert.Enabled {
 			slackTrigger.Update(globalStat.Loss)
 			if slackTrigger.ShouldAlertSend() {
-				AlertSend(cluster, &globalStat, groupsStat.GlobalErrorStatistic, slackTrigger.ThresholdLevels[slackTrigger.ThresholdIndex])
+				AlertSend(cConf, &globalStat, groupsStat.GlobalErrorStatistic, slackTrigger.ThresholdLevels[slackTrigger.ThresholdIndex])
 			}
 
 		}
-		time.Sleep(time.Duration(config.SlackReport.ReportTime) * time.Second)
+		time.Sleep(time.Duration(cConf.SlackReport.ReportInterval) * time.Second)
 	}
 }

@@ -101,7 +101,7 @@ func (s *SlackPayload) ReportPayload(c Cluster, data *GroupsAllStatistic, global
 	s.Blocks = append(s.Blocks, body)
 }
 
-func (s *SlackPayload) AlertPayload(c Cluster, gStat *GlobalStatistic, errorStistic map[string]int, thresholdAdj float64) {
+func (s *SlackPayload) AlertPayload(conf ClusterConfig, gStat *GlobalStatistic, errorStistic map[string]int, thresholdAdj float64) {
 	var text, timeStatis string
 	if gStat.TimeStatistic.Stddev <= 0 {
 		timeStatis = fmt.Sprintf(" %d/%3.0f/%d/%s ", gStat.TimeStatistic.Min, gStat.TimeStatistic.Mean, gStat.TimeStatistic.Max, "NaN")
@@ -116,7 +116,22 @@ func (s *SlackPayload) AlertPayload(c Cluster, gStat *GlobalStatistic, errorStis
 	}
 
 	text = fmt.Sprintf("{ hostname: %s, submitted: %3.0f, confirmed:%3.0f, loss: %3.1f%s, confirmation: min/mean/max/stddev = %s, next_threshold:%3.0f%s, error: %s}",
-		config.HostName, gStat.Submitted, gStat.Confirmed, gStat.Loss*100, "%", timeStatis, thresholdAdj, "%", errsorStatis)
+		conf.HostName, gStat.Submitted, gStat.Confirmed, gStat.Loss*100, "%", timeStatis, thresholdAdj, "%", errsorStatis)
+
+	header := Block{
+		BlockType: "section",
+		BlockText: SlackText{
+			SType: "mrkdwn",
+			SText: text,
+		},
+	}
+	s.Blocks = append(s.Blocks, header)
+}
+
+func (s *SlackPayload) FailoverAlertPayload(conf ClusterConfig, endpoint FailoverEndpoint, workerNum int) {
+	text := fmt.Sprintf("{ hostname: %s, cluster:%s, worker:%d, msg:%s}",
+		conf.HostName, conf.Cluster, workerNum,
+		fmt.Sprintf("failover to %s", endpoint.Endpoint))
 
 	header := Block{
 		BlockType: "section",

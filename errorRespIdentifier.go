@@ -3,7 +3,7 @@ package main
 import "strings"
 
 /*
-	Add an Known Error
+	Add an Known Response Error (Error from endpoint Server)
 	1. Add its error text from response
 		ie.BlockhashNotFoundText
 	2. create and ErrIdentifier
@@ -17,13 +17,13 @@ import "strings"
 			append(KnownErrIdentifierList, BlockhashNotFound)
 */
 
-type ErrIdentifier struct {
+type ErrRespIdentifier struct {
 	Text  PingResultError
 	Key   []string
 	Short string
 }
 
-// transaction responses errors
+// response errors
 var (
 	BlockhashNotFoundText                  = `rpc response error: {"code":-32002,"message":"Transaction simulation failed: Blockhash not found","data":{"accounts":null,"err":"BlockhashNotFound","logs":[],"unitsConsumed":0}}`
 	TransactionHasAlreadyBeenProcessedText = `rpc response error: {"code":-32002,"message":"Transaction simulation failed: This transaction has already been processed","data":{"accounts":null,"err":"AlreadyProcessed","logs":[],"unitsConsumed":0}}`
@@ -44,49 +44,49 @@ var (
 )
 
 var (
-	BlockhashNotFound = ErrIdentifier{
+	BlockhashNotFound = ErrRespIdentifier{
 		Text:  PingResultError(BlockhashNotFoundText),
 		Key:   []string{"BlockhashNotFound"},
 		Short: "BlockhashNotFound"}
-	TransactionHasAlreadyBeenProcessed = ErrIdentifier{
+	TransactionHasAlreadyBeenProcessed = ErrRespIdentifier{
 		Text:  PingResultError(TransactionHasAlreadyBeenProcessedText),
 		Key:   []string{"AlreadyProcessed"},
 		Short: "transaction has already been processed"}
-	RPCServerDeadlineExceeded = ErrIdentifier{
+	RPCServerDeadlineExceeded = ErrRespIdentifier{
 		Text:  PingResultError(RPCServerDeadlineExceededText),
 		Key:   []string{"context deadline exceeded"},
 		Short: "post to rpc server response timeout"}
-	ServiceUnavilable503 = ErrIdentifier{
+	ServiceUnavilable503 = ErrRespIdentifier{
 		Text:  PingResultError(ServiceUnavilable503Text),
 		Key:   []string{"code: 503"},
 		Short: "503-service-unavailable"}
-	TooManyRequest429 = ErrIdentifier{
+	TooManyRequest429 = ErrRespIdentifier{
 		Text:  PingResultError(TooManyRequest429Text),
 		Key:   []string{"code: 429"},
 		Short: "429-too-many-requests"}
-	NumSlotsBehind = ErrIdentifier{
+	NumSlotsBehind = ErrRespIdentifier{
 		Text:  PingResultError(NumSlotsBehindText),
 		Key:   []string{"numSlotsBehind"},
 		Short: "numSlotsBehind"}
-	RPCEOF = ErrIdentifier{
+	RPCEOF = ErrRespIdentifier{
 		Text:  PingResultError(RPCEOFText),
 		Key:   []string{"EOF"},
 		Short: "rpc error EOF"}
-	GatewayTimeout504 = ErrIdentifier{
+	GatewayTimeout504 = ErrRespIdentifier{
 		Text:  PingResultError(GatewayTimeout504Text),
 		Key:   []string{"code: 504"},
 		Short: "504-gateway-timeout"}
-	NoSuchHost = ErrIdentifier{
+	NoSuchHost = ErrRespIdentifier{
 		Text:  PingResultError(NoSuchHostText),
 		Key:   []string{"no such host"},
 		Short: "no-such-host"}
-	TxHasAlreadyProcess = ErrIdentifier{
+	TxHasAlreadyProcess = ErrRespIdentifier{
 		Text:  PingResultError(TxHasAlreadyProcessText),
 		Key:   []string{"transaction has already been processed"},
 		Short: "tx-has-been-processed"}
 )
 
-func (e ErrIdentifier) IsIdentical(p PingResultError) bool {
+func (e ErrRespIdentifier) IsIdentical(p PingResultError) bool {
 	for _, k := range e.Key {
 		if strings.Contains(string(p), k) {
 			return true

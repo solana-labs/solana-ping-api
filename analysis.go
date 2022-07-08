@@ -111,7 +111,7 @@ func grouping1Min(pr []PingResult, startTime int64, endTime int64) []Group1Min {
 	return groups
 }
 
-func statisticCompute(groups []Group1Min) *GroupsAllStatistic {
+func statisticCompute(cConf ClusterConfig, groups []Group1Min) *GroupsAllStatistic {
 	stat := GroupsAllStatistic{}
 	stat.PingStatisticList = []PingSatistic{}
 	stat.RawPingStaticList = []PingSatistic{}
@@ -149,7 +149,7 @@ func statisticCompute(groups []Group1Min) *GroupsAllStatistic {
 				if errorCount <= 0 {
 					filterGroupStat.TimeMeasure.AddTime(singlePing.TakeTime)
 				} else if (errorCount > 0) && !errorException { // general error is considered as a timeout
-					t := time.Duration(config.SolanaPing.TxTimeout) * time.Second
+					t := time.Duration(cConf.PingConfig.TxTimeout) * time.Second
 					filterGroupStat.TimeMeasure.AddTime(t.Milliseconds())
 				} // if StatisticErrorExceptionList , do not count as a satistic
 			}
@@ -196,13 +196,13 @@ func printPingResultGroup(pr []PingResult, from int64, to int64) {
 	}
 }
 
-func printStatistic(stat *GroupsAllStatistic) {
+func printStatistic(cConf ClusterConfig, stat *GroupsAllStatistic) {
 	for i, g := range stat.PingStatisticList {
 		statisticTime := fmt.Sprintf("min/mean/max/stddev ms = %d/%3.0f/%d/%3.0f",
 			g.TimeStatistic.Min, g.TimeStatistic.Mean, g.TimeStatistic.Max, g.TimeStatistic.Stddev)
 
 		log.Println(fmt.Sprintf("%d->{ hostname: %s, submitted: %3.0f,confirmed:%3.0f, loss: %3.1f%s, count:%d %s}",
-			i, config.HostName, g.Submitted, g.Confirmed, g.Loss*100, "%", g.Count, statisticTime))
+			i, cConf.HostName, g.Submitted, g.Confirmed, g.Loss*100, "%", g.Count, statisticTime))
 	}
 	for i, g := range stat.RawPingStaticList {
 		statisticTime := fmt.Sprintf("min/mean/max/stddev ms = %d/%3.0f/%d/%3.0f",
@@ -212,6 +212,6 @@ func printStatistic(stat *GroupsAllStatistic) {
 			errString = errString + v + "\n"
 		}
 		log.Println(fmt.Sprintf("RAW %d->{ hostname: %s, submitted: %3.0f,confirmed:%3.0f, loss: %3.3f%s, count:%d %s}",
-			i, config.HostName, g.Submitted, g.Confirmed, g.Loss, "%", g.Count, statisticTime))
+			i, cConf.HostName, g.Submitted, g.Confirmed, g.Loss, "%", g.Count, statisticTime))
 	}
 }
