@@ -32,15 +32,7 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 		timer.TimerStart()
 		var hash string
 		if config.Cluster == MainnetBeta {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.TxTimeout)*time.Second)
-			defer cancel()
-			txhash, pingErr := SendPingTx(SendPingTxParam{
-				Client:              c,
-				Ctx:                 ctx,
-				FeePayer:            acct,
-				RequestComputeUnits: config.RequestUnits,
-				ComputeUnitPrice:    config.ComputeUnitPrice,
-			})
+			txhash, pingErr := Transfer(c, acct, acct, config.Receiver, time.Duration(config.TxTimeout)*time.Second)
 			hash = txhash // avoid shadow
 			if !pingErr.NoError() {
 				timer.TimerStop()
