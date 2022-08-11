@@ -15,6 +15,7 @@ func APIService(c ClustersToRun) {
 		router.GET("/:cluster/latest", getLatest)
 		router.GET("/:cluster/last6hours", timeout.New(timeout.WithTimeout(10*time.Second), timeout.WithHandler(last6hours)))
 		router.GET("/health", health)
+		router.GET("/:cluster/rpc", getRPCEndpoint)
 		if mode == HTTPS {
 			err := router.RunTLS(hostSSL, crt, key)
 			if err != nil {
@@ -110,6 +111,24 @@ func APIService(c ClustersToRun) {
 
 func health(c *gin.Context) {
 	c.Data(200, c.ContentType(), []byte("OK"))
+}
+
+func getRPCEndpoint(c *gin.Context) {
+	cluster := c.Param("cluster")
+	var ret *FailoverEndpoint
+	switch cluster {
+	case "mainnet-beta":
+		ret = mainnetFailover.GetEndpoint()
+	case "testnet":
+		ret = testnetFailover.GetEndpoint()
+	case "devnet":
+		ret = devnetFailover.GetEndpoint()
+	default:
+		c.AbortWithStatus(http.StatusNotFound)
+		log.Println("StatusNotFound Error:", cluster)
+		return
+	}
+	c.IndentedJSON(http.StatusOK, *ret)
 }
 
 func getLatest(c *gin.Context) {
