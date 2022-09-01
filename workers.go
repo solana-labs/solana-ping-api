@@ -137,12 +137,10 @@ func getConfigKeyPair(c SolanaCLIConfig) (types.Account, error) {
 
 }
 
-var lastReporTime int64
-var lastReporUnixTime int64
-
 func reportWorker(cConf ClusterConfig) {
 	log.Println(">> Slack Report Worker for ", cConf.Cluster, " start!")
 	defer log.Println(">> Slack Report Worker for ", cConf.Cluster, " end!")
+	var lastReporTime int64
 	slackTrigger := NewAlertTrigger(cConf)
 	for {
 		now := time.Now().UTC().Unix()
