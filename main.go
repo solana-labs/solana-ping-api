@@ -15,7 +15,7 @@ import (
 
 var config Config
 
-//Cluster enum
+// Cluster enum
 type Cluster string
 
 var database *gorm.DB
@@ -25,7 +25,7 @@ const useGCloudDB = true
 
 type ClustersToRun string
 
-//Cluster enum
+// Cluster enum
 const (
 	MainnetBeta Cluster = "MainnetBeta"
 	Testnet             = "Testnet"
@@ -60,19 +60,20 @@ func init() {
 	log.Println("Mainnet.ClusterPing.PingServiceEnabled", config.Mainnet.ClusterPing.PingServiceEnabled)
 	log.Println("Mainnet.ClusterPing.AlternativeEnpoint.HostList", config.Mainnet.ClusterPing.AlternativeEnpoint.HostList)
 	log.Println("Mainnet.ClusterPing.PingConfig", config.Mainnet.ClusterPing.PingConfig)
-	log.Println("Mainnet.ClusterPing.SlackReport", config.Mainnet.ClusterPing.SlackReport)
+	log.Println("Mainnet.ClusterPing.Report", config.Mainnet.ClusterPing.Report)
 	log.Println("--- Testnet Ping  --- ")
 	log.Println("Mainnet.ClusterPing.APIServer", config.Testnet.ClusterPing.APIServer)
 	log.Println("Mainnet.ClusterPing.PingServiceEnabled", config.Mainnet.ClusterPing.PingServiceEnabled)
 	log.Println("Testnet.ClusterPing.AlternativeEnpoint.HostList", config.Testnet.ClusterPing.AlternativeEnpoint.HostList)
 	log.Println("Testnet.ClusterPing.PingConfig", config.Testnet.ClusterPing.PingConfig)
-	log.Println("Testnet.ClusterPing.SlackReport", config.Testnet.ClusterPing.SlackReport)
+	log.Println("Testnet.ClusterPing.Report", config.Testnet.ClusterPing.Report)
 	log.Println("--- Devnet Ping  --- ")
 	log.Println("Devnet.ClusterPing.APIServer", config.Devnet.ClusterPing.APIServer)
 	log.Println("Devnet.ClusterPing.Enabled", config.Devnet.ClusterPing.PingServiceEnabled)
 	log.Println("Devnet.ClusterPing.AlternativeEnpoint.HostList", config.Devnet.ClusterPing.AlternativeEnpoint.HostList)
 	log.Println("Devnet.ClusterPing.PingConfig", config.Devnet.ClusterPing.PingConfig)
-	log.Println("Devnet.ClusterPing.SlackReport", config.Devnet.ClusterPing.SlackReport)
+	log.Println("Devnet.ClusterPing.Report", config.Devnet.ClusterPing.Report)
+
 	log.Println(" *** Config End *** ")
 
 	ResponseErrIdentifierInit()

@@ -19,6 +19,9 @@ AlternativeEnpoint:
  SlackAlert: # failover alert
   Enabled: true
   Webhook:
+ DiscordAlert:
+  Enabled: true
+  Webhook:
 PingConfig:
  Receiver: 9qT3WeLV5o3t3GVgCk9A3mpTRjSb9qBvnfrAsVKLhmU5 # change your receive account here
  NumWorkers: 3                 #change number of concurent run here
@@ -30,12 +33,24 @@ PingConfig:
  MinPerPingTime: 10
  RequestUnits: 200000        # change RequestUnits 
  ComputeUnitPrice: 1000      # change ComputeUnitPrice
-SlackReport:
- Enabled:  false
- WebHook:
- ReportInterval: 600
- SlackAlert: 
-  Enabled:  true                        
-  WebHook:
-  LossThreshold: 20
-  LevelFilePath: /yourpath/level-mainnet.env
+Report:
+ Interval: 600
+ LossThreshold: 20
+ LevelFilePath: /yourpath/level-devnet.env
+ Slack:
+  Report:
+   Enabled: true
+   Webhook:
+  Alert: 
+   Enabled: true                       
+   Webhook:
+ Discord:
+  BotName: ping-service
+  BotAvatarURL:
+  Report:
+   Enabled: true
+   Webhook:
+  Alert: 
+   Enabled: true                        
+   Webhook:
+

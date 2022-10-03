@@ -31,18 +31,27 @@ type PingConfig struct {
 	RequestUnits            uint32
 	ComputeUnitPrice        uint64
 }
-
-type SlackReport struct {
-	Enabled        bool
-	WebHook        string
-	ReportInterval int
-	SlackAlert
+type WebHookConfig struct {
+	Enabled bool
+	Webhook string
 }
-type SlackAlert struct {
+type SlackReport struct {
+	Report WebHookConfig
+	Alert  WebHookConfig
+}
+type DiscordReport struct {
+	BotName      string
+	BotAvatarURL string
+	Report       WebHookConfig
+	Alert        WebHookConfig
+}
+type Report struct {
 	Enabled       bool
-	WebHook       string
-	LossThreshold int
+	Interval      int
+	LossThreshold float64
 	LevelFilePath string
+	Slack         SlackReport
+	Discord       DiscordReport
 }
 type APIServer struct {
 	Enabled bool
@@ -86,9 +95,14 @@ type RPCEndpoint struct {
 	Piority  int
 	MaxRetry int
 }
+type EndpointAlert struct {
+	Enabled bool
+	Webhook string
+}
 type AlternativeEnpoint struct {
-	HostList []RPCEndpoint
-	SlackAlert
+	HostList     []RPCEndpoint
+	SlackAlert   EndpointAlert
+	DiscordAlert EndpointAlert
 }
 
 type ClusterPing struct {
@@ -96,7 +110,7 @@ type ClusterPing struct {
 	PingServiceEnabled bool
 	AlternativeEnpoint
 	PingConfig
-	SlackReport
+	Report
 }
 
 type ClusterConfig struct {

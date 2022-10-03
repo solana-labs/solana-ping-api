@@ -17,11 +17,10 @@ type AlertTrigger struct {
 
 func NewAlertTrigger(conf ClusterConfig) AlertTrigger {
 	s := AlertTrigger{}
-	s.FilePath = conf.SlackReport.SlackAlert.LevelFilePath
+	s.FilePath = conf.Report.LevelFilePath
 	s.CurrentLoss = 0
 	s.LastLoss = 0
-	s.ThresholdLevels = []float64{float64(conf.SlackReport.SlackAlert.LossThreshold), float64(50), float64(75), float64(100)}
-	s.FilePath = conf.SlackReport.SlackAlert.LevelFilePath
+	s.ThresholdLevels = []float64{float64(conf.Report.LossThreshold), float64(50), float64(75), float64(100)}
 	s.ThresholdIndex = s.ReadIndexFromFile()
 	return s
 }
@@ -73,10 +72,13 @@ func (s *AlertTrigger) ReadIndexFromFile() int {
 
 // Doing rule here
 func (s *AlertTrigger) ShouldAlertSend() bool {
+	if s.ThresholdLevels[0] == 0 {
+		return true
+	}
 	if s.CurrentLoss < s.ThresholdLevels[0] {
 		s.ThresholdIndex = 0
 		s.WritIndexToFile(0)
-		log.Println("Loss < 20 :", s.CurrentLoss, "Index:", s.ThresholdIndex)
+		log.Println("Loss = ", s.CurrentLoss, " < ", s.ThresholdLevels[0], "Index:", s.ThresholdIndex)
 		return false
 	}
 	// adjust threshold up, include index = 0
@@ -97,13 +99,4 @@ func (s *AlertTrigger) ShouldAlertSend() bool {
 	}
 	log.Println("ThresholdLevel NOT change. Loss:", s.CurrentLoss, "Index:", s.ThresholdIndex)
 	return false
-}
-
-func AlertSend(conf ClusterConfig, globalStat *GlobalStatistic, globalErrorStatistic map[string]int, threadhold float64) {
-	payload := SlackPayload{}
-	payload.AlertPayload(conf, globalStat, globalErrorStatistic, threadhold)
-	err := SlackSend(conf.SlackReport.SlackAlert.WebHook, &payload)
-	if err != nil {
-		log.Println("SlackSend Error:", err)
-	}
 }

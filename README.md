@@ -10,24 +10,26 @@
 ## Server Setup
 ### API Service
 API service for getting the results of ping service. 
-Use `APIServer: Enabled: true` to turn on in in config-{cluster}.yaml. The default is true for mainnet but false for other clusters.
+Use `APIServer: Enabled: true` to turn on in in config-{cluster}.yaml.
 
 ### PingService
 This is similar to  "solana ping" tool in solana tool but can do concurrent rpc query.
 It send transactions to rpc endpoint and wait for transactions is confirmed. 
-Use `PingServiceEnabled: true` to turn on in config-{cluster}.yaml. The default is On. 
-
+Use `PingServiceEnabled: true` to turn on in config-{cluster}.yaml.
 ### RetensionService
 Use `Retension: Enabled: true` in config.yaml to turn on. Default is Off.
 Clean database data periodically.
 
-### SlackReportService
-Use `SlackReport: Enabled:true` in config-{cluster}.yaml to turn on. Default is On.
-send summary of ping result to a slack channel periodically.
+### ReportService
+Use `Report: Enabled:true` in config-{cluster}.yaml to turn on. 
+ping-api service supports sedning report & alert to both slack and discord.
+Use `Report: Slack: Report: Enabled:true` to turn on Slack Report.
+This sends summary of ping result to a slack channel periodically.
+Use `Report: Slack: Alert: Enabled:true` to turn on Slack Alert. 
+This will send alert when a event is triggered. See  **Alert Spam Filter** for more info.
+Use `Report: Discord: Report: Enabled:true` to turn on Discord Report.
+Use `Report: Discord: Alert: Enabled:true` to turn on Discord Alert.
 
-### SlackAlertService
-Use `SlackReport: SlackAlert: Enabled: true`  in config-{cluster}.yaml to turn on. Default is On.
-If confirmation loss is greater than a thredhold, send an alert to a channel
 
 + Example:Run only API Query Server
 In config.yaml ServerSetup: 
@@ -38,10 +40,19 @@ Retension:
  Enabled: false
 (config-{cluster}.yaml)
 PingEnabled: true     
-SlackReport:
+Report:
  Enabled: true
- SlackAlert: 
-  Enabled: true                        
+ Slack:
+  Report:
+   Enabled: true
+  Alert: 
+   Enabled: true   
+ Discord:
+  Enabled: true
+  Report:
+   Enabled: false
+  Alert: 
+   Enabled: true                  
 ```
 ## Installation
 - download executable file 

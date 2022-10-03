@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-//ReportPingResultJSON is a struct convert from PingResult to desire json output struct
+// ReportPingResultJSON is a struct convert from PingResult to desire json output struct
 type DataPoint1MinResultJSON struct {
 	Submitted  int    `json:"submitted"`
 	Confirmed  int    `json:"confirmed"`
@@ -16,21 +16,28 @@ type DataPoint1MinResultJSON struct {
 	Error      string `json:"error"`
 }
 
-//SlackText slack structure
+// SlackText slack structure
 type SlackText struct {
 	SText string `json:"text"`
 	SType string `json:"type"`
 }
 
-//Block slack structure
+// Block slack structure
 type Block struct {
 	BlockType string    `json:"type"`
 	BlockText SlackText `json:"text"`
 }
 
-//SlackPayload slack structure
+// SlackPayload slack structure
 type SlackPayload struct {
 	Blocks []Block `json:"blocks"`
+}
+
+// DiscordPayload slack structure
+type DiscordPayload struct {
+	BotName      string `json:"username"`
+	BotAvatarURL string `json:"avatar_url"`
+	Content      string `json:"content"`
 }
 
 func ErrorsToString(errs []string) (errsString string) {
@@ -160,6 +167,46 @@ func reportRecordBlock(data *GroupsAllStatistic) string {
 	return text
 }
 
+// ReportPayload get the report within specified minutes
+func (s *DiscordPayload) ReportPayload(c Cluster, data *GroupsAllStatistic, globalSatistic GlobalStatistic) {
+	summary := fmt.Sprintf("**total-submitted: %3.0f  total-confirmed: %3.0f average-loss: %3.1f%s**",
+		globalSatistic.Submitted,
+		globalSatistic.Confirmed,
+		globalSatistic.Loss*100, "%")
+	header := "( Submitted, Confirmed, Loss, min/mean/max/stddev ms )"
+	records := reportRecordBlock(data)
+	memo := "*BlockhashNotFound do not count as a transaction\n"
+	errorRecords := reportErrorBlock(data)
+	s.Content = fmt.Sprintf("%s\n```%s\n%s\n%s\n%s```", summary, header, records, memo, errorRecords)
+}
+
+// AlertPayload get the report within specified minutes
+func (s *DiscordPayload) AlertPayload(conf ClusterConfig, gStat *GlobalStatistic, errorStistic map[string]int, thresholdAdj float64) {
+	var timeStatis string
+	if gStat.TimeStatistic.Stddev <= 0 {
+		timeStatis = fmt.Sprintf(" %d/%3.0f/%d/%s ", gStat.TimeStatistic.Min, gStat.TimeStatistic.Mean, gStat.TimeStatistic.Max, "NaN")
+	} else {
+		timeStatis = fmt.Sprintf(" %d/%3.0f/%d/%3.0f ", gStat.TimeStatistic.Min, gStat.TimeStatistic.Mean, gStat.TimeStatistic.Max, gStat.TimeStatistic.Stddev)
+	}
+	errsorStatis := ""
+	for k, v := range errorStistic {
+		if !PingResultError(k).IsInErrorList(AlertErrorExceptionList) {
+			errsorStatis = fmt.Sprintf("%s%s(%d)", errsorStatis, PingResultError(k).Short(), v)
+		}
+	}
+
+	text := fmt.Sprintf("```{ hostname: %s, submitted: %3.0f, confirmed:%3.0f, loss: %3.1f%s, confirmation: min/mean/max/stddev = %s, next_threshold:%3.0f%s, error: %s}```",
+		conf.HostName, gStat.Submitted, gStat.Confirmed, gStat.Loss*100, "%", timeStatis, thresholdAdj, "%", errsorStatis)
+	s.Content = text
+}
+
+// FailoverAlertPayload get the report within specified minutes
+func (s *DiscordPayload) FailoverAlertPayload(conf ClusterConfig, endpoint FailoverEndpoint, workerNum int) {
+	s.Content = fmt.Sprintf("```{ hostname: %s, cluster:%s, worker:%d, msg:%s}```",
+		conf.HostName, conf.Cluster, workerNum,
+		fmt.Sprintf("failover to %s", endpoint.Endpoint))
+
+}
 func reportErrorBlock(data *GroupsAllStatistic) string {
 	var exceededText, errorText, blackHashText string
 	if len(data.GlobalErrorStatistic) == 0 {
