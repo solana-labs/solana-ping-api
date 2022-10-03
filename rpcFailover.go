@@ -74,7 +74,7 @@ func (f *RPCFailover) GoNext(cur *client.Client, config ClusterConfig, workerNum
 	if config.AlternativeEnpoint.SlackAlert.Enabled {
 		var slack SlackPayload
 		slack.FailoverAlertPayload(config, *f.GetEndpoint(), workerNum)
-		SlackSend(config.AlternativeEnpoint.SlackAlert.WebHook, &slack)
+		SlackSend(config.AlternativeEnpoint.SlackAlert.Webhook, &slack)
 	}
 	return next
 }

@@ -14,24 +14,23 @@ type PingType string
 
 const DefaultAlertThredHold = 20
 const (
-	Report        PingType = "report"
-	DataPoint1Min PingType = "datapoint1min"
+	DataPointReport PingType = "report"
+	DataPoint1Min   PingType = "datapoint1min"
 )
 
 func launchWorkers(c ClustersToRun) {
-	// Run API API Service
 	// Run Ping Service
 	runCluster := func(clusterConf ClusterConfig) {
 		if !clusterConf.PingServiceEnabled {
 			log.Println("==> go pingDataWorker", clusterConf.Cluster, " PingServiceEnabled ", clusterConf.PingServiceEnabled)
-			return
+		} else {
+			for i := 0; i < clusterConf.PingConfig.NumWorkers; i++ {
+				log.Println("==> go pingDataWorker", clusterConf.Cluster, " n:", clusterConf.PingConfig.NumWorkers, "i:", i)
+				go pingDataWorker(clusterConf, i)
+				time.Sleep(2 * time.Second)
+			}
 		}
-		for i := 0; i < clusterConf.PingConfig.NumWorkers; i++ {
-			log.Println("==> go pingDataWorker", clusterConf.Cluster, " n:", clusterConf.PingConfig.NumWorkers, "i:", i)
-			go pingDataWorker(clusterConf, i)
-			time.Sleep(2 * time.Second)
-		}
-		if clusterConf.SlackReport.Enabled {
+		if clusterConf.Report.Enabled {
 			go reportWorker(clusterConf)
 		}
 	}
@@ -53,7 +52,7 @@ func launchWorkers(c ClustersToRun) {
 	// Run Retension Service
 	if config.Retension.Enabled {
 		time.Sleep(2 * time.Second)
-		go RetensionServiceWorker()
+		go retensionServiceWorker()
 	}
 }
 
@@ -101,7 +100,7 @@ func pingDataWorker(cConf ClusterConfig, workerNum int) {
 	}
 }
 
-func RetensionServiceWorker() {
+func retensionServiceWorker() {
 	log.Println(">> Retension Service Worker start!")
 	defer log.Println(">> Retension Service Worker end!")
 	for {
@@ -128,24 +127,22 @@ func getConfigKeyPair(c SolanaCLIConfig) (types.Account, error) {
 	if err != nil {
 		return types.Account{}, err
 	}
-
 	acct, err := types.AccountFromBytes(key)
 	if err != nil {
 		return types.Account{}, err
 	}
 	return acct, nil
-
 }
 
 func reportWorker(cConf ClusterConfig) {
-	log.Println(">> Slack Report Worker for ", cConf.Cluster, " start!")
-	defer log.Println(">> Slack Report Worker for ", cConf.Cluster, " end!")
+	log.Println(">> Report Worker for ", cConf.Cluster, " start!")
+	defer log.Println(">> Report Worker for ", cConf.Cluster, " end!")
 	var lastReporTime int64
-	slackTrigger := NewAlertTrigger(cConf)
+	trigger := NewAlertTrigger(cConf)
 	for {
 		now := time.Now().UTC().Unix()
 		if lastReporTime == 0 { // server restart
-			lastReporTime = now - int64(cConf.SlackReport.ReportInterval)
+			lastReporTime = now - int64(cConf.Report.Interval)
 			log.Println("reconstruct lastReport time=", lastReporTime, "time now=", time.Now().UTC().Unix())
 		}
 		data := getAfter(cConf.Cluster, DataPoint1Min, lastReporTime)
@@ -154,25 +151,64 @@ func reportWorker(cConf ClusterConfig) {
 			time.Sleep(30 * time.Second)
 			continue
 		}
-
 		groups := grouping1Min(data, lastReporTime, now)
 		groupsStat := statisticCompute(cConf, groups)
 		globalStat := groupsStat.GetGroupsAllStatistic(false) // get raw data
 		lastReporTime = now
-		payload := SlackPayload{}
-		payload.ReportPayload(cConf.Cluster, groupsStat, globalStat)
-		err := SlackSend(cConf.SlackReport.WebHook, &payload)
-		if err != nil {
-			log.Println("SlackSend Error:", err)
+		trigger.Update(globalStat.Loss)
+		if cConf.Report.Slack.Report.Enabled {
+			slackReportSend(cConf, groupsStat, &globalStat)
 		}
-
-		if cConf.SlackReport.SlackAlert.Enabled {
-			slackTrigger.Update(globalStat.Loss)
-			if slackTrigger.ShouldAlertSend() {
-				AlertSend(cConf, &globalStat, groupsStat.GlobalErrorStatistic, slackTrigger.ThresholdLevels[slackTrigger.ThresholdIndex])
+		if cConf.Report.Slack.Alert.Enabled {
+			if trigger.ShouldAlertSend() {
+				slackAlertSend(cConf, &globalStat, groupsStat.GlobalErrorStatistic, trigger.ThresholdLevels[trigger.ThresholdIndex])
 			}
 
 		}
-		time.Sleep(time.Duration(cConf.SlackReport.ReportInterval) * time.Second)
+		if cConf.Report.Discord.Report.Enabled {
+			discordReportSend(cConf, groupsStat, &globalStat)
+		}
+		if cConf.Report.Discord.Alert.Enabled {
+
+			if trigger.ShouldAlertSend() {
+				discordAlertSend(cConf, &globalStat, groupsStat.GlobalErrorStatistic, trigger.ThresholdLevels[trigger.ThresholdIndex])
+			}
+
+		}
+		time.Sleep(time.Duration(cConf.Report.Interval) * time.Second)
+	}
+}
+func slackReportSend(cConf ClusterConfig, groupsStat *GroupsAllStatistic, globalStat *GlobalStatistic) {
+	payload := SlackPayload{}
+	payload.ReportPayload(cConf.Cluster, groupsStat, *globalStat)
+	err := SlackSend(cConf.Report.Slack.Report.Webhook, &payload)
+	if err != nil {
+		log.Println("slackReportSend Error:", err)
+	}
+}
+func slackAlertSend(conf ClusterConfig, globalStat *GlobalStatistic, globalErrorStatistic map[string]int, threadhold float64) {
+	payload := SlackPayload{}
+	payload.AlertPayload(conf, globalStat, globalErrorStatistic, threadhold)
+	err := SlackSend(conf.Report.Slack.Alert.Webhook, &payload)
+	if err != nil {
+		log.Println("slackAlertSend Error:", err)
+	}
+}
+
+func discordReportSend(cConf ClusterConfig, groupsStat *GroupsAllStatistic, globalStat *GlobalStatistic) {
+	payload := DiscordPayload{BotAvatarURL: cConf.Report.Discord.BotAvatarURL, BotName: cConf.Report.Discord.BotName}
+	payload.ReportPayload(cConf.Cluster, groupsStat, *globalStat)
+	err := DiscordSend(cConf.Report.Discord.Report.Webhook, &payload)
+	if err != nil {
+		log.Println("discordReportSend Error:", err)
+	}
+}
+
+func discordAlertSend(cConf ClusterConfig, globalStat *GlobalStatistic, globalErrorStatistic map[string]int, threadhold float64) {
+	payload := DiscordPayload{BotAvatarURL: cConf.Report.Discord.BotAvatarURL, BotName: cConf.Report.Discord.BotName}
+	payload.AlertPayload(cConf, globalStat, globalErrorStatistic, threadhold)
+	err := DiscordSend(cConf.Report.Discord.Alert.Webhook, &payload)
+	if err != nil {
+		log.Println("discordAlertSend Error:", err)
 	}
 }
