@@ -9,13 +9,17 @@ PingServiceEnabled: true
 AlternativeEnpoint:
  HostList:
   - Endpoint: http://127.0.0.1:8999
+    Piority: 1
     MaxRetry: 10
+    AccessToken:
   - Endpoint: http://localhost:8999
     Piority: 2
     MaxRetry: 5
+    AccessToken:
   - Endpoint: http://api.devnet.solana.com
     Piority: 3
     MaxRetry: 5
+    AccessToken:
  SlackAlert: # failover alert
   Enabled: true
   Webhook:

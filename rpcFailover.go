@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/portto/solana-go-sdk/client"
@@ -12,10 +14,11 @@ var failoverMutex sync.Mutex
 
 type FailoverEndpointList []FailoverEndpoint
 type FailoverEndpoint struct {
-	Endpoint string
-	Piority  int
-	MaxRetry int
-	Retry    int
+	Endpoint    string
+	AccessToken string
+	Piority     int
+	MaxRetry    int
+	Retry       int
 }
 
 type RPCFailover struct {
@@ -30,11 +33,17 @@ func (f FailoverEndpointList) Less(i, j int) bool { return f[i].Piority < f[j].P
 func NewRPCFailover(endpoints []RPCEndpoint) RPCFailover {
 	fList := []FailoverEndpoint{}
 	for _, e := range endpoints {
+		endpointExist := strings.TrimRight(e.Endpoint, " /")
+		if len(endpointExist) == 0 {
+			continue
+		}
+		tokenExist := strings.Trim(e.AccessToken, " ")
 		fList = append(fList,
 			FailoverEndpoint{
-				Endpoint: e.Endpoint,
-				Piority:  e.Piority,
-				MaxRetry: e.MaxRetry})
+				Endpoint:    endpointExist,
+				AccessToken: tokenExist,
+				Piority:     e.Piority,
+				MaxRetry:    e.MaxRetry})
 	}
 	sort.Sort(FailoverEndpointList(FailoverEndpointList(fList)))
 	return RPCFailover{
@@ -65,11 +74,19 @@ func (f *RPCFailover) GoNext(cur *client.Client, config ClusterConfig, workerNum
 		if cur != nil {
 			return cur
 		} else {
-			return client.NewClient(f.GetEndpoint().Endpoint)
+			connectionEndpoint := f.GetEndpoint().Endpoint
+			if len(f.GetEndpoint().AccessToken) != 0 {
+				connectionEndpoint = fmt.Sprintf("%s/%s", f.GetEndpoint().Endpoint, f.GetEndpoint().AccessToken)
+			}
+			return client.NewClient(connectionEndpoint)
 		}
 	}
 	idx := f.GetNextIndex()
-	next = client.NewClient(f.Endpoints[idx].Endpoint)
+	if len(f.Endpoints[idx].AccessToken) != 0 {
+		next = client.NewClient(fmt.Sprintf("%s/%s", f.Endpoints[idx].Endpoint, f.Endpoints[idx].AccessToken))
+	} else {
+		next = client.NewClient(f.Endpoints[idx].Endpoint)
+	}
 	log.Println("GoNext!!! New Endpoint:", f.GetEndpoint())
 	if config.AlternativeEnpoint.SlackAlert.Enabled {
 		var slack SlackPayload

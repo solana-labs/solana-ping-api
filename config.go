@@ -91,9 +91,10 @@ type ClusterCLIConfig struct {
 }
 
 type RPCEndpoint struct {
-	Endpoint string
-	Piority  int
-	MaxRetry int
+	Endpoint    string
+	AccessToken string
+	Piority     int
+	MaxRetry    int
 }
 type EndpointAlert struct {
 	Enabled bool
