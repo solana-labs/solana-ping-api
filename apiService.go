@@ -115,20 +115,25 @@ func health(c *gin.Context) {
 
 func getRPCEndpoint(c *gin.Context) {
 	cluster := c.Param("cluster")
-	var ret *FailoverEndpoint
+	var e *FailoverEndpoint
 	switch cluster {
 	case "mainnet-beta":
-		ret = mainnetFailover.GetEndpoint()
+		e = mainnetFailover.GetEndpoint()
 	case "testnet":
-		ret = testnetFailover.GetEndpoint()
+		e = testnetFailover.GetEndpoint()
 	case "devnet":
-		ret = devnetFailover.GetEndpoint()
+		e = devnetFailover.GetEndpoint()
 	default:
 		c.AbortWithStatus(http.StatusNotFound)
 		log.Println("StatusNotFound Error:", cluster)
 		return
 	}
-	c.IndentedJSON(http.StatusOK, *ret)
+	// to avoid leak of token
+	c.IndentedJSON(http.StatusOK, FailoverEndpoint{
+		Endpoint: e.Endpoint,
+		MaxRetry: e.MaxRetry,
+		Piority:  e.Piority,
+		Retry:    e.Retry})
 }
 
 func getLatest(c *gin.Context) {
@@ -165,7 +170,7 @@ func last6hours(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, ret)
 }
 
-//GetLatestResult return the latest DataPoint1Min PingResult from the cluster and convert it into PingResultJSON
+// GetLatestResult return the latest DataPoint1Min PingResult from the cluster and convert it into PingResultJSON
 func GetLatestResult(c Cluster) DataPoint1MinResultJSON {
 	records := getLastN(c, DataPoint1Min, 1)
 	if len(records) > 0 {
@@ -175,7 +180,7 @@ func GetLatestResult(c Cluster) DataPoint1MinResultJSON {
 	return DataPoint1MinResultJSON{}
 }
 
-//GetLatestResult return the latest 6hr DataPoint1Min PingResult from the cluster and convert it into PingResultJSON
+// GetLatestResult return the latest 6hr DataPoint1Min PingResult from the cluster and convert it into PingResultJSON
 func GetLast6hours(c Cluster) []DataPoint1MinResultJSON {
 	lastRecord := getLastN(c, DataPoint1Min, 1)
 	now := time.Now().UTC().Unix()
