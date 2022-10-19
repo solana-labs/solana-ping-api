@@ -156,24 +156,18 @@ func reportWorker(cConf ClusterConfig) {
 		globalStat := groupsStat.GetGroupsAllStatistic(false) // get raw data
 		lastReporTime = now
 		trigger.Update(globalStat.Loss)
+		alertSend := trigger.ShouldAlertSend() // ShouldAlertSend execute once only. TODO: make shouldAlertSend a function which does not modify any value
 		if cConf.Report.Slack.Report.Enabled {
 			slackReportSend(cConf, groupsStat, &globalStat)
 		}
-		if cConf.Report.Slack.Alert.Enabled {
-			if trigger.ShouldAlertSend() {
-				slackAlertSend(cConf, &globalStat, groupsStat.GlobalErrorStatistic, trigger.ThresholdLevels[trigger.ThresholdIndex])
-			}
-
+		if cConf.Report.Slack.Alert.Enabled && alertSend {
+			slackAlertSend(cConf, &globalStat, groupsStat.GlobalErrorStatistic, trigger.ThresholdLevels[trigger.ThresholdIndex])
 		}
 		if cConf.Report.Discord.Report.Enabled {
 			discordReportSend(cConf, groupsStat, &globalStat)
 		}
-		if cConf.Report.Discord.Alert.Enabled {
-
-			if trigger.ShouldAlertSend() {
-				discordAlertSend(cConf, &globalStat, groupsStat.GlobalErrorStatistic, trigger.ThresholdLevels[trigger.ThresholdIndex])
-			}
-
+		if cConf.Report.Discord.Alert.Enabled && alertSend {
+			discordAlertSend(cConf, &globalStat, groupsStat.GlobalErrorStatistic, trigger.ThresholdLevels[trigger.ThresholdIndex])
 		}
 		time.Sleep(time.Duration(cConf.Report.Interval) * time.Second)
 	}
