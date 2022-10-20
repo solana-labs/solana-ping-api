@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"strings"
 )
 
 // ping response error type
@@ -87,6 +88,10 @@ func (p PingResultError) Short() string {
 		}
 	}
 	return string(p)
+}
+
+func (p PingResultError) Subsitute(old string, new string) string {
+	return strings.ReplaceAll(string(p), old, new)
 }
 
 func (p PingResultError) NoError() bool {

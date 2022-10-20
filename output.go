@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -80,7 +81,7 @@ func PingResultToJson(stat *PingSatistic) DataPoint1MinResultJSON {
 }
 
 // ReportPayload get the report within specified minutes
-func (s *SlackPayload) ReportPayload(c Cluster, data *GroupsAllStatistic, globalSatistic GlobalStatistic) {
+func (s *SlackPayload) ReportPayload(c Cluster, data *GroupsAllStatistic, globalSatistic GlobalStatistic, hideKeywords []string) {
 	// Header Block
 	headerText := fmt.Sprintf("total-submitted: %3.0f, total-confirmed:%3.0f, average-loss:%3.1f%s",
 		globalSatistic.Submitted,
@@ -100,7 +101,7 @@ func (s *SlackPayload) ReportPayload(c Cluster, data *GroupsAllStatistic, global
 	description := "( Submitted, Confirmed, Loss, min/mean/max/stddev ms )"
 	//memo := "* rpc error : context deadline exceeded does not count as a transaction\n** BlockhashNotFound error does not show in Error List"
 	memo := "*BlockhashNotFound do not count as a transaction\n"
-	errorRecords := reportErrorBlock(data)
+	errorRecords := reportErrorBlock(data, hideKeywords)
 	body = Block{
 		BlockType: "section",
 		BlockText: SlackText{SType: "mrkdwn", SText: fmt.Sprintf("```%s\n%s\n%s\n%s```", description, records, memo, errorRecords)},
@@ -108,7 +109,7 @@ func (s *SlackPayload) ReportPayload(c Cluster, data *GroupsAllStatistic, global
 	s.Blocks = append(s.Blocks, body)
 }
 
-func (s *SlackPayload) AlertPayload(conf ClusterConfig, gStat *GlobalStatistic, errorStistic map[string]int, thresholdAdj float64) {
+func (s *SlackPayload) AlertPayload(conf ClusterConfig, gStat *GlobalStatistic, errorStistic map[string]int, thresholdAdj float64, hideKeywords []string) {
 	var text, timeStatis string
 	if gStat.TimeStatistic.Stddev <= 0 {
 		timeStatis = fmt.Sprintf(" %d/%3.0f/%d/%s ", gStat.TimeStatistic.Min, gStat.TimeStatistic.Mean, gStat.TimeStatistic.Max, "NaN")
@@ -118,7 +119,11 @@ func (s *SlackPayload) AlertPayload(conf ClusterConfig, gStat *GlobalStatistic, 
 	errsorStatis := ""
 	for k, v := range errorStistic {
 		if !PingResultError(k).IsInErrorList(AlertErrorExceptionList) {
-			errsorStatis = fmt.Sprintf("%s%s(%d)", errsorStatis, PingResultError(k).Short(), v)
+			hideError := PingResultError(k).Short()
+			for _, v := range hideKeywords {
+				hideError = PingResultError(hideError).Subsitute(v, "")
+			}
+			errsorStatis = fmt.Sprintf("%s%s(%d)", errsorStatis, hideError, v)
 		}
 	}
 
@@ -168,7 +173,7 @@ func reportRecordBlock(data *GroupsAllStatistic) string {
 }
 
 // ReportPayload get the report within specified minutes
-func (s *DiscordPayload) ReportPayload(c Cluster, data *GroupsAllStatistic, globalSatistic GlobalStatistic) {
+func (s *DiscordPayload) ReportPayload(c Cluster, data *GroupsAllStatistic, globalSatistic GlobalStatistic, hideKeywords []string) {
 	summary := fmt.Sprintf("**total-submitted: %3.0f  total-confirmed: %3.0f average-loss: %3.1f%s**",
 		globalSatistic.Submitted,
 		globalSatistic.Confirmed,
@@ -176,12 +181,12 @@ func (s *DiscordPayload) ReportPayload(c Cluster, data *GroupsAllStatistic, glob
 	header := "( Submitted, Confirmed, Loss, min/mean/max/stddev ms )"
 	records := reportRecordBlock(data)
 	memo := "*BlockhashNotFound do not count as a transaction\n"
-	errorRecords := reportErrorBlock(data)
+	errorRecords := reportErrorBlock(data, hideKeywords)
 	s.Content = fmt.Sprintf("%s\n```%s\n%s\n%s\n%s```", summary, header, records, memo, errorRecords)
 }
 
 // AlertPayload get the report within specified minutes
-func (s *DiscordPayload) AlertPayload(conf ClusterConfig, gStat *GlobalStatistic, errorStistic map[string]int, thresholdAdj float64) {
+func (s *DiscordPayload) AlertPayload(conf ClusterConfig, gStat *GlobalStatistic, errorStistic map[string]int, thresholdAdj float64, hideKeywords []string) {
 	var timeStatis string
 	if gStat.TimeStatistic.Stddev <= 0 {
 		timeStatis = fmt.Sprintf(" %d/%3.0f/%d/%s ", gStat.TimeStatistic.Min, gStat.TimeStatistic.Mean, gStat.TimeStatistic.Max, "NaN")
@@ -191,6 +196,10 @@ func (s *DiscordPayload) AlertPayload(conf ClusterConfig, gStat *GlobalStatistic
 	errsorStatis := ""
 	for k, v := range errorStistic {
 		if !PingResultError(k).IsInErrorList(AlertErrorExceptionList) {
+			hideError := PingResultError(k).Short()
+			for _, v := range hideKeywords {
+				hideError = PingResultError(hideError).Subsitute(v, "")
+			}
 			errsorStatis = fmt.Sprintf("%s%s(%d)", errsorStatis, PingResultError(k).Short(), v)
 		}
 	}
@@ -207,7 +216,7 @@ func (s *DiscordPayload) FailoverAlertPayload(conf ClusterConfig, endpoint Failo
 		fmt.Sprintf("failover to %s", endpoint.Endpoint))
 
 }
-func reportErrorBlock(data *GroupsAllStatistic) string {
+func reportErrorBlock(data *GroupsAllStatistic, hideKeywords []string) string {
 	var exceededText, errorText, blackHashText string
 	if len(data.GlobalErrorStatistic) == 0 {
 		return ""
@@ -219,7 +228,11 @@ func reportErrorBlock(data *GroupsAllStatistic) string {
 		} else if BlockhashNotFound.IsIdentical(PingResultError(k)) {
 			blackHashText = fmt.Sprintf("*(count:%d) BlockhashNotFound\n", v)
 		} else {
-			errorText = fmt.Sprintf("%s\n(count: %d) %s\n", errorText, v, k)
+			hide := k
+			for _, w := range hideKeywords {
+				hide = strings.ReplaceAll(hide, w, "")
+			}
+			errorText = fmt.Sprintf("%s\n(count: %d) %s\n", errorText, v, hide)
 		}
 	}
 	if len(data.GlobalErrorStatistic) > 0 {

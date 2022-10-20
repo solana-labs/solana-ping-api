@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"time"
@@ -157,6 +158,17 @@ func reportWorker(cConf ClusterConfig) {
 		lastReporTime = now
 		trigger.Update(globalStat.Loss)
 		alertSend := trigger.ShouldAlertSend() // ShouldAlertSend execute once only. TODO: make shouldAlertSend a function which does not modify any value
+		var accessToken string
+		switch cConf.Cluster {
+		case MainnetBeta:
+			accessToken = mainnetFailover.GetEndpoint().AccessToken
+		case Testnet:
+			accessToken = testnetFailover.GetEndpoint().AccessToken
+		case Devnet:
+			accessToken = devnetFailover.GetEndpoint().AccessToken
+		default:
+			panic(fmt.Sprintf("%s:%s", "no such cluster", cConf.Cluster))
+		}
 		if cConf.Report.Slack.Report.Enabled {
 			slackReportSend(cConf, groupsStat, &globalStat)
 		}
@@ -172,17 +184,17 @@ func reportWorker(cConf ClusterConfig) {
 		time.Sleep(time.Duration(cConf.Report.Interval) * time.Second)
 	}
 }
-func slackReportSend(cConf ClusterConfig, groupsStat *GroupsAllStatistic, globalStat *GlobalStatistic) {
+func slackReportSend(cConf ClusterConfig, groupsStat *GroupsAllStatistic, globalStat *GlobalStatistic, hideKeywords []string) {
 	payload := SlackPayload{}
-	payload.ReportPayload(cConf.Cluster, groupsStat, *globalStat)
+	payload.ReportPayload(cConf.Cluster, groupsStat, *globalStat, hideKeywords)
 	err := SlackSend(cConf.Report.Slack.Report.Webhook, &payload)
 	if err != nil {
 		log.Println("slackReportSend Error:", err)
 	}
 }
-func slackAlertSend(conf ClusterConfig, globalStat *GlobalStatistic, globalErrorStatistic map[string]int, threadhold float64) {
+func slackAlertSend(conf ClusterConfig, globalStat *GlobalStatistic, globalErrorStatistic map[string]int, threadhold float64, hideKeywords []string) {
 	payload := SlackPayload{}
-	payload.AlertPayload(conf, globalStat, globalErrorStatistic, threadhold)
+	payload.AlertPayload(conf, globalStat, globalErrorStatistic, threadhold, hideKeywords)
 	err := SlackSend(conf.Report.Slack.Alert.Webhook, &payload)
 	if err != nil {
 		log.Println("slackAlertSend Error:", err)
