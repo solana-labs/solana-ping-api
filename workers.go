@@ -170,16 +170,18 @@ func reportWorker(cConf ClusterConfig) {
 			panic(fmt.Sprintf("%s:%s", "no such cluster", cConf.Cluster))
 		}
 		if cConf.Report.Slack.Report.Enabled {
-			slackReportSend(cConf, groupsStat, &globalStat)
+			slackReportSend(cConf, groupsStat, &globalStat, []string{accessToken})
 		}
 		if cConf.Report.Slack.Alert.Enabled && alertSend {
-			slackAlertSend(cConf, &globalStat, groupsStat.GlobalErrorStatistic, trigger.ThresholdLevels[trigger.ThresholdIndex])
+			slackAlertSend(cConf, &globalStat, groupsStat.GlobalErrorStatistic,
+				trigger.ThresholdLevels[trigger.ThresholdIndex], []string{accessToken})
 		}
 		if cConf.Report.Discord.Report.Enabled {
-			discordReportSend(cConf, groupsStat, &globalStat)
+			discordReportSend(cConf, groupsStat, &globalStat, []string{accessToken})
 		}
 		if cConf.Report.Discord.Alert.Enabled && alertSend {
-			discordAlertSend(cConf, &globalStat, groupsStat.GlobalErrorStatistic, trigger.ThresholdLevels[trigger.ThresholdIndex])
+			discordAlertSend(cConf, &globalStat, groupsStat.GlobalErrorStatistic,
+				trigger.ThresholdLevels[trigger.ThresholdIndex], []string{accessToken})
 		}
 		time.Sleep(time.Duration(cConf.Report.Interval) * time.Second)
 	}
@@ -201,18 +203,18 @@ func slackAlertSend(conf ClusterConfig, globalStat *GlobalStatistic, globalError
 	}
 }
 
-func discordReportSend(cConf ClusterConfig, groupsStat *GroupsAllStatistic, globalStat *GlobalStatistic) {
+func discordReportSend(cConf ClusterConfig, groupsStat *GroupsAllStatistic, globalStat *GlobalStatistic, hideKeywords []string) {
 	payload := DiscordPayload{BotAvatarURL: cConf.Report.Discord.BotAvatarURL, BotName: cConf.Report.Discord.BotName}
-	payload.ReportPayload(cConf.Cluster, groupsStat, *globalStat)
+	payload.ReportPayload(cConf.Cluster, groupsStat, *globalStat, hideKeywords)
 	err := DiscordSend(cConf.Report.Discord.Report.Webhook, &payload)
 	if err != nil {
 		log.Println("discordReportSend Error:", err)
 	}
 }
 
-func discordAlertSend(cConf ClusterConfig, globalStat *GlobalStatistic, globalErrorStatistic map[string]int, threadhold float64) {
+func discordAlertSend(cConf ClusterConfig, globalStat *GlobalStatistic, globalErrorStatistic map[string]int, threadhold float64, hideKeywords []string) {
 	payload := DiscordPayload{BotAvatarURL: cConf.Report.Discord.BotAvatarURL, BotName: cConf.Report.Discord.BotName}
-	payload.AlertPayload(cConf, globalStat, globalErrorStatistic, threadhold)
+	payload.AlertPayload(cConf, globalStat, globalErrorStatistic, threadhold, hideKeywords)
 	err := DiscordSend(cConf.Report.Discord.Alert.Webhook, &payload)
 	if err != nil {
 		log.Println("discordAlertSend Error:", err)
