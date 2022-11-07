@@ -118,7 +118,7 @@ func init() {
 	} else {
 		testnetFailover = NewRPCFailover(config.Testnet.AlternativeEnpoint.HostList)
 	}
-	if len(config.Mainnet.AlternativeEnpoint.HostList) <= 0 {
+	if len(config.Devnet.AlternativeEnpoint.HostList) <= 0 {
 		devnetFailover = NewRPCFailover([]RPCEndpoint{{
 			Endpoint: rpc.MainnetRPCEndpoint,
 			Piority:  1,
