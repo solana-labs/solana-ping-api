@@ -35,8 +35,9 @@ func NewInfluxdbClient(config InfluxdbConfig) *InfluxdbClient {
 // PrepareInfluxdbData prepare influxdb datapoint form PingResult
 func (i *InfluxdbClient) PrepareInfluxdbData(r PingResult) *influxdb2write.Point {
 	return influxdb2.NewPoint(r.Cluster,
-		map[string]string{"hostname": r.Hostname},
+		map[string]string{},
 		map[string]interface{}{
+			"hostname":             r.Hostname,
 			"compute_unit_price":   r.ComputeUnitPrice,
 			"request_compute_unit": r.RequestComputeUnits,
 			"submit":               r.Submitted,
