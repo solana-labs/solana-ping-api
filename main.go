@@ -32,6 +32,7 @@ const (
 	Devnet              = "Devnet"
 )
 
+var influxdb *InfluxdbClient
 var userInputClusterMode string
 var mainnetFailover RPCFailover
 var testnetFailover RPCFailover
@@ -49,6 +50,8 @@ func init() {
 	log.Println(" *** Config Start *** ")
 	log.Println("--- //// Database Config --- ")
 	log.Println(config.Database)
+	log.Println("--- //// Influxdb Config --- ")
+	log.Println(config.InfluxdbConfig)
 	log.Println("--- //// Retension --- ")
 	log.Println(config.Retension)
 	log.Println("--- //// ClusterCLIConfig--- ")
@@ -100,6 +103,9 @@ func init() {
 	}
 	dbMtx = &sync.Mutex{}
 	log.Println("database connected")
+	if config.InfluxdbConfig.Enabled {
+		influxdb = NewInfluxdbClient(config.InfluxdbConfig)
+	}
 	/// ---- Start RPC Failover ---
 	log.Println("RPC Endpoint Failover Setting ---")
 	if len(config.Mainnet.AlternativeEnpoint.HostList) <= 0 {
@@ -129,6 +135,17 @@ func init() {
 }
 
 func main() {
+	defer func() {
+		if influxdb != nil {
+			influxdb.ClientClose()
+		}
+		if database != nil {
+			sqldb, err := database.DB()
+			if err == nil {
+				sqldb.Close()
+			}
+		}
+	}()
 	flag.Parse()
 	clustersToRun := flag.Arg(0)
 	if !(strings.Compare(clustersToRun, string(RunMainnetBeta)) == 0 ||

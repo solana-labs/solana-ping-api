@@ -6,6 +6,7 @@ require (
 	github.com/GoogleCloudPlatform/cloudsql-proxy v1.29.0
 	github.com/gin-contrib/timeout v0.0.3
 	github.com/gin-gonic/gin v1.7.7
+	github.com/influxdata/influxdb-client-go/v2 v2.12.0
 	github.com/lib/pq v1.10.4
 	github.com/parnurzeal/gorequest v0.2.16
 	github.com/portto/solana-go-sdk v1.18.0
@@ -18,6 +19,7 @@ require (
 	cloud.google.com/go/compute v1.5.0 // indirect
 	filippo.io/edwards25519 v1.0.0-rc.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/deepmap/oapi-codegen v1.8.2 // indirect
 	github.com/elazarl/goproxy v0.0.0-20211114080932-d06c3be7c11b // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
@@ -28,6 +30,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/googleapis/gax-go/v2 v2.2.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
+	github.com/influxdata/line-protocol v0.0.0-20200327222509-2487e7298839 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.11.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
@@ -55,7 +58,7 @@ require (
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/stretchr/testify v1.7.1 // indirect
+	github.com/stretchr/testify v1.8.0 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
 	github.com/ugorji/go/codec v1.2.7 // indirect
 	go.opencensus.io v0.23.0 // indirect
@@ -75,6 +78,6 @@ require (
 	google.golang.org/protobuf v1.28.0 // indirect
 	gopkg.in/ini.v1 v1.66.4 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 	moul.io/http2curl v1.0.0 // indirect
 )

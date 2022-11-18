@@ -10,12 +10,14 @@ import (
 	"github.com/portto/solana-go-sdk/types"
 )
 
+// TakeTime a struct to record a serious of start and end time. Start and End is used for current record and Times is for store take-time
 type TakeTime struct {
 	Times []int64
 	Start int64
 	End   int64
 }
 
+// Ping similar to solana-bench-tps. It send a transaction to the cluster
 func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterConfig) (PingResult, PingResultError) {
 	resultErrs := []string{}
 	timer := TakeTime{}
@@ -31,34 +33,46 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 		}
 		timer.TimerStart()
 		var hash string
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.TxTimeout)*time.Second)
-		defer cancel()
-		txhash, pingErr := SendPingTx(SendPingTxParam{
-			Client:              c,
-			Ctx:                 ctx,
-			FeePayer:            acct,
-			RequestComputeUnits: config.RequestUnits,
-			ComputeUnitPrice:    config.ComputeUnitPrice,
-		})
-		hash = txhash // avoid shadow
-		if !pingErr.NoError() {
-			timer.TimerStop()
-			if !pingErr.IsInErrorList(PingTakeTimeErrExpectionList) {
-				timer.Add()
+		if 0 == config.ComputeUnitPrice {
+			txhash, pingErr := Transfer(c, acct, acct, config.Receiver, time.Duration(config.TxTimeout)*time.Second)
+			hash = txhash // avoid shadow
+			if !pingErr.NoError() {
+				timer.TimerStop()
+				if !pingErr.IsInErrorList(PingTakeTimeErrExpectionList) {
+					timer.Add()
+				}
+				resultErrs = append(resultErrs, string(pingErr))
+				continue
 			}
-			resultErrs = append(resultErrs, string(pingErr))
-			continue
+		} else {
+			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.TxTimeout)*time.Second)
+			defer cancel()
+			txhash, pingErr := SendPingTx(SendPingTxParam{
+				Client:              c,
+				Ctx:                 ctx,
+				FeePayer:            acct,
+				RequestComputeUnits: config.RequestUnits,
+				ComputeUnitPrice:    config.ComputeUnitPrice,
+			})
+			hash = txhash // avoid shadow
+			if !pingErr.NoError() {
+				timer.TimerStop()
+				if !pingErr.IsInErrorList(PingTakeTimeErrExpectionList) {
+					timer.Add()
+				}
+				resultErrs = append(resultErrs, string(pingErr))
+				continue
+			}
 		}
 
-		pingErr = waitConfirmation(c, hash,
+		waitErr := waitConfirmation(c, hash,
 			time.Duration(config.WaitConfirmationTimeout)*time.Second,
 			time.Duration(config.TxTimeout)*time.Second,
 			time.Duration(config.StatusCheckInterval)*time.Second)
 		timer.TimerStop()
-		if !pingErr.NoError() {
-			resultErrs = append(resultErrs, string(pingErr))
-			if !pingErr.IsInErrorList(PingTakeTimeErrExpectionList) {
+		if !waitErr.NoError() {
+			resultErrs = append(resultErrs, string(waitErr))
+			if !waitErr.IsInErrorList(PingTakeTimeErrExpectionList) {
 				timer.Add()
 			}
 			continue
@@ -78,6 +92,8 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 	result.Min = min
 	result.Stddev = int64(stdDev)
 	result.TakeTime = total
+	result.ComputeUnitPrice = config.ComputeUnitPrice
+	result.RequestComputeUnits = config.RequestUnits
 	result.Error = resultErrs
 	stringErrors := []string(result.Error)
 	if 0 == len(stringErrors) {
@@ -86,22 +102,27 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 	return result, PingResultError(strings.Join(stringErrors[:], ","))
 }
 
+// TimerStart Record start time in ms format
 func (t *TakeTime) TimerStart() {
 	t.Start = time.Now().UTC().UnixMilli()
 }
 
+// TimerStop Record stop time in ms format
 func (t *TakeTime) TimerStop() {
 	t.End = time.Now().UTC().UnixMilli()
 }
 
+// Add save the end - stop in ms
 func (t *TakeTime) Add() {
 	t.Times = append(t.Times, (t.End - t.Start))
 }
 
+// AddTime add a take time directly into Times
 func (t *TakeTime) AddTime(ts int64) {
 	t.Times = append(t.Times, ts)
 }
 
+// TotalTime sum of data in Times
 func (t *TakeTime) TotalTime() int64 {
 	sum := int64(0)
 	for _, ts := range t.Times {
@@ -110,6 +131,7 @@ func (t *TakeTime) TotalTime() int64 {
 	return sum
 }
 
+// Statistic analyze data in TakeTime to return max/mean/min/stddev/sum
 func (t *TakeTime) Statistic() (max int64, mean float64, min int64, stddev float64, sum int64) {
 	count := 0
 	for _, ts := range t.Times {
