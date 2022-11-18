@@ -31,38 +31,27 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 		}
 		timer.TimerStart()
 		var hash string
-		if config.Cluster == MainnetBeta {
-			txhash, pingErr := Transfer(c, acct, acct, config.Receiver, time.Duration(config.TxTimeout)*time.Second)
-			hash = txhash // avoid shadow
-			if !pingErr.NoError() {
-				timer.TimerStop()
-				if !pingErr.IsInErrorList(PingTakeTimeErrExpectionList) {
-					timer.Add()
-				}
-				resultErrs = append(resultErrs, string(pingErr))
-				continue
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.TxTimeout)*time.Second)
+		defer cancel()
+		txhash, pingErr := SendPingTx(SendPingTxParam{
+			Client:              c,
+			Ctx:                 ctx,
+			FeePayer:            acct,
+			RequestComputeUnits: config.RequestUnits,
+			ComputeUnitPrice:    config.ComputeUnitPrice,
+		})
+		hash = txhash // avoid shadow
+		if !pingErr.NoError() {
+			timer.TimerStop()
+			if !pingErr.IsInErrorList(PingTakeTimeErrExpectionList) {
+				timer.Add()
 			}
-		} else {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.TxTimeout)*time.Second)
-			defer cancel()
-			txhash, pingErr := SendPingTx(SendPingTxParam{
-				Client:              c,
-				Ctx:                 ctx,
-				FeePayer:            acct,
-				RequestComputeUnits: config.RequestUnits,
-				ComputeUnitPrice:    config.ComputeUnitPrice,
-			})
-			hash = txhash // avoid shadow
-			if !pingErr.NoError() {
-				timer.TimerStop()
-				if !pingErr.IsInErrorList(PingTakeTimeErrExpectionList) {
-					timer.Add()
-				}
-				resultErrs = append(resultErrs, string(pingErr))
-				continue
-			}
+			resultErrs = append(resultErrs, string(pingErr))
+			continue
 		}
-		pingErr := waitConfirmation(c, hash,
+
+		pingErr = waitConfirmation(c, hash,
 			time.Duration(config.WaitConfirmationTimeout)*time.Second,
 			time.Duration(config.TxTimeout)*time.Second,
 			time.Duration(config.StatusCheckInterval)*time.Second)
