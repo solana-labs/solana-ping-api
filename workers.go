@@ -149,7 +149,7 @@ func reportWorker(cConf ClusterConfig) {
 			lastReporTime = now - int64(cConf.Report.Interval)
 			log.Println("reconstruct lastReport time=", lastReporTime, "time now=", time.Now().UTC().Unix())
 		}
-		data := getAfter(cConf.Cluster, DataPoint1Min, lastReporTime)
+		data := getAfter(cConf.Cluster, DataPoint1Min, lastReporTime, HasComputeUnitPrice, 0)
 		if len(data) <= 0 { // No Data
 			log.Println(cConf.Cluster, " getAfter return empty")
 			time.Sleep(30 * time.Second)
