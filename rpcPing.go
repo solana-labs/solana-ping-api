@@ -64,14 +64,15 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 				continue
 			}
 		}
-		pingErr := waitConfirmation(c, hash,
+
+		waitErr := waitConfirmation(c, hash,
 			time.Duration(config.WaitConfirmationTimeout)*time.Second,
 			time.Duration(config.TxTimeout)*time.Second,
 			time.Duration(config.StatusCheckInterval)*time.Second)
 		timer.TimerStop()
-		if !pingErr.NoError() {
-			resultErrs = append(resultErrs, string(pingErr))
-			if !pingErr.IsInErrorList(PingTakeTimeErrExpectionList) {
+		if !waitErr.NoError() {
+			resultErrs = append(resultErrs, string(waitErr))
+			if !waitErr.IsInErrorList(PingTakeTimeErrExpectionList) {
 				timer.Add()
 			}
 			continue
