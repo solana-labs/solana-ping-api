@@ -11,6 +11,11 @@ Database:
  UseGoogleCloud: false
  GCloudCredentialPath:  "/somepath/dev.json"
  DBConn: "user= password= host=localhost port=5432 dbname=" #use for both googlecloud or local database
+InfluxdbConfig:
+ Enableed: true
+ InfluxdbURL:
+ AccessToken:
+ Bucket:
 Retension:
  Enabled: false         #Retension service
  KeepHours: 48                                              

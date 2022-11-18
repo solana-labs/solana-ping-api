@@ -66,6 +66,13 @@ type Database struct {
 	GCloudCredentialPath string
 	DBConn               string
 }
+type InfluxdbConfig struct {
+	Enabled     bool
+	InfluxdbURL string
+	AccessToken string
+	Orgnization string
+	Bucket      string
+}
 type Retension struct {
 	Enabled           bool
 	KeepHours         int64
@@ -122,6 +129,7 @@ type ClusterConfig struct {
 
 type Config struct {
 	Database
+	InfluxdbConfig
 	Mainnet ClusterConfig
 	Testnet ClusterConfig
 	Devnet  ClusterConfig
@@ -158,6 +166,14 @@ func loadConfig() Config {
 		os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", c.Database.GCloudCredentialPath)
 	}
 	log.Println("GOOGLE_APPLICATION_CREDENTIALS=", os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"))
+	// setup influxdb in config.yaml
+	c.InfluxdbConfig = InfluxdbConfig{
+		Enabled:     v.GetBool("InfluxdbConfig.Enabled"),
+		InfluxdbURL: v.GetString("InfluxdbConfig.InfluxdbURL"),
+		AccessToken: v.GetString("InfluxdbConfig.AccessToken"),
+		Orgnization: v.GetString("InfluxdbConfig.Orgnization"),
+		Bucket:      v.GetString("InfluxdbConfig.Bucket"),
+	}
 	// setup config.yaml (Retension)
 	c.Retension = Retension{
 		Enabled:           v.GetBool("Retension.Enabled"),
