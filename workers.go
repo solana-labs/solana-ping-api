@@ -92,12 +92,14 @@ func pingDataWorker(cConf ClusterConfig, workerNum int) {
 	for {
 		c = failover.GoNext(c, cConf, workerNum)
 		result, err := Ping(c, DataPoint1Min, acct, cConf)
+		extraTimeStart := time.Now().UTC().Unix()
 		addRecord(result)
 		if influxdb != nil && influxdb.Client != nil {
 			influxdb.SendDatapointAsync(influxdb.PrepareInfluxdbData(result))
 		}
 		failover.GetEndpoint().RetryResult(err)
-		waitTime := cConf.ClusterPing.PingConfig.MinPerPingTime - (result.TakeTime / 1000)
+		extraTimeStop := time.Now().UTC().Unix()
+		waitTime := cConf.ClusterPing.PingConfig.MinPerPingTime - (result.TakeTime / 1000) - (extraTimeStop - extraTimeStart)
 		if waitTime > 0 {
 			time.Sleep(time.Duration(waitTime) * time.Second)
 		}
