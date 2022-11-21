@@ -39,9 +39,7 @@ type PingResult struct {
 }
 
 func addRecord(data PingResult) error {
-	dbMtx.Lock()
 	result := database.Create(&data)
-	dbMtx.Unlock()
 	return result.Error
 }
 
@@ -49,25 +47,16 @@ func getLastN(c Cluster, pType PingType, n int, priceType ComputeUnitPriceType, 
 	ret := []PingResult{}
 	switch priceType {
 	case NoComputeUnitPrice:
-		dbMtx.Lock()
 		database.Order("time_stamp desc").Where("cluster=? AND ping_type=? AND compute_unit_price = ?", c, string(pType), 0).Limit(n).Find(&ret)
-		dbMtx.Unlock()
 	case HasComputeUnitPrice:
-		dbMtx.Lock()
 		database.Order("time_stamp desc").Where("cluster=? AND ping_type=? AND compute_unit_price > ?", c, string(pType), 0).Limit(n).Find(&ret)
-		dbMtx.Unlock()
 	case ComputeUnitPriceThreshold:
-		dbMtx.Lock()
 		database.Order("time_stamp desc").Where("cluster=? AND ping_type=? AND compute_unit_price > ?", c, string(pType), threshold).Limit(n).Find(&ret)
-		dbMtx.Unlock()
 	case AllData:
 		fallthrough
 	default:
-		dbMtx.Lock()
 		database.Order("time_stamp desc").Where("cluster=? AND ping_type=?", c, string(pType)).Limit(n).Find(&ret)
-		dbMtx.Unlock()
 	}
-
 	return ret
 }
 func getAfter(c Cluster, pType PingType, t int64, priceType ComputeUnitPriceType, threshold uint64) []PingResult {
@@ -75,23 +64,15 @@ func getAfter(c Cluster, pType PingType, t int64, priceType ComputeUnitPriceType
 	now := time.Now().UTC().Unix()
 	switch priceType {
 	case NoComputeUnitPrice:
-		dbMtx.Lock()
 		database.Where("cluster=? AND ping_type=? AND time_stamp > ? AND time_stamp < ? AND compute_unit_price = ?", c, string(pType), t, now, 0).Find(&ret)
-		dbMtx.Unlock()
 	case HasComputeUnitPrice:
-		dbMtx.Lock()
 		database.Where("cluster=? AND ping_type=? AND time_stamp > ? AND time_stamp < ? AND compute_unit_price > ?", c, string(pType), t, now, 0).Find(&ret)
-		dbMtx.Unlock()
 	case ComputeUnitPriceThreshold:
-		dbMtx.Lock()
 		database.Where("cluster=? AND ping_type=? AND time_stamp > ? AND time_stamp < ? AND compute_unit_price > ?", c, string(pType), t, now, threshold).Find(&ret)
-		dbMtx.Unlock()
 	case AllData:
 		fallthrough
 	default:
-		dbMtx.Lock()
 		database.Where("cluster=? AND ping_type=? AND time_stamp > ? AND time_stamp < ?", c, string(pType), t, now).Find(&ret)
-		dbMtx.Unlock()
 	}
 
 	return ret

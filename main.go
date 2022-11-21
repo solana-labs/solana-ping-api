@@ -4,7 +4,6 @@ import (
 	"flag"
 	"log"
 	"strings"
-	"sync"
 	"time"
 
 	_ "github.com/GoogleCloudPlatform/cloudsql-proxy/proxy/dialers/postgres"
@@ -19,7 +18,6 @@ var config Config
 type Cluster string
 
 var database *gorm.DB
-var dbMtx *sync.Mutex
 
 const useGCloudDB = true
 
@@ -101,7 +99,6 @@ func init() {
 		}
 		database = gormDB
 	}
-	dbMtx = &sync.Mutex{}
 	log.Println("database connected")
 	if config.InfluxdbConfig.Enabled {
 		influxdb = NewInfluxdbClient(config.InfluxdbConfig)
