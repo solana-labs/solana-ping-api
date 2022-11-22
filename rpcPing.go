@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"math"
 	"strings"
 	"time"
@@ -46,7 +45,6 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 				resultErrs = append(resultErrs, string(pingErr))
 				continue
 			}
-			log.Println("Send tx No Fee")
 		} else {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.TxTimeout)*time.Second)
 			defer cancel()
@@ -66,7 +64,6 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 				resultErrs = append(resultErrs, string(pingErr))
 				continue
 			}
-			log.Println("Send tx With Fee")
 		}
 
 		waitErr := waitConfirmation(c, hash,
