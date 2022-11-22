@@ -51,7 +51,6 @@ func (i *InfluxdbClient) PrepareInfluxdbData(r PingResult) *influxdb2write.Point
 			"error":                r.Error,
 		},
 		time.Now())
-
 }
 
 // SendDatapointAsync send datapoint to influx cloud

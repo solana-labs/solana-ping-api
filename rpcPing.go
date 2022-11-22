@@ -18,7 +18,7 @@ type TakeTime struct {
 }
 
 // Ping similar to solana-bench-tps. It send a transaction to the cluster
-func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterConfig) (PingResult, PingResultError) {
+func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterConfig, feeEnabled bool) (PingResult, PingResultError) {
 	resultErrs := []string{}
 	timer := TakeTime{}
 	result := PingResult{
@@ -33,7 +33,8 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 		}
 		timer.TimerStart()
 		var hash string
-		if 0 == config.ComputeUnitPrice {
+
+		if !feeEnabled || 0 == config.ComputeUnitPrice {
 			txhash, pingErr := Transfer(c, acct, acct, config.Receiver, time.Duration(config.TxTimeout)*time.Second)
 			hash = txhash // avoid shadow
 			if !pingErr.NoError() {

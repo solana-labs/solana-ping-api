@@ -34,6 +34,7 @@ PingConfig:
  WaitConfirmationTimeout: 75
  StatusCheckInterval: 1
  MinPerPingTime: 10
+ ComputeFeeDualMode: false   # send tx both with and without compute fee
  RequestUnits: 200000        # change RequestUnits 
  ComputeUnitPrice: 1000      # change ComputeUnitPrice
 Report:

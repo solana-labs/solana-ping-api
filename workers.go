@@ -89,19 +89,34 @@ func pingDataWorker(cConf ClusterConfig, workerNum int) {
 	default:
 		panic(ErrInvalidCluster)
 	}
-	for {
-		c = failover.GoNext(c, cConf, workerNum)
-		result, err := Ping(c, DataPoint1Min, acct, cConf)
-		extraTimeStart := time.Now().UTC().Unix()
-		addRecord(result)
-		if influxdb != nil && influxdb.Client != nil {
-			influxdb.SendDatapointAsync(influxdb.PrepareInfluxdbData(result))
-		}
-		failover.GetEndpoint().RetryResult(err)
-		extraTimeStop := time.Now().UTC().Unix()
-		waitTime := cConf.ClusterPing.PingConfig.MinPerPingTime - (result.TakeTime / 1000) - (extraTimeStop - extraTimeStart)
-		if waitTime > 0 {
-			time.Sleep(time.Duration(waitTime) * time.Second)
+	pingWithFee := false
+	if cConf.PingConfig.ComputeFeeDualMode {
+		pingWithFee = true
+	}
+	if !cConf.PingConfig.ComputeFeeDualMode {
+		for {
+			c = failover.GoNext(c, cConf, workerNum)
+			result, err := Ping(c, DataPoint1Min, acct, cConf, pingWithFee)
+			extraTimeStart := time.Now().UTC().Unix()
+			if cConf.PingConfig.ComputeFeeDualMode {
+				if !pingWithFee {
+					result.ComputeUnitPrice = 0
+					result.RequestComputeUnits = 0
+				}
+			}
+			addRecord(result)
+			if influxdb != nil && influxdb.Client != nil {
+				influxdb.SendDatapointAsync(influxdb.PrepareInfluxdbData(result))
+			}
+			failover.GetEndpoint().RetryResult(err)
+			extraTimeStop := time.Now().UTC().Unix()
+			waitTime := cConf.ClusterPing.PingConfig.MinPerPingTime - (result.TakeTime / 1000) - (extraTimeStop - extraTimeStart)
+			if waitTime > 0 {
+				time.Sleep(time.Duration(waitTime) * time.Second)
+			}
+			if cConf.PingConfig.ComputeFeeDualMode {
+				pingWithFee = !pingWithFee
+			}
 		}
 	}
 }
