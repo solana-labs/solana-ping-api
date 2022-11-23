@@ -89,10 +89,18 @@ func pingDataWorker(cConf ClusterConfig, workerNum int) {
 	default:
 		panic(ErrInvalidCluster)
 	}
+	pingWithFee := true
+
 	for {
 		c = failover.GoNext(c, cConf, workerNum)
-		result, err := Ping(c, DataPoint1Min, acct, cConf)
+		result, err := Ping(c, DataPoint1Min, acct, cConf, pingWithFee)
 		extraTimeStart := time.Now().UTC().Unix()
+		if cConf.PingConfig.ComputeFeeDualMode {
+			if !pingWithFee {
+				result.ComputeUnitPrice = 0
+				result.RequestComputeUnits = 0
+			}
+		}
 		addRecord(result)
 		if influxdb != nil && influxdb.Client != nil {
 			influxdb.SendDatapointAsync(influxdb.PrepareInfluxdbData(result))
@@ -102,6 +110,9 @@ func pingDataWorker(cConf ClusterConfig, workerNum int) {
 		waitTime := cConf.ClusterPing.PingConfig.MinPerPingTime - (result.TakeTime / 1000) - (extraTimeStop - extraTimeStart)
 		if waitTime > 0 {
 			time.Sleep(time.Duration(waitTime) * time.Second)
+		}
+		if cConf.PingConfig.ComputeFeeDualMode {
+			pingWithFee = !pingWithFee
 		}
 	}
 }
@@ -151,7 +162,11 @@ func reportWorker(cConf ClusterConfig) {
 			lastReporTime = now - int64(cConf.Report.Interval)
 			log.Println("reconstruct lastReport time=", lastReporTime, "time now=", time.Now().UTC().Unix())
 		}
-		data := getAfter(cConf.Cluster, DataPoint1Min, lastReporTime, HasComputeUnitPrice, 0)
+		getDataFromComputeFee := AllData
+		if cConf.PingConfig.ComputeUnitPrice > 0 {
+			getDataFromComputeFee = HasComputeUnitPrice
+		}
+		data := getAfter(cConf.Cluster, DataPoint1Min, lastReporTime, getDataFromComputeFee, 0)
 		if len(data) <= 0 { // No Data
 			log.Println(cConf.Cluster, " getAfter return empty")
 			time.Sleep(30 * time.Second)

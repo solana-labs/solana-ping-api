@@ -28,6 +28,7 @@ type PingConfig struct {
 	WaitConfirmationTimeout int64
 	StatusCheckInterval     int64
 	MinPerPingTime          int64
+	ComputeFeeDualMode      bool
 	RequestUnits            uint32
 	ComputeUnitPrice        uint64
 }

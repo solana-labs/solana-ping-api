@@ -11,8 +11,8 @@ type ComputeUnitPriceType string
 
 // Cluster enum
 const (
-	AllData                                        = "all"
-	NoComputeUnitPrice        ComputeUnitPriceType = "zero"
+	AllData                   ComputeUnitPriceType = "all"
+	NoComputeUnitPrice                             = "zero"
 	HasComputeUnitPrice                            = "hasprice"
 	ComputeUnitPriceThreshold                      = "threshold"
 )
