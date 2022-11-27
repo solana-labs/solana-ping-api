@@ -69,7 +69,7 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 		waitErr := waitConfirmation(c, hash,
 			time.Duration(config.WaitConfirmationTimeout)*time.Second,
 			time.Duration(config.TxTimeout)*time.Second,
-			time.Duration(config.StatusCheckInterval)*time.Second)
+			time.Duration(config.StatusCheckInterval)*time.Millisecond)
 		timer.TimerStop()
 		if !waitErr.NoError() {
 			resultErrs = append(resultErrs, string(waitErr))
