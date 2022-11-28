@@ -119,12 +119,11 @@ func (s *SlackPayload) AlertPayload(conf ClusterConfig, gStat *GlobalStatistic, 
 	errsorStatis := ""
 	for k, v := range errorStistic {
 		if !PingResultError(k).IsInErrorList(AlertErrorExceptionList) {
-			hideError := PingResultError(k).Short()
-			for _, v := range hideKeywords {
-				hideError = PingResultError(hideError).Subsitute(v, "")
-			}
-			errsorStatis = fmt.Sprintf("%s%s(%d)", errsorStatis, hideError, v)
+			errsorStatis = fmt.Sprintf("%s%s(%d)", errsorStatis, PingResultError(k).Short(), v)
 		}
+	}
+	for _, w := range hideKeywords {
+		errsorStatis = strings.ReplaceAll(errsorStatis, w, "")
 	}
 
 	text = fmt.Sprintf("{ hostname: %s, submitted: %3.0f, confirmed:%3.0f, loss: %3.1f%s, confirmation: min/mean/max/stddev = %s, next_threshold:%3.0f%s, error: %s}",
@@ -196,12 +195,11 @@ func (s *DiscordPayload) AlertPayload(conf ClusterConfig, gStat *GlobalStatistic
 	errsorStatis := ""
 	for k, v := range errorStistic {
 		if !PingResultError(k).IsInErrorList(AlertErrorExceptionList) {
-			hideError := PingResultError(k).Short()
-			for _, v := range hideKeywords {
-				hideError = PingResultError(hideError).Subsitute(v, "")
-			}
 			errsorStatis = fmt.Sprintf("%s%s(%d)", errsorStatis, PingResultError(k).Short(), v)
 		}
+	}
+	for _, w := range hideKeywords {
+		errsorStatis = strings.ReplaceAll(errsorStatis, w, "")
 	}
 
 	text := fmt.Sprintf("```{ hostname: %s, submitted: %3.0f, confirmed:%3.0f, loss: %3.1f%s, confirmation: min/mean/max/stddev = %s, next_threshold:%3.0f%s, error: %s}```",
@@ -228,12 +226,11 @@ func reportErrorBlock(data *GroupsAllStatistic, hideKeywords []string) string {
 		} else if BlockhashNotFound.IsIdentical(PingResultError(k)) {
 			blackHashText = fmt.Sprintf("*(count:%d) BlockhashNotFound\n", v)
 		} else {
-			hide := k
-			for _, w := range hideKeywords {
-				hide = strings.ReplaceAll(hide, w, "")
-			}
-			errorText = fmt.Sprintf("%s\n(count: %d) %s\n", errorText, v, hide)
+			errorText = fmt.Sprintf("%s\n(count: %d) %s\n", errorText, v, k)
 		}
+	}
+	for _, w := range hideKeywords {
+		errorText = strings.ReplaceAll(errorText, w, "")
 	}
 	if len(data.GlobalErrorStatistic) > 0 {
 		return fmt.Sprintf("Error List:\n%s%s%s", exceededText, blackHashText, errorText)
