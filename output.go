@@ -81,12 +81,13 @@ func PingResultToJson(stat *PingSatistic) DataPoint1MinResultJSON {
 }
 
 // ReportPayload get the report within specified minutes
-func (s *SlackPayload) ReportPayload(c Cluster, data *GroupsAllStatistic, globalSatistic GlobalStatistic, hideKeywords []string) {
+func (s *SlackPayload) ReportPayload(c Cluster, data *GroupsAllStatistic, globalSatistic GlobalStatistic, hideKeywords []string, messageMemo string) {
 	// Header Block
-	headerText := fmt.Sprintf("total-submitted: %3.0f, total-confirmed:%3.0f, average-loss:%3.1f%s",
+	headerText := fmt.Sprintf("total-submitted: %3.0f, total-confirmed:%3.0f, average-loss:%3.1f%s\n memo:%s",
 		globalSatistic.Submitted,
 		globalSatistic.Confirmed,
-		globalSatistic.Loss*100, "%")
+		globalSatistic.Loss*100, "%",
+		messageMemo)
 	header := Block{
 		BlockType: "section",
 		BlockText: SlackText{
@@ -109,7 +110,7 @@ func (s *SlackPayload) ReportPayload(c Cluster, data *GroupsAllStatistic, global
 	s.Blocks = append(s.Blocks, body)
 }
 
-func (s *SlackPayload) AlertPayload(conf ClusterConfig, gStat *GlobalStatistic, errorStistic map[string]int, thresholdAdj float64, hideKeywords []string) {
+func (s *SlackPayload) AlertPayload(conf ClusterConfig, gStat *GlobalStatistic, errorStistic map[string]int, thresholdAdj float64, hideKeywords []string, messageMemo string) {
 	var text, timeStatis string
 	if gStat.TimeStatistic.Stddev <= 0 {
 		timeStatis = fmt.Sprintf(" %d/%3.0f/%d/%s ", gStat.TimeStatistic.Min, gStat.TimeStatistic.Mean, gStat.TimeStatistic.Max, "NaN")
@@ -126,8 +127,8 @@ func (s *SlackPayload) AlertPayload(conf ClusterConfig, gStat *GlobalStatistic, 
 		errsorStatis = strings.ReplaceAll(errsorStatis, w, "")
 	}
 
-	text = fmt.Sprintf("{ hostname: %s, submitted: %3.0f, confirmed:%3.0f, loss: %3.1f%s, confirmation: min/mean/max/stddev = %s, next_threshold:%3.0f%s, error: %s}",
-		conf.HostName, gStat.Submitted, gStat.Confirmed, gStat.Loss*100, "%", timeStatis, thresholdAdj, "%", errsorStatis)
+	text = fmt.Sprintf("{ hostname: %s, memo: %s ,submitted: %3.0f, confirmed:%3.0f, loss: %3.1f%s, confirmation: min/mean/max/stddev = %s, next_threshold:%3.0f%s, error: %s}",
+		conf.HostName, messageMemo, gStat.Submitted, gStat.Confirmed, gStat.Loss*100, "%", timeStatis, thresholdAdj, "%", errsorStatis)
 
 	header := Block{
 		BlockType: "section",
@@ -172,11 +173,12 @@ func reportRecordBlock(data *GroupsAllStatistic) string {
 }
 
 // ReportPayload get the report within specified minutes
-func (s *DiscordPayload) ReportPayload(c Cluster, data *GroupsAllStatistic, globalSatistic GlobalStatistic, hideKeywords []string) {
-	summary := fmt.Sprintf("**total-submitted: %3.0f  total-confirmed: %3.0f average-loss: %3.1f%s**",
+func (s *DiscordPayload) ReportPayload(c Cluster, data *GroupsAllStatistic, globalSatistic GlobalStatistic, hideKeywords []string, messageMemo string) {
+	summary := fmt.Sprintf("**total-submitted: %3.0f  total-confirmed: %3.0f average-loss: %3.1f%s**\nmemo: %s",
 		globalSatistic.Submitted,
 		globalSatistic.Confirmed,
-		globalSatistic.Loss*100, "%")
+		globalSatistic.Loss*100, "%",
+		messageMemo)
 	header := "( Submitted, Confirmed, Loss, min/mean/max/stddev ms )"
 	records := reportRecordBlock(data)
 	memo := "*BlockhashNotFound do not count as a transaction\n"
@@ -185,7 +187,7 @@ func (s *DiscordPayload) ReportPayload(c Cluster, data *GroupsAllStatistic, glob
 }
 
 // AlertPayload get the report within specified minutes
-func (s *DiscordPayload) AlertPayload(conf ClusterConfig, gStat *GlobalStatistic, errorStistic map[string]int, thresholdAdj float64, hideKeywords []string) {
+func (s *DiscordPayload) AlertPayload(conf ClusterConfig, gStat *GlobalStatistic, errorStistic map[string]int, thresholdAdj float64, hideKeywords []string, messageMemo string) {
 	var timeStatis string
 	if gStat.TimeStatistic.Stddev <= 0 {
 		timeStatis = fmt.Sprintf(" %d/%3.0f/%d/%s ", gStat.TimeStatistic.Min, gStat.TimeStatistic.Mean, gStat.TimeStatistic.Max, "NaN")
@@ -202,8 +204,8 @@ func (s *DiscordPayload) AlertPayload(conf ClusterConfig, gStat *GlobalStatistic
 		errsorStatis = strings.ReplaceAll(errsorStatis, w, "")
 	}
 
-	text := fmt.Sprintf("```{ hostname: %s, submitted: %3.0f, confirmed:%3.0f, loss: %3.1f%s, confirmation: min/mean/max/stddev = %s, next_threshold:%3.0f%s, error: %s}```",
-		conf.HostName, gStat.Submitted, gStat.Confirmed, gStat.Loss*100, "%", timeStatis, thresholdAdj, "%", errsorStatis)
+	text := fmt.Sprintf("```{ hostname: %s, memo: %s, submitted: %3.0f, confirmed:%3.0f, loss: %3.1f%s, confirmation: min/mean/max/stddev = %s, next_threshold:%3.0f%s, error: %s}```",
+		conf.HostName, messageMemo, gStat.Submitted, gStat.Confirmed, gStat.Loss*100, "%", timeStatis, thresholdAdj, "%", errsorStatis)
 	s.Content = text
 }
 

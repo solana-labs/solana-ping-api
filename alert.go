@@ -24,7 +24,15 @@ func NewAlertTrigger(conf ClusterConfig) AlertTrigger {
 	s.ThresholdIndex = s.ReadIndexFromFile()
 	return s
 }
-
+func NewAlertTriggerByParams(levelFilePath string, lossThreshold float64) AlertTrigger {
+	s := AlertTrigger{}
+	s.FilePath = levelFilePath
+	s.CurrentLoss = 0
+	s.LastLoss = 0
+	s.ThresholdLevels = []float64{lossThreshold, float64(50), float64(75), float64(100)}
+	s.ThresholdIndex = s.ReadIndexFromFile()
+	return s
+}
 func (s *AlertTrigger) Update(currentLoss float64) {
 	s.LastLoss = s.CurrentLoss
 	s.CurrentLoss = currentLoss * 100
