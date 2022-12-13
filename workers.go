@@ -226,12 +226,12 @@ func reportWorker(cConf ClusterConfig) {
 
 		// ComputeFeeDualMode for no-fee alert
 		if cConf.PingConfig.ComputeUnitPrice > 0 && cConf.PingConfig.RequestUnits > 0 && cConf.PingConfig.ComputeFeeDualMode {
-			data := getAfter(cConf.Cluster, DataPoint1Min, lastReporTime, NoComputeUnitPrice, 0)
+			dataNoFee := getAfter(cConf.Cluster, DataPoint1Min, lastReporTime, NoComputeUnitPrice, 0)
 			if len(data) <= 0 { // No Data
 				log.Println(cConf.Cluster, "ComputeFeeDualMode noComputeUnitPrice getAfter return empty")
 			} else {
-				groupsStatNoFee, globalStatNoFee := getGlobalStatistis(cConf, data, lastReporTime, now)
-				triggerNoFee.Update(groupsStatNoFee.Loss)
+				groupsStatNoFee, globalStatNoFee := getGlobalStatistis(cConf, dataNoFee, lastReporTime, now)
+				triggerNoFee.Update(globalStat.Loss)
 				alertSendNoFee := triggerNoFee.ShouldAlertSend()
 				sendReportAlert(cConf.Report.Slack.Report.Enabled, cConf.Report.Slack.Alert.Enabled,
 					cConf.Report.Discord.Report.Enabled, cConf.Report.Discord.Alert.Enabled,
