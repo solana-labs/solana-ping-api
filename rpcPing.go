@@ -10,6 +10,8 @@ import (
 	"github.com/portto/solana-go-sdk/types"
 )
 
+const WaitConfirmationTxTimeout = 10
+
 // TakeTime a struct to record a serious of start and end time. Start and End is used for current record and Times is for store take-time
 type TakeTime struct {
 	Times []int64
@@ -68,7 +70,7 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 
 		waitErr := waitConfirmation(c, hash,
 			time.Duration(config.WaitConfirmationTimeout)*time.Second,
-			time.Duration(config.TxTimeout)*time.Second,
+			time.Duration(WaitConfirmationTxTimeout)*time.Second,
 			time.Duration(config.StatusCheckInterval)*time.Millisecond)
 		timer.TimerStop()
 		if !waitErr.NoError() {

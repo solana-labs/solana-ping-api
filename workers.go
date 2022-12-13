@@ -14,6 +14,7 @@ import (
 type PingType string
 
 const DefaultAlertThredHold = 20
+const DualModeNoFeeTriggerName = "no-fee-dualmode"
 const (
 	DataPointReport PingType = "report"
 	DataPoint1Min   PingType = "datapoint1min"
@@ -156,29 +157,18 @@ func reportWorker(cConf ClusterConfig) {
 	defer log.Println(">> Report Worker for ", cConf.Cluster, " end!")
 	var lastReporTime int64
 	trigger := NewAlertTrigger(cConf)
+
 	var triggerNoFee AlertTrigger // TriggerNoFee is used only when ComputeFeeDualMode is on
 	if cConf.PingConfig.ComputeUnitPrice > 0 && cConf.PingConfig.ComputeFeeDualMode {
-		triggerNoFee = NewAlertTriggerByParams(cConf.Report.LevelFilePath+".nofee", cConf.LossThreshold)
+		triggerNoFee = NewAlertTriggerByParams(DualModeNoFeeTriggerName, cConf.Report.LevelFilePath+".nofee", cConf.LossThreshold)
 	}
 
 	for {
 		now := time.Now().UTC().Unix()
-		if lastReporTime == 0 { // server restart
+		if lastReporTime == 0 { // server restart will cause lasterReportTime zero
 			lastReporTime = now - int64(cConf.Report.Interval)
 			log.Println("reconstruct lastReport time=", lastReporTime, "time now=", time.Now().UTC().Unix())
 		}
-		getDataFromComputeFee := AllData
-		if cConf.PingConfig.ComputeUnitPrice > 0 {
-			getDataFromComputeFee = HasComputeUnitPrice
-		}
-
-		data := getAfter(cConf.Cluster, DataPoint1Min, lastReporTime, getDataFromComputeFee, 0)
-		if len(data) <= 0 { // No Data
-			log.Println(cConf.Cluster, " getAfter return empty")
-			time.Sleep(30 * time.Second)
-			continue
-		}
-
 		sendReportAlert := func(slackReportEnabled bool, slackAlertEnabled bool,
 			discordReportEnabled bool, discordAlertEnabled bool,
 			groupStatistic *GroupsAllStatistic, globalStatistic GlobalStatistic,
@@ -209,27 +199,44 @@ func reportWorker(cConf ClusterConfig) {
 					alertTrigger.ThresholdLevels[alertTrigger.ThresholdIndex], []string{accessToken}, messageMemo)
 			}
 		}
+		getDataFromComputeFee := AllData
+		if cConf.PingConfig.ComputeUnitPrice > 0 && cConf.PingConfig.RequestUnits > 0 {
+			getDataFromComputeFee = HasComputeUnitPrice
+		}
+		data := getAfter(cConf.Cluster, DataPoint1Min, lastReporTime, getDataFromComputeFee, 0)
+		if len(data) <= 0 { // No Data
+			log.Println(cConf.Cluster, " getAfter return empty")
+			time.Sleep(30 * time.Second)
+			continue
+		}
 		groupsStat, globalStat := getGlobalStatistis(cConf, data, lastReporTime, now)
 		trigger.Update(globalStat.Loss)
 		// ShouldAlertSend execute once only. TODO: make shouldAlertSend a function which does not modify any value
 		alertSend := trigger.ShouldAlertSend()
 		messageMemo := ""
 		if cConf.PingConfig.ComputeUnitPrice > 0 {
-			messageMemo = "with fee"
+			messageMemo = "with-fee"
 		} else {
-			messageMemo = "no fee"
+			messageMemo = "no-fee"
 		}
+
 		sendReportAlert(cConf.Report.Slack.Report.Enabled, cConf.Report.Slack.Alert.Enabled,
 			cConf.Report.Discord.Report.Enabled, cConf.Report.Discord.Alert.Enabled,
 			groupsStat, globalStat, alertSend, trigger, messageMemo)
 
-		if cConf.PingConfig.ComputeUnitPrice > 0 && cConf.PingConfig.ComputeFeeDualMode && triggerNoFee.FilePath != "" {
-			groupsStatNoFee, globalStatNoFee := getGlobalStatistis(cConf, data, lastReporTime, now)
-			triggerNoFee.Update(groupsStatNoFee.Loss)
-			alertSendNoFee := triggerNoFee.ShouldAlertSend()
-			sendReportAlert(cConf.Report.Slack.Report.Enabled, cConf.Report.Slack.Alert.Enabled,
-				cConf.Report.Discord.Report.Enabled, cConf.Report.Discord.Alert.Enabled,
-				groupsStatNoFee, globalStatNoFee, alertSendNoFee, triggerNoFee, "no fee")
+		// ComputeFeeDualMode for no-fee alert
+		if cConf.PingConfig.ComputeUnitPrice > 0 && cConf.PingConfig.RequestUnits > 0 && cConf.PingConfig.ComputeFeeDualMode {
+			data := getAfter(cConf.Cluster, DataPoint1Min, lastReporTime, NoComputeUnitPrice, 0)
+			if len(data) <= 0 { // No Data
+				log.Println(cConf.Cluster, "ComputeFeeDualMode noComputeUnitPrice getAfter return empty")
+			} else {
+				groupsStatNoFee, globalStatNoFee := getGlobalStatistis(cConf, data, lastReporTime, now)
+				triggerNoFee.Update(groupsStatNoFee.Loss)
+				alertSendNoFee := triggerNoFee.ShouldAlertSend()
+				sendReportAlert(cConf.Report.Slack.Report.Enabled, cConf.Report.Slack.Alert.Enabled,
+					cConf.Report.Discord.Report.Enabled, cConf.Report.Discord.Alert.Enabled,
+					groupsStatNoFee, globalStatNoFee, alertSendNoFee, triggerNoFee, "no-fee (dual-mode)")
+			}
 		}
 		lastReporTime = now
 		time.Sleep(time.Duration(cConf.Report.Interval) * time.Second)
