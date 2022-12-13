@@ -14,6 +14,7 @@ import (
 type PingType string
 
 const DefaultAlertThredHold = 20
+const DualModeNoFeeTriggerName = "no-fee-dualmode"
 const (
 	DataPointReport PingType = "report"
 	DataPoint1Min   PingType = "datapoint1min"
@@ -156,14 +157,50 @@ func reportWorker(cConf ClusterConfig) {
 	defer log.Println(">> Report Worker for ", cConf.Cluster, " end!")
 	var lastReporTime int64
 	trigger := NewAlertTrigger(cConf)
+
+	var triggerNoFee AlertTrigger // TriggerNoFee is used only when ComputeFeeDualMode is on
+	if cConf.PingConfig.ComputeUnitPrice > 0 && cConf.PingConfig.ComputeFeeDualMode {
+		triggerNoFee = NewAlertTriggerByParams(DualModeNoFeeTriggerName, cConf.Report.LevelFilePath+".nofee", cConf.LossThreshold)
+	}
+
 	for {
 		now := time.Now().UTC().Unix()
-		if lastReporTime == 0 { // server restart
+		if lastReporTime == 0 { // server restart will cause lasterReportTime zero
 			lastReporTime = now - int64(cConf.Report.Interval)
 			log.Println("reconstruct lastReport time=", lastReporTime, "time now=", time.Now().UTC().Unix())
 		}
+		sendReportAlert := func(slackReportEnabled bool, slackAlertEnabled bool,
+			discordReportEnabled bool, discordAlertEnabled bool,
+			groupStatistic *GroupsAllStatistic, globalStatistic GlobalStatistic,
+			toSendAlert bool, alertTrigger AlertTrigger, messageMemo string) {
+			var accessToken string
+			switch cConf.Cluster {
+			case MainnetBeta:
+				accessToken = mainnetFailover.GetEndpoint().AccessToken
+			case Testnet:
+				accessToken = testnetFailover.GetEndpoint().AccessToken
+			case Devnet:
+				accessToken = devnetFailover.GetEndpoint().AccessToken
+			default:
+				panic(fmt.Sprintf("%s:%s", "no such cluster", cConf.Cluster))
+			}
+			if slackReportEnabled {
+				slackReportSend(cConf, groupStatistic, &globalStatistic, []string{accessToken}, messageMemo)
+			}
+			if slackAlertEnabled && toSendAlert {
+				slackAlertSend(cConf, &globalStatistic, groupStatistic.GlobalErrorStatistic,
+					alertTrigger.ThresholdLevels[alertTrigger.ThresholdIndex], []string{accessToken}, messageMemo)
+			}
+			if discordReportEnabled {
+				discordReportSend(cConf, groupStatistic, &globalStatistic, []string{accessToken}, messageMemo)
+			}
+			if discordAlertEnabled && toSendAlert {
+				discordAlertSend(cConf, &globalStatistic, groupStatistic.GlobalErrorStatistic,
+					alertTrigger.ThresholdLevels[alertTrigger.ThresholdIndex], []string{accessToken}, messageMemo)
+			}
+		}
 		getDataFromComputeFee := AllData
-		if cConf.PingConfig.ComputeUnitPrice > 0 {
+		if cConf.PingConfig.ComputeUnitPrice > 0 && cConf.PingConfig.RequestUnits > 0 {
 			getDataFromComputeFee = HasComputeUnitPrice
 		}
 		data := getAfter(cConf.Cluster, DataPoint1Min, lastReporTime, getDataFromComputeFee, 0)
@@ -172,71 +209,78 @@ func reportWorker(cConf ClusterConfig) {
 			time.Sleep(30 * time.Second)
 			continue
 		}
-		groups := grouping1Min(data, lastReporTime, now)
-		groupsStat := statisticCompute(cConf, groups)
-		globalStat := groupsStat.GetGroupsAllStatistic(false) // get raw data
-		lastReporTime = now
+		groupsStat, globalStat := getGlobalStatistis(cConf, data, lastReporTime, now)
 		trigger.Update(globalStat.Loss)
-		alertSend := trigger.ShouldAlertSend() // ShouldAlertSend execute once only. TODO: make shouldAlertSend a function which does not modify any value
-		var accessToken string
-		switch cConf.Cluster {
-		case MainnetBeta:
-			accessToken = mainnetFailover.GetEndpoint().AccessToken
-		case Testnet:
-			accessToken = testnetFailover.GetEndpoint().AccessToken
-		case Devnet:
-			accessToken = devnetFailover.GetEndpoint().AccessToken
-		default:
-			panic(fmt.Sprintf("%s:%s", "no such cluster", cConf.Cluster))
+		// ShouldAlertSend execute once only. TODO: make shouldAlertSend a function which does not modify any value
+		alertSend := trigger.ShouldAlertSend()
+		messageMemo := ""
+		if cConf.PingConfig.ComputeUnitPrice > 0 {
+			messageMemo = "with-fee"
+		} else {
+			messageMemo = "no-fee"
 		}
-		if cConf.Report.Slack.Report.Enabled {
-			slackReportSend(cConf, groupsStat, &globalStat, []string{accessToken})
+
+		sendReportAlert(cConf.Report.Slack.Report.Enabled, cConf.Report.Slack.Alert.Enabled,
+			cConf.Report.Discord.Report.Enabled, cConf.Report.Discord.Alert.Enabled,
+			groupsStat, globalStat, alertSend, trigger, messageMemo)
+
+		// ComputeFeeDualMode for no-fee alert
+		if cConf.PingConfig.ComputeUnitPrice > 0 && cConf.PingConfig.RequestUnits > 0 && cConf.PingConfig.ComputeFeeDualMode {
+			data := getAfter(cConf.Cluster, DataPoint1Min, lastReporTime, NoComputeUnitPrice, 0)
+			if len(data) <= 0 { // No Data
+				log.Println(cConf.Cluster, "ComputeFeeDualMode noComputeUnitPrice getAfter return empty")
+			} else {
+				groupsStatNoFee, globalStatNoFee := getGlobalStatistis(cConf, data, lastReporTime, now)
+				triggerNoFee.Update(groupsStatNoFee.Loss)
+				alertSendNoFee := triggerNoFee.ShouldAlertSend()
+				sendReportAlert(cConf.Report.Slack.Report.Enabled, cConf.Report.Slack.Alert.Enabled,
+					cConf.Report.Discord.Report.Enabled, cConf.Report.Discord.Alert.Enabled,
+					groupsStatNoFee, globalStatNoFee, alertSendNoFee, triggerNoFee, "no-fee (dual-mode)")
+			}
 		}
-		if cConf.Report.Slack.Alert.Enabled && alertSend {
-			slackAlertSend(cConf, &globalStat, groupsStat.GlobalErrorStatistic,
-				trigger.ThresholdLevels[trigger.ThresholdIndex], []string{accessToken})
-		}
-		if cConf.Report.Discord.Report.Enabled {
-			discordReportSend(cConf, groupsStat, &globalStat, []string{accessToken})
-		}
-		if cConf.Report.Discord.Alert.Enabled && alertSend {
-			discordAlertSend(cConf, &globalStat, groupsStat.GlobalErrorStatistic,
-				trigger.ThresholdLevels[trigger.ThresholdIndex], []string{accessToken})
-		}
+		lastReporTime = now
 		time.Sleep(time.Duration(cConf.Report.Interval) * time.Second)
 	}
 }
-func slackReportSend(cConf ClusterConfig, groupsStat *GroupsAllStatistic, globalStat *GlobalStatistic, hideKeywords []string) {
+
+func slackReportSend(cConf ClusterConfig, groupsStat *GroupsAllStatistic, globalStat *GlobalStatistic, hideKeywords []string, memo string) {
 	payload := SlackPayload{}
-	payload.ReportPayload(cConf.Cluster, groupsStat, *globalStat, hideKeywords)
+	payload.ReportPayload(cConf.Cluster, groupsStat, *globalStat, hideKeywords, memo)
 	err := SlackSend(cConf.Report.Slack.Report.Webhook, &payload)
 	if err != nil {
 		log.Println("slackReportSend Error:", err)
 	}
 }
-func slackAlertSend(conf ClusterConfig, globalStat *GlobalStatistic, globalErrorStatistic map[string]int, threadhold float64, hideKeywords []string) {
+
+func slackAlertSend(conf ClusterConfig, globalStat *GlobalStatistic, globalErrorStatistic map[string]int, threadhold float64, hideKeywords []string, messageMemo string) {
 	payload := SlackPayload{}
-	payload.AlertPayload(conf, globalStat, globalErrorStatistic, threadhold, hideKeywords)
+	payload.AlertPayload(conf, globalStat, globalErrorStatistic, threadhold, hideKeywords, messageMemo)
 	err := SlackSend(conf.Report.Slack.Alert.Webhook, &payload)
 	if err != nil {
 		log.Println("slackAlertSend Error:", err)
 	}
 }
 
-func discordReportSend(cConf ClusterConfig, groupsStat *GroupsAllStatistic, globalStat *GlobalStatistic, hideKeywords []string) {
+func discordReportSend(cConf ClusterConfig, groupsStat *GroupsAllStatistic, globalStat *GlobalStatistic, hideKeywords []string, messageMemo string) {
 	payload := DiscordPayload{BotAvatarURL: cConf.Report.Discord.BotAvatarURL, BotName: cConf.Report.Discord.BotName}
-	payload.ReportPayload(cConf.Cluster, groupsStat, *globalStat, hideKeywords)
+	payload.ReportPayload(cConf.Cluster, groupsStat, *globalStat, hideKeywords, messageMemo)
 	err := DiscordSend(cConf.Report.Discord.Report.Webhook, &payload)
 	if err != nil {
 		log.Println("discordReportSend Error:", err)
 	}
 }
 
-func discordAlertSend(cConf ClusterConfig, globalStat *GlobalStatistic, globalErrorStatistic map[string]int, threadhold float64, hideKeywords []string) {
+func discordAlertSend(cConf ClusterConfig, globalStat *GlobalStatistic, globalErrorStatistic map[string]int, threadhold float64, hideKeywords []string, messageMemo string) {
 	payload := DiscordPayload{BotAvatarURL: cConf.Report.Discord.BotAvatarURL, BotName: cConf.Report.Discord.BotName}
-	payload.AlertPayload(cConf, globalStat, globalErrorStatistic, threadhold, hideKeywords)
+	payload.AlertPayload(cConf, globalStat, globalErrorStatistic, threadhold, hideKeywords, messageMemo)
 	err := DiscordSend(cConf.Report.Discord.Alert.Webhook, &payload)
 	if err != nil {
 		log.Println("discordAlertSend Error:", err)
 	}
+}
+
+func getGlobalStatistis(cConf ClusterConfig, resutls []PingResult, lastReportTime int64, currentTime int64) (*GroupsAllStatistic, GlobalStatistic) {
+	groups := grouping1Min(resutls, lastReportTime, currentTime)
+	groupsStat := statisticCompute(cConf, groups)
+	return groupsStat, groupsStat.GetGroupsAllStatistic(false) // get raw data
 }
