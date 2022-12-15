@@ -231,7 +231,7 @@ func reportWorker(cConf ClusterConfig) {
 				log.Println(cConf.Cluster, "ComputeFeeDualMode noComputeUnitPrice getAfter return empty")
 			} else {
 				groupsStatNoFee, globalStatNoFee := getGlobalStatistis(cConf, dataNoFee, lastReporTime, now)
-				triggerNoFee.Update(globalStat.Loss)
+				triggerNoFee.Update(globalStatNoFee.Loss)
 				alertSendNoFee := triggerNoFee.ShouldAlertSend()
 				sendReportAlert(cConf.Report.Slack.Report.Enabled, cConf.Report.Slack.Alert.Enabled,
 					cConf.Report.Discord.Report.Enabled, cConf.Report.Discord.Alert.Enabled,
