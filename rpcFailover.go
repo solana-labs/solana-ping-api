@@ -107,7 +107,8 @@ func (f *FailoverEndpoint) RetryResult(err PingResultError) {
 		if err.IsTooManyRequest429() ||
 			err.IsServiceUnavilable() ||
 			err.IsErrGatewayTimeout504() ||
-			err.IsNoSuchHost() {
+			err.IsNoSuchHost() ||
+			err.IsConnectionRefused() {
 			f.Retry += 1
 		}
 	} else {
