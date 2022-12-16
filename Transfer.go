@@ -47,7 +47,7 @@ func Transfer(c *client.Client, sender types.Account, feePayer types.Account, re
 	})
 	if err != nil {
 		log.Printf("Error: Failed to create a new transaction, err: %v", err)
-		return "", PingResultError(err.Error())
+		return "", PingResultError(fmt.Sprintf("Failed to new a tx, err: %v", err))
 	}
 	// send tx
 	if txTimeout <= 0 {
@@ -129,7 +129,7 @@ func waitConfirmation(c *client.Client, txHash string, timeout time.Duration, re
 			if now.Sub(elapse).Seconds() < timeout.Seconds() {
 				continue
 			} else {
-				return PingResultError(err.Error())
+				return PingResultError(fmt.Sprintf("failed to get signatureStatus, err: %v", err))
 			}
 		}
 		if resp != nil {
