@@ -40,6 +40,7 @@ var (
 	</body></html>
 	`
 	NoSuchHostText          = `rpc: call error, err: failed to do request, err: Post "https://api.internal.mainnet-beta.solana.comx": dial tcp: lookup api.internal.mainnet-beta.solana.comx: no such host, body:`
+	ConnectionRefusedText   = `rpc: call error, err: failed to do request, err: Post "https://api.devnet.solana.com/": dial tcp 139.178.65.155:443: connect: connection refused, body: `
 	TxHasAlreadyProcessText = `rpc response error: {"code":-32002,"message":"Transaction simulation failed: This transaction has already been processed","data":{"accounts":null,"err":"AlreadyProcessed","logs":[],"unitsConsumed":0}}`
 )
 
@@ -64,6 +65,10 @@ var (
 		Text:  PingResultError(TooManyRequest429Text),
 		Key:   []string{"code: 429"},
 		Short: "429-too-many-requests"}
+	ConnectionRefused = ErrRespIdentifier{
+		Text:  PingResultError(ConnectionRefusedText),
+		Key:   []string{"connection refused"},
+		Short: "connection-refused"}
 	NumSlotsBehind = ErrRespIdentifier{
 		Text:  PingResultError(NumSlotsBehindText),
 		Key:   []string{"numSlotsBehind"},

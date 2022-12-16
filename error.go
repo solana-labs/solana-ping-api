@@ -22,6 +22,7 @@ var (
 	ErrNoPingResultRecord      = errors.New("no Ping Result Record")
 	ErrNoPingResultShort       = errors.New("PingResultError has no shortname")
 	ErrTransactionLoss         = errors.New("TransactionLoss")
+	ErrInProcessedStateTimeout = errors.New("TxHash is still in processd state but timeout")
 	ErrWaitForConfirmedTimeout = errors.New("Wait for a confirmed block timeout")
 	ErrGetKeyPair              = errors.New("No valid KeyPair")
 	ErrKeyPairFile             = errors.New("Read KeyPair File Error")
@@ -68,6 +69,9 @@ func (e PingResultError) IsErrRPCEOF() bool {
 }
 func (e PingResultError) IsErrGatewayTimeout504() bool {
 	return GatewayTimeout504.IsIdentical(e)
+}
+func (e PingResultError) IsConnectionRefused() bool {
+	return ConnectionRefused.IsIdentical(e)
 }
 func (e PingResultError) IsNoSuchHost() bool {
 	return NoSuchHost.IsIdentical(e)

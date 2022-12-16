@@ -138,6 +138,9 @@ func waitConfirmation(c *client.Client, txHash string, timeout time.Duration, re
 			}
 		}
 		if now.Sub(elapse).Seconds() > timeout.Seconds() {
+			if *resp.ConfirmationStatus == rpc.CommitmentProcessed {
+				return PingResultError(ErrInProcessedStateTimeout.Error())
+			}
 			return PingResultError(ErrWaitForConfirmedTimeout.Error())
 		}
 
