@@ -25,7 +25,7 @@ func Transfer(c *client.Client, sender types.Account, feePayer types.Account, re
 	// to fetch recent blockhash
 	res, err := c.GetRecentBlockhash(context.Background())
 	if err != nil {
-		return "", PingResultError(err.Error())
+		return "", PingResultError(fmt.Sprintf("Failed to get latest blockhash, err: %v", err))
 	}
 	// create a message
 	message := types.NewMessage(types.NewMessageParam{
@@ -58,7 +58,7 @@ func Transfer(c *client.Client, sender types.Account, feePayer types.Account, re
 
 	if err != nil {
 		log.Printf("Error: Failed to send tx, err: %v", err)
-		return "", PingResultError(err.Error())
+		return "", PingResultError(fmt.Sprintf("Failed to send a tx, err: %v", err))
 	}
 	return txHash, EmptyPingResultError
 }
