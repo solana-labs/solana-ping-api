@@ -38,8 +38,8 @@ func (i *InfluxdbClient) PrepareInfluxdbData(r PingResult) *influxdb2write.Point
 		map[string]string{},
 		map[string]interface{}{
 			"hostname":             r.Hostname,
-			"compute_unit_price":   r.ComputeUnitPrice,
-			"request_compute_unit": r.RequestComputeUnits,
+			"compute_unit_price":   int64(r.ComputeUnitPrice),
+			"request_compute_unit": int64(r.RequestComputeUnits),
 			"submit":               r.Submitted,
 			"confirmed":            r.Confirmed,
 			"loss":                 r.Loss,
@@ -61,9 +61,10 @@ func (i *InfluxdbClient) SendDatapointAsync(p *influxdb2write.Point) {
 	}
 	go func() {
 		writeAPI := i.Client.WriteAPIBlocking(i.Organization, i.Bucket)
+		log.Println("InfluxBucket", i.Bucket)
 		err := writeAPI.WritePoint(context.Background(), p)
 		if err != nil {
-			log.Println("Influxdb write ppint ERROR!")
+			log.Println("Influxdb write point ERROR! ", err)
 		}
 		writeAPI.Flush(context.Background())
 	}()
