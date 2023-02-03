@@ -23,8 +23,9 @@ var (
 
 func Transfer(c *client.Client, sender types.Account, feePayer types.Account, receiverPubkey string, txTimeout time.Duration) (txHash string, pingErr PingResultError) {
 	// to fetch recent blockhash
-	res, err := c.GetRecentBlockhash(context.Background())
+	res, err := c.GetLatestBlockhash(context.Background())
 	if err != nil {
+		log.Println("Failed to get latest blockhash, err: ", err)
 		return "", PingResultError(fmt.Sprintf("Failed to get latest blockhash, err: %v", err))
 	}
 	// create a message
