@@ -61,7 +61,6 @@ func (i *InfluxdbClient) SendDatapointAsync(p *influxdb2write.Point) {
 	}
 	go func() {
 		writeAPI := i.Client.WriteAPIBlocking(i.Organization, i.Bucket)
-		log.Println("InfluxBucket", i.Bucket)
 		err := writeAPI.WritePoint(context.Background(), p)
 		if err != nil {
 			log.Println("Influxdb write point ERROR! ", err)
