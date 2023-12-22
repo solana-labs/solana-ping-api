@@ -1,6 +1,6 @@
 module solana-labs/solana-ping-api-service
 
-go 1.17
+go 1.21
 
 require (
 	github.com/GoogleCloudPlatform/cloudsql-proxy v1.29.0
