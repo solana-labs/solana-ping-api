@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/portto/solana-go-sdk/client"
-	"github.com/portto/solana-go-sdk/types"
+	"github.com/blocto/solana-go-sdk/client"
+	"github.com/blocto/solana-go-sdk/types"
 )
 
 const WaitConfirmationQueryTimeout = 10

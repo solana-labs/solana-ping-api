@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/portto/solana-go-sdk/client"
+	"github.com/blocto/solana-go-sdk/client"
 )
 
 var failoverMutex sync.Mutex
