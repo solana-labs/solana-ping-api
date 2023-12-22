@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sort"
 	"time"
 
 	"github.com/blocto/solana-go-sdk/client"
@@ -78,6 +79,21 @@ func SendPingTx(param SendPingTxParam) (string, PingResultError) {
 		return "", PingResultError(fmt.Sprintf("failed to get latest blockhash, err: %v", err))
 	}
 
+	// HACK: set the fee value to the maximum value found in the most recent 10 blocks
+	maxFee := uint64(1)
+	fees, err := param.Client.GetRecentPrioritizationFees(context.Background(), []common.PublicKey{})
+	if err == nil {
+		sort.Slice(fees, func(i, j int) bool {
+			return fees[i].Slot > fees[j].Slot
+		})
+		maxFee := uint64(1)
+		for i := 0; i < len(fees) && i < 10; i++ {
+			if fees[i].PrioritizationFee > maxFee {
+				maxFee = fees[i].PrioritizationFee
+			}
+		}
+	}
+
 	tx, err := types.NewTransaction(types.NewTransactionParam{
 		Signers: []types.Account{param.FeePayer},
 		Message: types.NewMessage(types.NewMessageParam{
@@ -88,7 +104,7 @@ func SendPingTx(param SendPingTxParam) (string, PingResultError) {
 					Units: param.RequestComputeUnits,
 				}),
 				cmptbdgprog.SetComputeUnitPrice(cmptbdgprog.SetComputeUnitPriceParam{
-					MicroLamports: param.ComputeUnitPrice,
+					MicroLamports: maxFee,
 				}),
 				memoprog.BuildMemo(memoprog.BuildMemoParam{
 					Memo: []byte("ping"),
