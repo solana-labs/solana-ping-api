@@ -215,7 +215,12 @@ func reportWorker(cConf ClusterConfig) {
 		alertSend := trigger.ShouldAlertSend()
 		messageMemo := ""
 		if cConf.PingConfig.ComputeUnitPrice > 0 {
-			messageMemo = "with-fee"
+			m := map[uint64]uint64{}
+			for _, v := range data {
+				m[v.ComputeUnitPrice]++
+			}
+			b, _ := json.Marshal(m)
+			messageMemo = fmt.Sprintf("with-fee, (%v => %v)", "key: compute-unit-price, value: count", string(b))
 		} else {
 			messageMemo = "no-fee"
 		}
