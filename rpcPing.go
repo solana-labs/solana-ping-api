@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"math"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/blocto/solana-go-sdk/client"
+	"github.com/blocto/solana-go-sdk/common"
 	"github.com/blocto/solana-go-sdk/types"
 )
 
@@ -29,6 +31,25 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 		PingType: string(pType),
 	}
 	confirmedCount := 0
+
+	// HACK: set the fee value to the maximum value found in the most recent 10 blocks
+	var computeUnitPrice uint64 = 0
+	if feeEnabled {
+		computeUnitPrice = 1
+	}
+	fees, err := c.GetRecentPrioritizationFees(context.Background(), []common.PublicKey{acct.PublicKey})
+	if err == nil {
+		sort.Slice(fees, func(i, j int) bool {
+			return fees[i].Slot > fees[j].Slot
+		})
+		for i := 0; i < len(fees) && i < 10; i++ {
+			var pFee = fees[i].PrioritizationFee
+			if pFee > computeUnitPrice && pFee < 10_000_000 {
+				computeUnitPrice = pFee
+			}
+		}
+	}
+
 	for i := 0; i < config.BatchCount; i++ {
 		if i > 0 {
 			time.Sleep(time.Duration(config.BatchInverval))
@@ -55,7 +76,7 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 				Ctx:                 ctx,
 				FeePayer:            acct,
 				RequestComputeUnits: config.RequestUnits,
-				ComputeUnitPrice:    config.ComputeUnitPrice,
+				ComputeUnitPrice:    computeUnitPrice,
 			})
 			hash = txhash // avoid shadow
 			if !pingErr.NoError() {
@@ -95,7 +116,7 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 	result.Min = min
 	result.Stddev = int64(stdDev)
 	result.TakeTime = total
-	result.ComputeUnitPrice = config.ComputeUnitPrice
+	result.ComputeUnitPrice = computeUnitPrice
 	result.RequestComputeUnits = config.RequestUnits
 	result.Error = resultErrs
 	stringErrors := []string(result.Error)
