@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/blocto/solana-go-sdk/client"
@@ -215,12 +217,27 @@ func reportWorker(cConf ClusterConfig) {
 		alertSend := trigger.ShouldAlertSend()
 		messageMemo := ""
 		if cConf.PingConfig.ComputeUnitPrice > 0 {
+			// count txs by fee
 			m := map[uint64]uint64{}
 			for _, v := range data {
 				m[v.ComputeUnitPrice]++
 			}
-			b, _ := json.Marshal(m)
-			messageMemo = fmt.Sprintf("with-fee, (%v => %v)", "key: compute-unit-price, value: count", string(b))
+
+			// sort keys for pretty output
+			keys := make([]uint64, 0, len(m))
+			for k := range m {
+				keys = append(keys, k)
+			}
+			sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
+
+			// prepare output
+			outputs := make([]string, 0, len(keys))
+			for _, computeUnitPrice := range keys {
+				txCount := m[computeUnitPrice]
+				outputs = append(outputs, fmt.Sprintf("%vtx@%vml", txCount, computeUnitPrice))
+			}
+
+			messageMemo = fmt.Sprintf("with-fee, ({count}tx@{compute_unit_price}ml: %v)", strings.Join(outputs, ","))
 		} else {
 			messageMemo = "no-fee"
 		}
