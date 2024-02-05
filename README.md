@@ -14,7 +14,7 @@ Use `APIServer: Enabled: true` to turn on in in config-{cluster}.yaml.
 
 ### PingService
 This is similar to  "solana ping" tool in solana tool but can do concurrent rpc query.
-It send transactions to rpc endpoint and wait for transactions is confirmed. 
+It sends transactions to rpc endpoint and wait for transactions is confirmed. 
 Use `PingServiceEnabled: true` to turn on in config-{cluster}.yaml.
 ### RetensionService
 Use `Retension: Enabled: true` in config.yaml to turn on. Default is Off.
@@ -22,7 +22,7 @@ Clean database data periodically.
 
 ### ReportService
 Use `Report: Enabled:true` in config-{cluster}.yaml to turn on. 
-ping-api service supports sedning report & alert to both slack and discord.
+ping-api service supports sending report & alert to both slack and discord.
 Use `Report: Slack: Report: Enabled:true` to turn on Slack Report.
 This sends summary of ping result to a slack channel periodically.
 Use `Report: Slack: Alert: Enabled:true` to turn on Slack Alert. 
@@ -99,12 +99,12 @@ WantedBy=multi-user.target
 - put executable file in ~/ping-api-server
 - cp config.yaml.samle to ~/ping-api-server/config.yaml and modify it 
 - use cp-to-real-config.sh to copy config.yaml to ~/.config/ping-api/config.yaml
-- start service by sudo sysmtemctl start solana-ping-api.service
+- start service by `sudo sysmtemctl start solana-ping-api.service`
 - you can check log by ```sudo tail -f /var/log/syslog | grep ping-api```
 
 ## Alert Spam Filter
 
-Alert Spam Filter could be changed frequently. The updte to date (4/18/2022) setting  is as below.
+Alert Spam Filter could be changed frequently. The update to date (4/18/2022) setting  is as below.
 ```
     Threshold increases when
     Loss > 20 % -> new threshold = 50% -> send alert
