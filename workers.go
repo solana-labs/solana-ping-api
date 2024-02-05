@@ -237,7 +237,7 @@ func reportWorker(cConf ClusterConfig) {
 				outputs = append(outputs, fmt.Sprintf("%vtx@%vml", txCount, computeUnitPrice))
 			}
 
-			messageMemo = fmt.Sprintf("with-fee, ({count}tx@{compute_unit_price}ml: %v)", strings.Join(outputs, ","))
+			messageMemo = fmt.Sprintf("with-fee (max: 10^8 ml), ({count}tx@{compute_unit_price}ml: %v)", strings.Join(outputs, ","))
 		} else {
 			messageMemo = "no-fee"
 		}
