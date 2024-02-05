@@ -32,7 +32,7 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 	}
 	confirmedCount := 0
 
-	// HACK: set the fee value to the maximum value found in the most recent 10 blocks
+	// HACK: set the fee value to the maximum value found in the most recent 100 blocks
 	var computeUnitPrice uint64 = 0
 	if feeEnabled {
 		computeUnitPrice = 1
@@ -42,9 +42,9 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 		sort.Slice(fees, func(i, j int) bool {
 			return fees[i].Slot > fees[j].Slot
 		})
-		for i := 0; i < len(fees) && i < 10; i++ {
+		for i := 0; i < len(fees) && i < 100; i++ {
 			var pFee = fees[i].PrioritizationFee
-			if pFee > computeUnitPrice && pFee < 10_000_000 {
+			if pFee > computeUnitPrice && pFee < 100_000_000 {
 				computeUnitPrice = pFee
 			}
 		}
