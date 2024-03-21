@@ -44,8 +44,14 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 		})
 		for i := 0; i < len(fees) && i < 100; i++ {
 			var pFee = fees[i].PrioritizationFee
-			if pFee > computeUnitPrice && pFee < 100_000_000 {
+			if pFee > computeUnitPrice {
 				computeUnitPrice = pFee
+			}
+
+			cap := uint64(100_000_000)
+			if computeUnitPrice > cap {
+				computeUnitPrice = cap
+				break
 			}
 		}
 	}
