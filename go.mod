@@ -4,7 +4,7 @@ go 1.21
 
 require (
 	github.com/GoogleCloudPlatform/cloudsql-proxy v1.29.0
-	github.com/blocto/solana-go-sdk v1.26.1-0.20231222161051-d91633d3cab7
+	github.com/blocto/solana-go-sdk v1.27.1-0.20240322074811-5a60fbd6a563
 	github.com/gin-contrib/timeout v0.0.3
 	github.com/gin-gonic/gin v1.7.7
 	github.com/influxdata/influxdb-client-go/v2 v2.12.0
