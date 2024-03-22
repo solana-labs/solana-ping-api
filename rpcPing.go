@@ -32,29 +32,7 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 	}
 	confirmedCount := 0
 
-	// HACK: set the fee value to the maximum value found in the most recent 100 blocks
-	var computeUnitPrice uint64 = 0
-	if feeEnabled {
-		computeUnitPrice = 1
-	}
-	fees, err := c.GetRecentPrioritizationFees(context.Background(), []common.PublicKey{acct.PublicKey})
-	if err == nil {
-		sort.Slice(fees, func(i, j int) bool {
-			return fees[i].Slot > fees[j].Slot
-		})
-		for i := 0; i < len(fees) && i < 100; i++ {
-			var pFee = fees[i].PrioritizationFee
-			if pFee > computeUnitPrice {
-				computeUnitPrice = pFee
-			}
-
-			cap := uint64(100_000_000)
-			if computeUnitPrice > cap {
-				computeUnitPrice = cap
-				break
-			}
-		}
-	}
+	computeUnitPrice := getFee(c, acct)
 
 	for i := 0; i < config.BatchCount; i++ {
 		if i > 0 {
@@ -194,4 +172,31 @@ func (t *TakeTime) Statistic() (max int64, mean float64, min int64, stddev float
 		stddev = math.Sqrt(stddev / float64(count))
 	}
 	return
+}
+
+func getFee(c *client.Client, account types.Account) uint64 {
+	// at least 1 to trigger the system send the fee tx. can be updated if the logic is fixed.
+	computeUnitPrice := uint64(1)
+
+	// get the max(the last 100 blocks)
+	fees, err := c.GetRecentPrioritizationFees(context.Background(), []common.PublicKey{account.PublicKey})
+	if err == nil {
+		sort.Slice(fees, func(i, j int) bool {
+			return fees[i].Slot > fees[j].Slot
+		})
+		for i := 0; i < len(fees) && i < 100; i++ {
+			var pFee = fees[i].PrioritizationFee
+			if pFee > computeUnitPrice {
+				computeUnitPrice = pFee
+			}
+
+			cap := uint64(100_000_000)
+			if computeUnitPrice > cap {
+				computeUnitPrice = cap
+				break
+			}
+		}
+	}
+
+	return computeUnitPrice
 }
