@@ -1,0 +1,13 @@
+FROM golang:1.22 AS builder
+ARG COMPONENT
+WORKDIR /workspace
+COPY . .
+RUN go build -o app ./cmd/$COMPONENT
+
+FROM debian:latest
+RUN \
+ apt-get update && \
+ apt-get install ca-certificates curl vim -y
+WORKDIR /workspace
+COPY --from=builder /workspace/app .
+CMD ["./app"]
