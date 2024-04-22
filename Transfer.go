@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"log"
 	"time"
@@ -78,6 +79,14 @@ func SendPingTx(param SendPingTxParam) (string, PingResultError) {
 		return "", PingResultError(fmt.Sprintf("failed to get latest blockhash, err: %v", err))
 	}
 
+	// Add randomness to memo to ensure transaction is unique
+	randomBytes := make([]byte, 4)
+	_, err = rand.Read(randomBytes)
+	if err != nil {
+		return "", PingResultError(fmt.Sprintf("failed to generate random bytes, err: %v", err))
+	}
+	memoText := append([]byte("ping"), randomBytes...)
+
 	tx, err := types.NewTransaction(types.NewTransactionParam{
 		Signers: []types.Account{param.FeePayer},
 		Message: types.NewMessage(types.NewMessageParam{
@@ -91,7 +100,7 @@ func SendPingTx(param SendPingTxParam) (string, PingResultError) {
 					MicroLamports: param.ComputeUnitPrice,
 				}),
 				memoprog.BuildMemo(memoprog.BuildMemoParam{
-					Memo: []byte("ping"),
+					Memo: memoText,
 				}),
 			},
 		}),
