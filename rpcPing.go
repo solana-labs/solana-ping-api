@@ -61,6 +61,7 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 				FeePayer:            acct,
 				RequestComputeUnits: config.RequestUnits,
 				ComputeUnitPrice:    computeUnitPrice,
+				ReceiverPubkey:      config.Receiver,
 			})
 			hash = txhash // avoid shadow
 			if !pingErr.NoError() {

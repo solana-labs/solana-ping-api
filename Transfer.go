@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/rand"
 	"time"
 
 	"github.com/blocto/solana-go-sdk/client"
 	"github.com/blocto/solana-go-sdk/common"
 	"github.com/blocto/solana-go-sdk/program/cmptbdgprog"
-	"github.com/blocto/solana-go-sdk/program/memoprog"
 	"github.com/blocto/solana-go-sdk/program/sysprog"
 	"github.com/blocto/solana-go-sdk/rpc"
 	"github.com/blocto/solana-go-sdk/types"
@@ -70,6 +70,7 @@ type SendPingTxParam struct {
 	FeePayer            types.Account
 	RequestComputeUnits uint32
 	ComputeUnitPrice    uint64 // micro lamports
+	ReceiverPubkey      string
 }
 
 func SendPingTx(param SendPingTxParam) (string, PingResultError) {
@@ -77,6 +78,9 @@ func SendPingTx(param SendPingTxParam) (string, PingResultError) {
 	if err != nil {
 		return "", PingResultError(fmt.Sprintf("failed to get latest blockhash, err: %v", err))
 	}
+
+	rand.Seed(time.Now().UnixNano())
+	amount := uint64(rand.Intn(1000)) + 1
 
 	tx, err := types.NewTransaction(types.NewTransactionParam{
 		Signers: []types.Account{param.FeePayer},
@@ -90,8 +94,10 @@ func SendPingTx(param SendPingTxParam) (string, PingResultError) {
 				cmptbdgprog.SetComputeUnitPrice(cmptbdgprog.SetComputeUnitPriceParam{
 					MicroLamports: param.ComputeUnitPrice,
 				}),
-				memoprog.BuildMemo(memoprog.BuildMemoParam{
-					Memo: []byte("ping"),
+				sysprog.Transfer(sysprog.TransferParam{
+					From:   param.FeePayer.PublicKey,
+					To:     common.PublicKeyFromString(param.ReceiverPubkey),
+					Amount: amount,
 				}),
 			},
 		}),
