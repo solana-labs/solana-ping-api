@@ -164,13 +164,16 @@ func waitConfirmation(c *client.Client, txHash string, timeout time.Duration, re
 }
 
 func waitConfirmation2(c *client.Client, txHash, blockhash string) PingResultError {
-	for {
+	startTime := time.Now()
+	endTime := startTime.Add(3 * time.Minute)
+
+	for time.Now().Before(endTime) {
 		time.Sleep(1 * time.Second)
 
 		// check if blockhash is valid
 		isBlockhashValid, err := c.IsBlockhashValid(context.Background(), blockhash)
 		if err != nil {
-			return PingResultError(fmt.Sprintf("failed to check if a blockhash is valid, txHash: %v, blockhash: %v, err: %v", txHash, blockhash, err))
+			continue
 		}
 		if !isBlockhashValid {
 			return PingResultError(fmt.Sprintf("blockhash is not valid, txHash: %v, blockhash: %v, err: %v", txHash, blockhash, err))
@@ -189,4 +192,6 @@ func waitConfirmation2(c *client.Client, txHash, blockhash string) PingResultErr
 			return EmptyPingResultError
 		}
 	}
+
+	return PingResultError(fmt.Sprintf("the confirmation process exceeds 3 mins, txHash: %v, blockhash: %v", txHash, blockhash))
 }
