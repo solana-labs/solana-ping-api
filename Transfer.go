@@ -74,7 +74,12 @@ type SendPingTxParam struct {
 }
 
 func SendPingTx(param SendPingTxParam) (string, PingResultError) {
-	latestBlockhashResponse, err := param.Client.GetLatestBlockhash(param.Ctx)
+	latestBlockhashResponse, err := param.Client.GetLatestBlockhashWithConfig(
+		param.Ctx,
+		client.GetLatestBlockhashConfig{
+			Commitment: rpc.CommitmentFinalized,
+		},
+	)
 	if err != nil {
 		return "", PingResultError(fmt.Sprintf("failed to get latest blockhash, err: %v", err))
 	}
