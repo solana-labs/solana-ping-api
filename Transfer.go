@@ -66,23 +66,23 @@ func Transfer(c *client.Client, sender types.Account, feePayer types.Account, re
 
 type SendPingTxParam struct {
 	Client              *client.Client
-	Ctx                 context.Context
 	FeePayer            types.Account
 	RequestComputeUnits uint32
 	ComputeUnitPrice    uint64 // micro lamports
 	ReceiverPubkey      string
 }
 
-func SendPingTx(param SendPingTxParam) (string, PingResultError) {
+func SendPingTx(param SendPingTxParam) (string, string, PingResultError) {
 	latestBlockhashResponse, err := param.Client.GetLatestBlockhashWithConfig(
-		param.Ctx,
+		context.Background(),
 		client.GetLatestBlockhashConfig{
 			Commitment: rpc.CommitmentFinalized,
 		},
 	)
 	if err != nil {
-		return "", PingResultError(fmt.Sprintf("failed to get latest blockhash, err: %v", err))
+		return "", "", PingResultError(fmt.Sprintf("failed to get latest blockhash, err: %v", err))
 	}
+	blockhash := latestBlockhashResponse.Blockhash
 
 	rand.Seed(time.Now().UnixNano())
 	amount := uint64(rand.Intn(1000)) + 1
@@ -91,7 +91,7 @@ func SendPingTx(param SendPingTxParam) (string, PingResultError) {
 		Signers: []types.Account{param.FeePayer},
 		Message: types.NewMessage(types.NewMessageParam{
 			FeePayer:        param.FeePayer.PublicKey,
-			RecentBlockhash: latestBlockhashResponse.Blockhash,
+			RecentBlockhash: blockhash,
 			Instructions: []types.Instruction{
 				cmptbdgprog.SetComputeUnitLimit(cmptbdgprog.SetComputeUnitLimitParam{
 					Units: param.RequestComputeUnits,
@@ -108,15 +108,15 @@ func SendPingTx(param SendPingTxParam) (string, PingResultError) {
 		}),
 	})
 	if err != nil {
-		return "", PingResultError(fmt.Sprintf("failed to new a tx, err: %v", err))
+		return "", blockhash, PingResultError(fmt.Sprintf("failed to new a tx, err: %v", err))
 	}
 
-	txhash, err := param.Client.SendTransaction(param.Ctx, tx)
+	txhash, err := param.Client.SendTransaction(context.Background(), tx)
 	if err != nil {
-		return "", PingResultError(fmt.Sprintf("failed to send a tx, err: %v", err))
+		return "", blockhash, PingResultError(fmt.Sprintf("failed to send a tx, err: %v", err))
 	}
 
-	return txhash, PingResultError("")
+	return txhash, blockhash, PingResultError("")
 }
 
 /*
@@ -160,5 +160,33 @@ func waitConfirmation(c *client.Client, txHash string, timeout time.Duration, re
 			checkInterval = statusCheckTimeDefault
 		}
 		time.Sleep(checkInterval)
+	}
+}
+
+func waitConfirmation2(c *client.Client, txHash, blockhash string) PingResultError {
+	for {
+		time.Sleep(1 * time.Second)
+
+		// check if blockhash is valid
+		isBlockhashValid, err := c.IsBlockhashValid(context.Background(), blockhash)
+		if err != nil {
+			return PingResultError(fmt.Sprintf("failed to check if a blockhash is valid, txHash: %v, blockhash: %v, err: %v", txHash, blockhash, err))
+		}
+		if !isBlockhashValid {
+			return PingResultError(fmt.Sprintf("blockhash is not valid, txHash: %v, blockhash: %v, err: %v", txHash, blockhash, err))
+		}
+
+		// check txhash status
+		getSignatureStatus, err := c.GetSignatureStatus(context.Background(), txHash)
+		if err != nil {
+			continue
+		}
+		if getSignatureStatus == nil {
+			continue
+		}
+		commitment := *getSignatureStatus.ConfirmationStatus
+		if commitment == rpc.CommitmentConfirmed || commitment == rpc.CommitmentFinalized {
+			return EmptyPingResultError
+		}
 	}
 }

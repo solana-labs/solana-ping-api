@@ -39,11 +39,9 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 			time.Sleep(time.Duration(config.BatchInverval))
 		}
 		timer.TimerStart()
-		var hash string
 
 		if !feeEnabled || 0 == config.ComputeUnitPrice {
 			txhash, pingErr := Transfer(c, acct, acct, config.Receiver, time.Duration(config.TxTimeout)*time.Second)
-			hash = txhash // avoid shadow
 			if !pingErr.NoError() {
 				timer.TimerStop()
 				if !pingErr.IsInErrorList(PingTakeTimeErrExpectionList) {
@@ -52,18 +50,32 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 				resultErrs = append(resultErrs, string(pingErr))
 				continue
 			}
+
+			waitErr := waitConfirmation(
+				c,
+				txhash,
+				time.Duration(config.WaitConfirmationTimeout)*time.Second,
+				time.Duration(WaitConfirmationQueryTimeout)*time.Second,
+				time.Duration(config.StatusCheckInterval)*time.Millisecond,
+			)
+			timer.TimerStop()
+			if !waitErr.NoError() {
+				resultErrs = append(resultErrs, string(waitErr))
+				if !waitErr.IsInErrorList(PingTakeTimeErrExpectionList) {
+					timer.Add()
+				}
+				continue
+			}
+			timer.Add()
+			confirmedCount++
 		} else {
-			ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.TxTimeout)*time.Second)
-			defer cancel()
-			txhash, pingErr := SendPingTx(SendPingTxParam{
+			txhash, blockhash, pingErr := SendPingTx(SendPingTxParam{
 				Client:              c,
-				Ctx:                 ctx,
 				FeePayer:            acct,
 				RequestComputeUnits: config.RequestUnits,
 				ComputeUnitPrice:    computeUnitPrice,
 				ReceiverPubkey:      config.Receiver,
 			})
-			hash = txhash // avoid shadow
 			if !pingErr.NoError() {
 				timer.TimerStop()
 				if !pingErr.IsInErrorList(PingTakeTimeErrExpectionList) {
@@ -72,24 +84,18 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 				resultErrs = append(resultErrs, string(pingErr))
 				continue
 			}
-		}
-
-		waitErr := waitConfirmation(c, hash,
-			time.Duration(config.WaitConfirmationTimeout)*time.Second,
-			time.Duration(WaitConfirmationQueryTimeout)*time.Second,
-			time.Duration(config.StatusCheckInterval)*time.Millisecond)
-		timer.TimerStop()
-		if !waitErr.NoError() {
-			resultErrs = append(resultErrs, string(waitErr))
-			if !waitErr.IsInErrorList(PingTakeTimeErrExpectionList) {
-				timer.Add()
+			waitErr := waitConfirmation2(c, txhash, blockhash)
+			timer.TimerStop()
+			if !waitErr.NoError() {
+				resultErrs = append(resultErrs, string(waitErr))
+				if !waitErr.IsInErrorList(PingTakeTimeErrExpectionList) {
+					timer.Add()
+				}
+				continue
 			}
-			continue
+			timer.Add()
+			confirmedCount++
 		}
-		timer.Add()
-		confirmedCount++
-		// log.Println(hash, "is confirmed/finalized")
-
 	}
 	result.TimeStamp = time.Now().UTC().Unix()
 	result.Submitted = config.BatchCount
