@@ -73,50 +73,66 @@ type SendPingTxParam struct {
 }
 
 func SendPingTx(param SendPingTxParam) (string, string, PingResultError) {
-	latestBlockhashResponse, err := param.Client.GetLatestBlockhashWithConfig(
-		context.Background(),
-		client.GetLatestBlockhashConfig{
-			Commitment: rpc.CommitmentFinalized,
-		},
-	)
-	if err != nil {
-		return "", "", PingResultError(fmt.Sprintf("failed to get latest blockhash, err: %v", err))
-	}
-	blockhash := latestBlockhashResponse.Blockhash
+	retry := 5
+	errRecords := make([]string, 0, retry)
 
-	rand.Seed(time.Now().UnixNano())
-	amount := uint64(rand.Intn(1000)) + 1
+	for retry > 0 {
+		retry -= 1
+		time.Sleep(10 * time.Millisecond)
 
-	tx, err := types.NewTransaction(types.NewTransactionParam{
-		Signers: []types.Account{param.FeePayer},
-		Message: types.NewMessage(types.NewMessageParam{
-			FeePayer:        param.FeePayer.PublicKey,
-			RecentBlockhash: blockhash,
-			Instructions: []types.Instruction{
-				cmptbdgprog.SetComputeUnitLimit(cmptbdgprog.SetComputeUnitLimitParam{
-					Units: param.RequestComputeUnits,
-				}),
-				cmptbdgprog.SetComputeUnitPrice(cmptbdgprog.SetComputeUnitPriceParam{
-					MicroLamports: param.ComputeUnitPrice,
-				}),
-				sysprog.Transfer(sysprog.TransferParam{
-					From:   param.FeePayer.PublicKey,
-					To:     common.PublicKeyFromString(param.ReceiverPubkey),
-					Amount: amount,
-				}),
+		// get a recnet blockhash
+		latestBlockhashResponse, err := param.Client.GetLatestBlockhashWithConfig(
+			context.Background(),
+			client.GetLatestBlockhashConfig{
+				Commitment: rpc.CommitmentFinalized,
 			},
-		}),
-	})
-	if err != nil {
-		return "", blockhash, PingResultError(fmt.Sprintf("failed to new a tx, err: %v", err))
+		)
+		if err != nil {
+			errRecords = append(errRecords, fmt.Sprintf("failed to get the latest blockhash, err: %v", err))
+			continue
+		}
+		blockhash := latestBlockhashResponse.Blockhash
+
+		// generate a random amount for trasferring
+		rand.Seed(time.Now().UnixNano())
+		amount := uint64(rand.Intn(1000)) + 1
+
+		// constructing a tx
+		tx, err := types.NewTransaction(types.NewTransactionParam{
+			Signers: []types.Account{param.FeePayer},
+			Message: types.NewMessage(types.NewMessageParam{
+				FeePayer:        param.FeePayer.PublicKey,
+				RecentBlockhash: blockhash,
+				Instructions: []types.Instruction{
+					cmptbdgprog.SetComputeUnitLimit(cmptbdgprog.SetComputeUnitLimitParam{
+						Units: param.RequestComputeUnits,
+					}),
+					cmptbdgprog.SetComputeUnitPrice(cmptbdgprog.SetComputeUnitPriceParam{
+						MicroLamports: param.ComputeUnitPrice,
+					}),
+					sysprog.Transfer(sysprog.TransferParam{
+						From:   param.FeePayer.PublicKey,
+						To:     common.PublicKeyFromString(param.ReceiverPubkey),
+						Amount: amount,
+					}),
+				},
+			}),
+		})
+		if err != nil {
+			errRecords = append(errRecords, fmt.Sprintf("failed to create a ping tx, err: %v", err))
+			continue
+		}
+
+		// send the tx
+		txhash, err := param.Client.SendTransaction(context.Background(), tx)
+		if err != nil {
+			errRecords = append(errRecords, fmt.Sprintf("failed to send the ping tx, err: %v", err))
+			continue
+		}
+		return txhash, blockhash, PingResultError("")
 	}
 
-	txhash, err := param.Client.SendTransaction(context.Background(), tx)
-	if err != nil {
-		return "", blockhash, PingResultError(fmt.Sprintf("failed to send a tx, err: %v", err))
-	}
-
-	return txhash, blockhash, PingResultError("")
+	return "", "", PingResultError(fmt.Sprintf("failed to send a ping tx, errs: %v", errRecords))
 }
 
 /*
