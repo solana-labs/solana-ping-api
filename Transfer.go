@@ -84,7 +84,7 @@ func SendPingTx(param SendPingTxParam) (string, string, PingResultError) {
 		latestBlockhashResponse, err := param.Client.GetLatestBlockhashWithConfig(
 			context.Background(),
 			client.GetLatestBlockhashConfig{
-				Commitment: rpc.CommitmentFinalized,
+				Commitment: rpc.CommitmentConfirmed,
 			},
 		)
 		if err != nil {
@@ -124,7 +124,13 @@ func SendPingTx(param SendPingTxParam) (string, string, PingResultError) {
 		}
 
 		// send the tx
-		txhash, err := param.Client.SendTransaction(context.Background(), tx)
+		txhash, err := param.Client.SendTransactionWithConfig(
+			context.Background(),
+			tx,
+			client.SendTransactionConfig{
+				PreflightCommitment: rpc.CommitmentConfirmed,
+			},
+		)
 		if err != nil {
 			errRecords = append(errRecords, fmt.Sprintf("failed to send the ping tx, err: %v", err))
 			continue
@@ -187,7 +193,7 @@ func waitConfirmation2(c *client.Client, txHash, blockhash string) PingResultErr
 		time.Sleep(1 * time.Second)
 
 		// check if blockhash is valid
-		isBlockhashValid, err := c.IsBlockhashValid(context.Background(), blockhash)
+		isBlockhashValid, err := isBlockhashValid(c, context.Background(), blockhash)
 		if err != nil {
 			continue
 		}
@@ -210,4 +216,32 @@ func waitConfirmation2(c *client.Client, txHash, blockhash string) PingResultErr
 	}
 
 	return PingResultError(fmt.Sprintf("the confirmation process exceeds 3 mins, txHash: %v, blockhash: %v", txHash, blockhash))
+}
+
+func isBlockhashValid(c *client.Client, ctx context.Context, blockhash string) (bool, error) {
+	// check for confirmed commitment
+	b1, err := c.IsBlockhashValidWithConfig(
+		ctx,
+		blockhash,
+		client.IsBlockhashValidConfig{
+			Commitment: rpc.CommitmentConfirmed,
+		},
+	)
+	if err != nil {
+		return false, err
+	}
+
+	// check for finalized commitment
+	b2, err := c.IsBlockhashValidWithConfig(
+		ctx,
+		blockhash,
+		client.IsBlockhashValidConfig{
+			Commitment: rpc.CommitmentFinalized,
+		},
+	)
+	if err != nil {
+		return false, err
+	}
+
+	return b1 || b2, nil
 }
