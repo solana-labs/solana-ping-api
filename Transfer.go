@@ -128,7 +128,7 @@ func SendPingTx(param SendPingTxParam) (string, string, PingResultError) {
 			context.Background(),
 			tx,
 			client.SendTransactionConfig{
-				PreflightCommitment: rpc.CommitmentConfirmed,
+				SkipPreflight: true,
 			},
 		)
 		if err != nil {
