@@ -103,7 +103,7 @@ func (f *RPCFailover) GetEndpoint() *FailoverEndpoint {
 func (f *FailoverEndpoint) RetryResult(err PingResultError) {
 	failoverMutex.Lock()
 	defer failoverMutex.Unlock()
-	if !err.NoError() {
+	if err.HasError() {
 		if err.IsTooManyRequest429() ||
 			err.IsServiceUnavilable() ||
 			err.IsErrGatewayTimeout504() ||

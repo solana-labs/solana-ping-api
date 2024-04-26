@@ -98,11 +98,11 @@ func (p PingResultError) Subsitute(old string, new string) string {
 	return strings.ReplaceAll(string(p), old, new)
 }
 
-func (p PingResultError) NoError() bool {
+func (p PingResultError) HasError() bool {
 	if string(p) == string(EmptyPingResultError) {
-		return true
+		return false
 	}
-	return false
+	return true
 }
 
 func ResponseErrIdentifierInit() []ErrRespIdentifier {
