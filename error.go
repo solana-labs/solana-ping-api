@@ -99,10 +99,7 @@ func (p PingResultError) Subsitute(old string, new string) string {
 }
 
 func (p PingResultError) HasError() bool {
-	if string(p) == string(EmptyPingResultError) {
-		return false
-	}
-	return true
+	return p != EmptyPingResultError
 }
 
 func ResponseErrIdentifierInit() []ErrRespIdentifier {
