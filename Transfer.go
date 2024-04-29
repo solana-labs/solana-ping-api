@@ -73,6 +73,8 @@ type SendPingTxParam struct {
 }
 
 func SendPingTx(param SendPingTxParam) (string, string, PingResultError) {
+	// There can be intermittent failures querying for blockhash, so retry a few
+	// times if necessary.
 	retry := 5
 	errRecords := make([]string, 0, retry)
 
@@ -80,7 +82,7 @@ func SendPingTx(param SendPingTxParam) (string, string, PingResultError) {
 		retry -= 1
 		time.Sleep(10 * time.Millisecond)
 
-		// get a recnet blockhash
+		// Get a recent blockhash.
 		latestBlockhashResponse, err := param.Client.GetLatestBlockhashWithConfig(
 			context.Background(),
 			client.GetLatestBlockhashConfig{
@@ -93,11 +95,13 @@ func SendPingTx(param SendPingTxParam) (string, string, PingResultError) {
 		}
 		blockhash := latestBlockhashResponse.Blockhash
 
-		// generate a random amount for trasferring
+		// Generate a random amount for trasferring. This entropy is needed to
+		// ensure we don't send duplicates in cases where the blockhash hasn't
+		// moved between pings.
 		rand.Seed(time.Now().UnixNano())
 		amount := uint64(rand.Intn(1000)) + 1
 
-		// constructing a tx
+		// Construct the tx.
 		tx, err := types.NewTransaction(types.NewTransactionParam{
 			Signers: []types.Account{param.FeePayer},
 			Message: types.NewMessage(types.NewMessageParam{
@@ -123,7 +127,7 @@ func SendPingTx(param SendPingTxParam) (string, string, PingResultError) {
 			continue
 		}
 
-		// send the tx
+		// Send the tx.
 		txhash, err := param.Client.SendTransactionWithConfig(
 			context.Background(),
 			tx,
@@ -185,23 +189,24 @@ func waitConfirmation(c *client.Client, txHash string, timeout time.Duration, re
 	}
 }
 
-func waitConfirmation2(c *client.Client, txHash, blockhash string) PingResultError {
+func waitConfirmationOrBlockhashInvalid(c *client.Client, txHash, blockhash string) PingResultError {
 	startTime := time.Now()
 	endTime := startTime.Add(3 * time.Minute)
 
 	for time.Now().Before(endTime) {
 		time.Sleep(1 * time.Second)
 
-		// check if blockhash is valid
+		// Check if blockhash has expired.
 		isBlockhashValid, err := isBlockhashValid(c, context.Background(), blockhash)
 		if err != nil {
 			continue
 		}
 		if !isBlockhashValid {
+			// Ping expired!
 			return PingResultError(fmt.Sprintf("blockhash is not valid, txHash: %v, blockhash: %v, err: %v", txHash, blockhash, err))
 		}
 
-		// check txhash status
+		// Check tx signature status.
 		getSignatureStatus, err := c.GetSignatureStatus(context.Background(), txHash)
 		if err != nil {
 			continue
@@ -211,10 +216,12 @@ func waitConfirmation2(c *client.Client, txHash, blockhash string) PingResultErr
 		}
 		commitment := *getSignatureStatus.ConfirmationStatus
 		if commitment == rpc.CommitmentConfirmed || commitment == rpc.CommitmentFinalized {
+			// Ping has landed!
 			return EmptyPingResultError
 		}
 	}
 
+	// Ping timed out!
 	return PingResultError(fmt.Sprintf("the confirmation process exceeds 3 mins, txHash: %v, blockhash: %v", txHash, blockhash))
 }
 

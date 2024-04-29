@@ -84,7 +84,7 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 				resultErrs = append(resultErrs, string(pingErr))
 				continue
 			}
-			waitErr := waitConfirmation2(c, txhash, blockhash)
+			waitErr := waitConfirmationOrBlockhashInvalid(c, txhash, blockhash)
 			timer.TimerStop()
 			if waitErr.HasError() {
 				resultErrs = append(resultErrs, string(waitErr))
