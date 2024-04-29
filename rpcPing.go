@@ -42,7 +42,7 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 
 		if !feeEnabled || 0 == config.ComputeUnitPrice {
 			txhash, pingErr := Transfer(c, acct, acct, config.Receiver, time.Duration(config.TxTimeout)*time.Second)
-			if !pingErr.NoError() {
+			if pingErr.HasError() {
 				timer.TimerStop()
 				if !pingErr.IsInErrorList(PingTakeTimeErrExpectionList) {
 					timer.Add()
@@ -59,7 +59,7 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 				time.Duration(config.StatusCheckInterval)*time.Millisecond,
 			)
 			timer.TimerStop()
-			if !waitErr.NoError() {
+			if waitErr.HasError() {
 				resultErrs = append(resultErrs, string(waitErr))
 				if !waitErr.IsInErrorList(PingTakeTimeErrExpectionList) {
 					timer.Add()
@@ -76,7 +76,7 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 				ComputeUnitPrice:    computeUnitPrice,
 				ReceiverPubkey:      config.Receiver,
 			})
-			if !pingErr.NoError() {
+			if pingErr.HasError() {
 				timer.TimerStop()
 				if !pingErr.IsInErrorList(PingTakeTimeErrExpectionList) {
 					timer.Add()
@@ -86,7 +86,7 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 			}
 			waitErr := waitConfirmation2(c, txhash, blockhash)
 			timer.TimerStop()
-			if !waitErr.NoError() {
+			if waitErr.HasError() {
 				resultErrs = append(resultErrs, string(waitErr))
 				if !waitErr.IsInErrorList(PingTakeTimeErrExpectionList) {
 					timer.Add()
