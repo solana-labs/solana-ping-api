@@ -132,7 +132,7 @@ func SendPingTx(param SendPingTxParam) (string, string, PingResultError) {
 			context.Background(),
 			tx,
 			client.SendTransactionConfig{
-				PreflightCommitment: rpc.CommitmentFinalized,
+				PreflightCommitment: rpc.CommitmentConfirmed,
 			},
 		)
 		if err != nil {
@@ -231,7 +231,7 @@ func isBlockhashValid(c *client.Client, ctx context.Context, blockhash string) (
 		ctx,
 		blockhash,
 		client.IsBlockhashValidConfig{
-			Commitment: rpc.CommitmentFinalized,
+			Commitment: rpc.CommitmentConfirmed,
 		},
 	)
 	if err != nil {
