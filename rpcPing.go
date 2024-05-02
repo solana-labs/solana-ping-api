@@ -69,6 +69,8 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 			timer.Add()
 			confirmedCount++
 		} else {
+			startTime := time.Now()
+			endTime := startTime.Add(5 * time.Second)
 			txhash, blockhash, pingErr := SendPingTx(SendPingTxParam{
 				Client:              c,
 				FeePayer:            acct,
@@ -84,7 +86,15 @@ func Ping(c *client.Client, pType PingType, acct types.Account, config ClusterCo
 				resultErrs = append(resultErrs, string(pingErr))
 				continue
 			}
+			if time.Now().After(endTime) {
+				resultErrs = append(resultErrs, "Send Ping took over 5 seconds for txhash: "+txhash+" and blockhash: "+blockhash)
+			}
+			startTimeConfirmation := time.Now()
+			endTimeConfirmation := startTimeConfirmation.Add(10 * time.Second)
 			waitErr := waitConfirmationOrBlockhashInvalid(c, txhash, blockhash)
+			if time.Now().After(endTimeConfirmation) {
+				resultErrs = append(resultErrs, "Confirmation took over 10 seconds for txhash: "+txhash+" and blockhash: "+blockhash)
+			}
 			timer.TimerStop()
 			if waitErr.HasError() {
 				resultErrs = append(resultErrs, string(waitErr))

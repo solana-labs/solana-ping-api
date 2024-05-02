@@ -86,7 +86,7 @@ func SendPingTx(param SendPingTxParam) (string, string, PingResultError) {
 		latestBlockhashResponse, err := param.Client.GetLatestBlockhashWithConfig(
 			context.Background(),
 			client.GetLatestBlockhashConfig{
-				Commitment: rpc.CommitmentConfirmed,
+				Commitment: rpc.CommitmentFinalized,
 			},
 		)
 		if err != nil {
@@ -132,7 +132,7 @@ func SendPingTx(param SendPingTxParam) (string, string, PingResultError) {
 			context.Background(),
 			tx,
 			client.SendTransactionConfig{
-				SkipPreflight: true,
+				PreflightCommitment: rpc.CommitmentConfirmed,
 			},
 		)
 		if err != nil {
