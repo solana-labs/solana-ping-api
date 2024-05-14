@@ -7,7 +7,8 @@ RUN go build -o app ./cmd/$COMPONENT
 FROM debian:latest
 RUN \
  apt-get update && \
- apt-get install -y --no-install-recommends ca-certificates curl vim
+ apt-get install -y --no-install-recommends ca-certificates curl vim && \
+ rm -rf /var/lib/apt/lists/*
 WORKDIR /workspace
 COPY --from=builder /workspace/app .
 CMD ["./app"]
