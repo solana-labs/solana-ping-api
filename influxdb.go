@@ -27,6 +27,7 @@ func NewInfluxdbClient(config InfluxdbConfig) *InfluxdbClient {
 	c.Bucket = config.Bucket
 	c.AccessToken = config.AccessToken
 	c.InfluxCloudURL = config.InfluxdbURL
+	c.Organization = config.Organization
 	c.Client = influxdb2.NewClientWithOptions(c.InfluxCloudURL, c.AccessToken,
 		influxdb2.DefaultOptions().SetBatchSize(InfluxdbAsyncBatchSize))
 	return c

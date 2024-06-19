@@ -71,7 +71,7 @@ type InfluxdbConfig struct {
 	Enabled     bool
 	InfluxdbURL string
 	AccessToken string
-	Orgnization string
+	Organization string
 	Bucket      string
 }
 type Retension struct {
@@ -172,7 +172,7 @@ func loadConfig() Config {
 		Enabled:     v.GetBool("InfluxdbConfig.Enabled"),
 		InfluxdbURL: v.GetString("InfluxdbConfig.InfluxdbURL"),
 		AccessToken: v.GetString("InfluxdbConfig.AccessToken"),
-		Orgnization: v.GetString("InfluxdbConfig.Orgnization"),
+		Organization: v.GetString("InfluxdbConfig.Organization"),
 		Bucket:      v.GetString("InfluxdbConfig.Bucket"),
 	}
 	// setup config.yaml (Retension)
