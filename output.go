@@ -195,11 +195,19 @@ func (s *DiscordPayload) AlertPayload(conf ClusterConfig, gStat *GlobalStatistic
 		timeStatis = fmt.Sprintf(" %d/%3.0f/%d/%3.0f ", gStat.TimeStatistic.Min, gStat.TimeStatistic.Mean, gStat.TimeStatistic.Max, gStat.TimeStatistic.Stddev)
 	}
 	errsorStatis := ""
+	unconfirmedTx := 0
 	for k, v := range errorStistic {
-		if !PingResultError(k).IsInErrorList(AlertErrorExceptionList) {
+		if PingResultError(k).IsInErrorList(AlertErrorExceptionList) {
+			continue
+		}
+
+		if UnconfirmedTx.IsIdentical(PingResultError(k)) {
+			unconfirmedTx++
+		} else {
 			errsorStatis = fmt.Sprintf("%s%s(%d)", errsorStatis, PingResultError(k).Short(), v)
 		}
 	}
+	errsorStatis += fmt.Sprintf("\n*(count:%d) Txs couldn't be confirmed\n", unconfirmedTx)
 	for _, w := range hideKeywords {
 		errsorStatis = strings.ReplaceAll(errsorStatis, w, "")
 	}
@@ -217,7 +225,7 @@ func (s *DiscordPayload) FailoverAlertPayload(conf ClusterConfig, endpoint Failo
 
 }
 func reportErrorBlock(data *GroupsAllStatistic, hideKeywords []string) string {
-	var exceededText, errorText, blackHashText string
+	var exceededText, errorText, blackHashText, unconfirmedTx string
 	if len(data.GlobalErrorStatistic) == 0 {
 		return ""
 	}
@@ -227,6 +235,8 @@ func reportErrorBlock(data *GroupsAllStatistic, hideKeywords []string) string {
 			exceededText = fmt.Sprintf("*(count:%d) RPC Server context deadline exceed\n", v)
 		} else if BlockhashNotFound.IsIdentical(PingResultError(k)) {
 			blackHashText = fmt.Sprintf("*(count:%d) BlockhashNotFound\n", v)
+		} else if UnconfirmedTx.IsIdentical(PingResultError(k)) {
+			unconfirmedTx = fmt.Sprintf("*(count:%d) Txs couldn't be confirmed\n", v)
 		} else {
 			errorText = fmt.Sprintf("%s\n(count: %d) %s\n", errorText, v, k)
 		}
@@ -235,7 +245,7 @@ func reportErrorBlock(data *GroupsAllStatistic, hideKeywords []string) string {
 		errorText = strings.ReplaceAll(errorText, w, "")
 	}
 	if len(data.GlobalErrorStatistic) > 0 {
-		return fmt.Sprintf("Error List:\n%s%s%s", exceededText, blackHashText, errorText)
+		return fmt.Sprintf("Error List:\n%s%s%s%s", exceededText, blackHashText, unconfirmedTx, errorText)
 	}
 	return ""
 }

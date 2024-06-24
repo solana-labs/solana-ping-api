@@ -89,6 +89,10 @@ var (
 		Text:  PingResultError(TxHasAlreadyProcessText),
 		Key:   []string{"transaction has already been processed"},
 		Short: "tx-has-been-processed"}
+	UnconfirmedTx = ErrRespIdentifier{
+		Text:  PingResultError(TxHasAlreadyProcessText),
+		Key:   []string{"blockhash is not valid", "the confirmation process exceeds"},
+		Short: "unconfirmed-tx"}
 )
 
 func (e ErrRespIdentifier) IsIdentical(p PingResultError) bool {
